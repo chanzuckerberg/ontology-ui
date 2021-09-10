@@ -12,14 +12,7 @@ class Vertex extends React.Component<IProps, IState> {
     const { ontology, vertex } = this.props;
 
     return (
-      <div
-        style={{
-          margin: "none",
-          padding: "none",
-          fontSize: 10,
-          lineHeight: 0,
-        }}
-      >
+      <div>
         <h1>{vertex.label}</h1>
         <h3> Ancestors </h3>
 

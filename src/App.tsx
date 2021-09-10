@@ -1,5 +1,5 @@
 import React from "react";
-import Ontology from "./components/Ontology";
+import Vertex from "./components/Vertex";
 import loadOntologies from "./util/loadOntologies";
 import { IOntology } from "./d";
 
@@ -7,12 +7,13 @@ interface IProps {}
 
 interface IState {
   ontology: null | IOntology;
+  selectedVertex: string;
 }
 
 class App extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
-    this.state = { ontology: null };
+    this.state = { ontology: null, selectedVertex: "CL:0000623" };
   }
 
   async componentDidMount() {
@@ -25,10 +26,13 @@ class App extends React.Component<IProps, IState> {
   }
 
   render() {
+    const { ontology } = this.state;
     return (
       <div>
         {!this.state.ontology && "Loading..."}
-        {this.state.ontology && <Ontology ontology={this.state.ontology} />}
+        {ontology && (
+          <Vertex ontology={ontology} vertex={ontology.get("CL:0000623")} />
+        )}
       </div>
     );
   }
