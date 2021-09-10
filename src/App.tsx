@@ -1,4 +1,6 @@
 import React from "react";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+
 import Vertex from "./components/Vertex";
 import loadOntologies from "./util/loadOntologies";
 import { IOntology } from "./d";

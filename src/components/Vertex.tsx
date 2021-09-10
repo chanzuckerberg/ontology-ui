@@ -16,16 +16,20 @@ class Vertex extends React.Component<IProps, IState> {
         <h1>{vertex.label}</h1>
         <h3> Ancestors </h3>
 
-        {vertex.ancestors.map((ancestor: string) => {
-          const _a: any = ontology.get(ancestor);
-          return <p key={ancestor}> {_a.label} </p>;
-        })}
+        {/* <ul>
+          {vertex.ancestors.map((ancestor: string) => {
+            const _a: any = ontology.get(ancestor);
+            return <li key={ancestor}> {_a.label} </li>;
+          })}
+        </ul>
 
         <h3> Descendents </h3>
-        {vertex.descendants.map((descendant: string) => {
-          const _d: any = ontology.get(descendant);
-          return <p key={descendant}> {_d.label} </p>;
-        })}
+        <ul>
+          {vertex.descendants.map((descendant: string) => {
+            const _d: any = ontology.get(descendant);
+            return <li key={descendant}> {_d.label} </li>;
+          })}
+        </ul> */}
       </div>
     );
   }
