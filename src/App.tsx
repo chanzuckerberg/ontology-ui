@@ -1,12 +1,12 @@
 import React from "react";
 import Ontology from "./components/Ontology";
 import loadOntologies from "./util/loadOntologies";
-import { Vertex } from "./d";
+import { IOntology } from "./d";
 
 interface IProps {}
 
 interface IState {
-  ontology: null | Vertex[];
+  ontology: null | IOntology;
 }
 
 class App extends React.Component<IProps, IState> {
@@ -16,15 +16,19 @@ class App extends React.Component<IProps, IState> {
   }
 
   async componentDidMount() {
-    const foo = await loadOntologies("http://localhost:8080/all_ontology.json");
-    this.setState({ ontology: foo.CL });
+    const _o = await loadOntologies("http://localhost:8080/all_ontology.json");
+    let arr = Object.entries(_o.CL);
+    /* make a map of the ontology values for easy getting and setting */
+    let ontology = new Map(arr);
+
+    this.setState({ ontology });
   }
 
   render() {
     return (
       <div>
         {!this.state.ontology && "Loading..."}
-        {this.state.ontology && <Ontology data={this.state.ontology} />}
+        {this.state.ontology && <Ontology ontology={this.state.ontology} />}
       </div>
     );
   }

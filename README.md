@@ -11,6 +11,8 @@ React, with create-react-app
 `$ npm install`
 `$ npm install -g http-server`
 
+prototype code is hardcoded to look for localhost port 8080, which is the default for `http-server`
+
 Terminal 1:
 `$ http-server ./public --gzip --cors`
 

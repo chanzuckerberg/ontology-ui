@@ -1,34 +1,20 @@
 import React from "react";
-import { Vertex } from "../d";
-import _ from "lodash";
+import { IOntology } from "../d";
+import Vertex from "./Vertex";
 
 interface IProps {
-  data: Vertex[];
+  ontology: IOntology;
 }
 
 interface IState {}
 
 class Ontology extends React.Component<IProps, IState> {
   render() {
-    const { data } = this.props;
-    console.log("show data", data);
+    const { ontology } = this.props;
     return (
       <div>
-        {_.map(data, (d, i) => {
-          return (
-            <p
-              key={i}
-              style={{
-                margin: "none",
-                padding: "none",
-                fontSize: 10,
-                lineHeight: 0,
-              }}
-            >
-              {d.label}
-            </p>
-          );
-        })}
+        {/* hardcoded entry point at natural killer cell */}
+        <Vertex ontology={ontology} vertex={ontology.get("CL:0000623")} />
       </div>
     );
   }
