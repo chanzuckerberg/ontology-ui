@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import Vertex from "./components/Vertex";
 import loadOntologies from "./util/loadOntologies";
@@ -9,13 +9,13 @@ interface IProps {}
 
 interface IState {
   ontology: null | IOntology;
-  selectedVertex: string;
+  defaultVertex: string;
 }
 
 class App extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
-    this.state = { ontology: null, selectedVertex: "CL:0000623" };
+    this.state = { ontology: null, defaultVertex: "CL:0000623" };
   }
 
   async componentDidMount() {
@@ -28,14 +28,50 @@ class App extends React.Component<IProps, IState> {
   }
 
   render() {
-    const { ontology } = this.state;
+    const { ontology, defaultVertex } = this.state;
+
     return (
-      <div>
-        {!this.state.ontology && "Loading..."}
-        {ontology && (
-          <Vertex ontology={ontology} vertex={ontology.get("CL:0000623")} />
-        )}
-      </div>
+      <Router>
+        <div
+          id="container"
+          style={{
+            margin: "0 auto",
+            maxWidth: "50em",
+            fontFamily: "Helvetica, Arial, sans-serif",
+            lineHeight: 1.5,
+            padding: "4em 1em",
+            color: "#555",
+          }}
+        >
+          {!this.state.ontology && "Loading..."}
+          {ontology && (
+            <Switch>
+              <Route
+                path="/:vertex"
+                render={({ match }) => {
+                  return (
+                    <Vertex
+                      ontology={ontology}
+                      vertex={ontology.get(match.params.vertex)}
+                    />
+                  );
+                }}
+              />
+              <Route
+                path="/"
+                render={({ match }) => {
+                  return (
+                    <Vertex
+                      ontology={ontology}
+                      vertex={ontology.get(defaultVertex)}
+                    />
+                  );
+                }}
+              />
+            </Switch>
+          )}
+        </div>
+      </Router>
     );
   }
 }

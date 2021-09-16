@@ -18,3 +18,7 @@ Terminal 1:
 
 Terminal 2:
 `$ npm start`
+
+# Query scheme
+
+`/:vertex`

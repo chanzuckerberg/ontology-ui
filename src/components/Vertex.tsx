@@ -1,4 +1,6 @@
+import { stringify } from "querystring";
 import React from "react";
+import { Link } from "react-router-dom";
 
 interface IProps {
   ontology: Map<string, unknown | object>;
@@ -16,20 +18,29 @@ class Vertex extends React.Component<IProps, IState> {
         <h1>{vertex.label}</h1>
         <h3> Ancestors </h3>
 
-        {/* <ul>
+        <ul>
           {vertex.ancestors.map((ancestor: string) => {
             const _a: any = ontology.get(ancestor);
-            return <li key={ancestor}> {_a.label} </li>;
+            return (
+              <li key={ancestor}>
+                <Link to={ancestor}>{_a.label}</Link>
+              </li>
+            );
           })}
         </ul>
 
         <h3> Descendents </h3>
-        <ul>
+        <ol>
           {vertex.descendants.map((descendant: string) => {
             const _d: any = ontology.get(descendant);
-            return <li key={descendant}> {_d.label} </li>;
+            // if (_d.label.contains("mouse") || _d.label.contains("human")) return
+            return (
+              <li key={descendant}>
+                <Link to={descendant}> {_d.label} </Link>
+              </li>
+            );
           })}
-        </ul> */}
+        </ol>
       </div>
     );
   }
