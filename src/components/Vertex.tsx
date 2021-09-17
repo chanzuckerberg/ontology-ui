@@ -1,15 +1,31 @@
-import { stringify } from "querystring";
 import React from "react";
 import { Link } from "react-router-dom";
+import fetchVertexEBI from "../util/fetchVertexEBI";
 
 interface IProps {
   ontology: Map<string, unknown | object>;
   vertex: any;
 }
 
-interface IState {}
+interface IState {
+  ebiData: null | object;
+}
 
 class Vertex extends React.Component<IProps, IState> {
+  constructor(props: IProps) {
+    super(props);
+    this.state = { ebiData: null };
+  }
+
+  async componentDidMount() {
+    const { vertex } = this.props;
+
+    const _ebi = await fetchVertexEBI(vertex.label);
+    console.log(_ebi);
+
+    this.setState({ ebiData: _ebi });
+  }
+
   render() {
     const { ontology, vertex } = this.props;
 
