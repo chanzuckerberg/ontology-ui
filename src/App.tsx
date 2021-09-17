@@ -1,8 +1,9 @@
 import React from "react";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 
 import Vertex from "./components/Vertex";
-import loadOntologies from "./util/loadOntologies";
+import DiscoveryLog from "./components/DiscoveryLog";
+import load from "./util/load";
 import { IOntology } from "./d";
 
 interface IProps {}
@@ -19,11 +20,11 @@ class App extends React.Component<IProps, IState> {
   }
 
   async componentDidMount() {
-    const _o = await loadOntologies("http://localhost:8080/all_ontology.json");
+    const _o = await load("http://localhost:8080/all_ontology.json");
     let arr = Object.entries(_o.CL);
     /* make a map of the ontology values for easy getting and setting */
     let ontology = new Map(arr);
-
+    console.log(ontology);
     this.setState({ ontology });
   }
 
@@ -44,28 +45,25 @@ class App extends React.Component<IProps, IState> {
           }}
         >
           {!this.state.ontology && "Loading..."}
+
           {ontology && (
             <Switch>
               <Route
-                path="/:vertex"
+                path="/cell/:vertex"
                 render={({ match }) => {
                   return (
                     <Vertex
                       ontology={ontology}
                       vertex={ontology.get(match.params.vertex)}
+                      vertexID={match.params.vertex}
                     />
                   );
                 }}
               />
               <Route
-                path="/"
-                render={({ match }) => {
-                  return (
-                    <Vertex
-                      ontology={ontology}
-                      vertex={ontology.get(defaultVertex)}
-                    />
-                  );
+                path="/discovery-log"
+                render={() => {
+                  return <DiscoveryLog />;
                 }}
               />
             </Switch>

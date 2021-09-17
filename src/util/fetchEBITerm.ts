@@ -1,10 +1,13 @@
-export default async function loadOntologies(_ontologiesURL: string) {
+// this needs to be proxied,
+const ebiBaseUrl = "/terms?id=";
+
+export default async function fetchEBITerm(vertex: string) {
   const _headers = new Headers();
 
   _headers.append("Content-Type", "application/json");
-  _headers.append("Accept-Encoding", "gzip");
+  _headers.append("Access-Control-Allow-Origin", "*");
 
-  const _request = new Request(_ontologiesURL, {
+  const _request = new Request(ebiBaseUrl + vertex, {
     method: "GET",
     headers: _headers,
     cache: "default",

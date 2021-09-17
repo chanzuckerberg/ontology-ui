@@ -1,11 +1,10 @@
-const ebiBaseUrl = "http://www.ebi.ac.uk/ols/api/terms?id=";
-
-export default async function fetchVertexEBI(vertex: string) {
+export default async function load(url: string) {
   const _headers = new Headers();
 
   _headers.append("Content-Type", "application/json");
+  _headers.append("Accept-Encoding", "gzip");
 
-  const _request = new Request(ebiBaseUrl + vertex, {
+  const _request = new Request(url, {
     method: "GET",
     headers: _headers,
     cache: "default",

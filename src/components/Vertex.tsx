@@ -1,37 +1,71 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import fetchVertexEBI from "../util/fetchVertexEBI";
-
+import fetchEBITerm from "../util/fetchEBITerm";
+import { IEBITerm, IEBITermAPIResponse } from "../d";
 interface IProps {
   ontology: Map<string, unknown | object>;
   vertex: any;
+  vertexID: string;
 }
 
 interface IState {
-  ebiData: null | object;
+  cl: null | IEBITerm;
+  uberon: null | IEBITerm;
 }
 
 class Vertex extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
-    this.state = { ebiData: null };
+    this.state = { cl: null, uberon: null };
   }
 
   async componentDidMount() {
-    const { vertex } = this.props;
-
-    const _ebi = await fetchVertexEBI(vertex.label);
-    console.log(_ebi);
-
-    this.setState({ ebiData: _ebi });
+    this.doGetEBITerm();
   }
+
+  async componentDidUpdate(prevProps: IProps) {
+    const { vertexID } = this.props;
+    if (prevProps.vertexID !== vertexID) {
+      this.setState({ cl: null, uberon: null });
+      this.doGetEBITerm();
+    }
+  }
+
+  doGetEBITerm = async () => {
+    const { vertexID } = this.props;
+    // call the ebi api
+    const _ebiResponse: IEBITermAPIResponse = await fetchEBITerm(vertexID);
+    // filter down the terms to only cl and uberon ontologies,
+    const cl: IEBITerm = _ebiResponse._embedded.terms.filter(
+      (term: IEBITerm) => {
+        return term.ontology_name === "cl";
+      }
+    )[0];
+    const uberon: IEBITerm = _ebiResponse._embedded.terms.filter(
+      (term: IEBITerm) => {
+        return term.ontology_name === "uberon";
+      }
+    )[0];
+
+    this.setState({ cl, uberon });
+  };
 
   render() {
     const { ontology, vertex } = this.props;
+    const { cl, uberon } = this.state;
+
+    const definition =
+      cl && cl.annotation.definition && cl.annotation.definition[0];
+
+    console.log("cl", cl);
+    console.log("uberon", uberon);
 
     return (
       <div>
         <h1>{vertex.label}</h1>
+        <p>{!cl && "Loading..."}</p>
+        <p>{cl && definition}</p>
+
         <h3> Ancestors </h3>
 
         <ul>
