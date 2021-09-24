@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import Vertex from "./components/Vertex";
 import DiscoveryLog from "./components/DiscoveryLog";
@@ -9,27 +9,39 @@ import { IOntology } from "./d";
 interface IProps {}
 
 interface IState {
-  ontology: null | IOntology;
-  defaultVertex: string;
+  cl_ontology: null | IOntology;
+  mondo_ontology: null | IOntology;
+  uberon_ontology: null | IOntology;
+  lattice: null | IOntology;
 }
 
 class App extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
-    this.state = { ontology: null, defaultVertex: "CL:0000623" };
+    this.state = {
+      cl_ontology: null,
+      mondo_ontology: null,
+      uberon_ontology: null,
+      lattice: null,
+    };
   }
 
   async componentDidMount() {
     const _o = await load("http://localhost:8080/all_ontology.json");
-    let arr = Object.entries(_o.CL);
+    const _lattice = await load("http://localhost:8080/lattice.json");
+
     /* make a map of the ontology values for easy getting and setting */
-    let ontology = new Map(arr);
-    console.log(ontology);
-    this.setState({ ontology });
+    let cl_ontology = new Map(Object.entries(_o.CL));
+    let mondo_ontology = new Map(Object.entries(_o.MONDO));
+    let uberon_ontology = new Map(Object.entries(_o.UBERON));
+    let lattice = new Map(Object.entries(_lattice));
+
+    this.setState({ cl_ontology, mondo_ontology, uberon_ontology, lattice });
   }
 
   render() {
-    const { ontology, defaultVertex } = this.state;
+    const { cl_ontology, mondo_ontology, uberon_ontology, lattice } =
+      this.state;
 
     return (
       <Router>
@@ -44,18 +56,48 @@ class App extends React.Component<IProps, IState> {
             color: "#555",
           }}
         >
-          {!this.state.ontology && "Loading..."}
+          {!cl_ontology && "Loading..."}
 
-          {ontology && (
+          {cl_ontology && mondo_ontology && uberon_ontology && lattice && (
             <Switch>
               <Route
                 path="/cell/:vertex"
                 render={({ match }) => {
                   return (
                     <Vertex
-                      ontology={ontology}
-                      vertex={ontology.get(match.params.vertex)}
+                      ontologyName="cl"
+                      ontology={cl_ontology}
+                      vertex={cl_ontology.get(match.params.vertex)}
                       vertexID={match.params.vertex}
+                      lattice={lattice}
+                    />
+                  );
+                }}
+              />
+              <Route
+                path="/disease/:vertex"
+                render={({ match }) => {
+                  return (
+                    <Vertex
+                      ontologyName="mondo"
+                      ontology={mondo_ontology}
+                      vertex={mondo_ontology.get(match.params.vertex)}
+                      vertexID={match.params.vertex}
+                      lattice={lattice}
+                    />
+                  );
+                }}
+              />
+              <Route
+                path="/compartment/:vertex"
+                render={({ match }) => {
+                  return (
+                    <Vertex
+                      ontologyName="uberon"
+                      ontology={uberon_ontology}
+                      vertex={uberon_ontology.get(match.params.vertex)}
+                      vertexID={match.params.vertex}
+                      lattice={lattice}
                     />
                   );
                 }}

@@ -1,22 +1,24 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import fetchEBITerm from "../util/fetchEBITerm";
-import { IEBITerm, IEBITermAPIResponse } from "../d";
+import { IEBITerm, IEBITermAPIResponse, ILatticeTerm } from "../d";
+
 interface IProps {
+  ontologyName: string;
   ontology: Map<string, unknown | object>;
+  lattice: Map<string, unknown | object>;
   vertex: any;
   vertexID: string;
 }
 
 interface IState {
-  cl: null | IEBITerm;
-  uberon: null | IEBITerm;
+  term: null | IEBITerm;
 }
 
 class Vertex extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
-    this.state = { cl: null, uberon: null };
+    this.state = { term: null };
   }
 
   async componentDidMount() {
@@ -26,49 +28,54 @@ class Vertex extends React.Component<IProps, IState> {
   async componentDidUpdate(prevProps: IProps) {
     const { vertexID } = this.props;
     if (prevProps.vertexID !== vertexID) {
-      this.setState({ cl: null, uberon: null });
+      this.setState({ term: null });
       this.doGetEBITerm();
     }
   }
 
   doGetEBITerm = async () => {
-    const { vertexID } = this.props;
+    const { vertexID, ontologyName } = this.props;
     // call the ebi api
     const _ebiResponse: IEBITermAPIResponse = await fetchEBITerm(vertexID);
-    // filter down the terms to only cl and uberon ontologies,
-    const cl: IEBITerm = _ebiResponse._embedded.terms.filter(
+    // filter down the terms to the ontology we're in
+    // this call returns every ontology the term appears in
+    const term: IEBITerm = _ebiResponse._embedded.terms.filter(
       (term: IEBITerm) => {
-        return term.ontology_name === "cl";
-      }
-    )[0];
-    const uberon: IEBITerm = _ebiResponse._embedded.terms.filter(
-      (term: IEBITerm) => {
-        return term.ontology_name === "uberon";
+        return term.ontology_name === ontologyName; /* ie., === cl */
       }
     )[0];
 
-    this.setState({ cl, uberon });
+    this.setState({ term });
   };
 
   render() {
-    const { ontology, vertex } = this.props;
-    const { cl, uberon } = this.state;
+    const { vertexID, vertex, ontology, lattice } = this.props;
+    const { term } = this.state;
 
+    /* A mechanoreceptor cell located in the inner ear that is sensitive to auditory stimuli. The ... */
     const definition =
-      cl && cl.annotation.definition && cl.annotation.definition[0];
+      term && term.annotation.definition && term.annotation.definition[0];
 
-    console.log("cl", cl);
-    console.log("uberon", uberon);
+    /* UBERON compartment linkage, if present */
+    const _lattice: ILatticeTerm | any = lattice.get(vertexID);
+
+    let _filteredLattice: string[] | null = null;
+
+    if (_lattice) {
+      _filteredLattice = _lattice.ancestors.filter((d: string) =>
+        d.includes("UBERON")
+      );
+    }
 
     return (
       <div>
         <h1>{vertex.label}</h1>
-        <p>{!cl && "Loading..."}</p>
-        <p>{cl && definition}</p>
+        <p>{!term && "Loading..."}</p>
+        <p>{term && definition}</p>
 
         <h3> Ancestors </h3>
 
-        <ul>
+        <ol>
           {vertex.ancestors.map((ancestor: string) => {
             const _a: any = ontology.get(ancestor);
             return (
@@ -77,19 +84,31 @@ class Vertex extends React.Component<IProps, IState> {
               </li>
             );
           })}
-        </ul>
+        </ol>
 
         <h3> Descendents </h3>
         <ol>
           {vertex.descendants.map((descendant: string) => {
             const _d: any = ontology.get(descendant);
-            // if (_d.label.contains("mouse") || _d.label.contains("human")) return
             return (
               <li key={descendant}>
                 <Link to={descendant}> {_d.label} </Link>
               </li>
             );
           })}
+        </ol>
+
+        <h3> Compartments </h3>
+        <ol>
+          {_filteredLattice &&
+            _filteredLattice.map((uberonID: string) => {
+              const _u: any = lattice.get(uberonID);
+              return (
+                <li key={_u.name}>
+                  <Link to={`/compartment/${uberonID}`}> {_u.name} </Link>
+                </li>
+              );
+            })}
         </ol>
       </div>
     );
