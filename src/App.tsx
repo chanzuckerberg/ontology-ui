@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import Vertex from "./components/Vertex";
+import Dag from "./components/Dag";
 import DiscoveryLog from "./components/DiscoveryLog";
 import load from "./util/load";
 import { IOntology } from "./d";
@@ -72,6 +73,13 @@ class App extends React.Component<IProps, IState> {
                       lattice={lattice}
                     />
                   );
+                }}
+              />
+              {/* the specific check for /dag MUST appear in this list before the general check for :vertex, fragile */}
+              <Route
+                path="/disease/dag"
+                render={({ match }) => {
+                  return <Dag ontologyName="mondo" ontology={mondo_ontology} />;
                 }}
               />
               <Route
