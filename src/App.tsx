@@ -62,6 +62,12 @@ class App extends React.Component<IProps, IState> {
           {cl_ontology && mondo_ontology && uberon_ontology && lattice && (
             <Switch>
               <Route
+                path="/cell/dag"
+                render={({ match }) => {
+                  return <Dag ontologyName="cell" ontology={cl_ontology} />;
+                }}
+              />
+              <Route
                 path="/cell/:vertex"
                 render={({ match }) => {
                   return (
