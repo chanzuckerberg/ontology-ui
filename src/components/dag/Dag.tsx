@@ -45,19 +45,29 @@ class DAG extends React.Component<IProps, IState> {
       "CL:0000255",
       "CL:0000548",
       "CL:0002371",
+      "CL:0000540",
+      "CL:0000066",
     ];
     const { nodes, links } = createNodesAndLinks(ontology, nodesToFilter);
     this.setState({ nodes, links });
   }
 
   render() {
+    const { ontology } = this.props;
     const { nodes, links, width, height } = this.state;
 
     return (
       <div>
         {nodes &&
           links &&
-          drawForceDag(nodes, links, width, height, this.dagCanvasRef)}
+          drawForceDag(
+            nodes,
+            links,
+            width,
+            height,
+            this.dagCanvasRef,
+            ontology
+          )}
         <canvas
           style={{ position: "absolute", top: 0, left: 0 }}
           width={width}

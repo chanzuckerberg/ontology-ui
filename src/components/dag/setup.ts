@@ -2,27 +2,27 @@ import {
   forceSimulation,
   forceLink,
   forceManyBody,
-  forceCollide,
   forceCenter,
-  forceRadial,
-  forceY,
   SimulationLinkDatum,
-  SimulationNodeDatum,
 } from "d3-force";
 
-import { select, pointer } from "d3-selection";
+import { select } from "d3-selection";
 
 import { OntologyVertexDatum } from "./Dag";
-import { IOntology } from "../../d";
+import { IOntology, IVertex } from "../../d";
 
 export const drawForceDag = (
   nodes: OntologyVertexDatum[],
   links: SimulationLinkDatum<any>[],
   width: number,
   height: number,
-  dagCanvasRef: any
+  dagCanvasRef: any,
+  ontology: IOntology
 ) => {
   /* via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas */
+
+  /* typescript this is a mashup between mouse coords and ontology attributes, which d3 has trouble with */
+  let closestNode: any = null;
 
   const simulation = forceSimulation(nodes)
     .force(
@@ -35,6 +35,10 @@ export const drawForceDag = (
   const context = dagCanvasRef.current!.getContext("2d"); //.context2d(width, height);
 
   simulation.on("tick", ticked);
+
+  // const decideFill = (node, closestNode, ontology) => {
+
+  // };
 
   function ticked() {
     if (context) {
@@ -49,9 +53,22 @@ export const drawForceDag = (
       for (const node of nodes) {
         context.beginPath();
         drawNode(node);
-        context.fillStyle = "steelblue"; //color(node);
+        context.fillStyle =
+          closestNode && closestNode.id === node.id ? "red" : "steelblue"; //color(node);
         context.fill();
         context.stroke();
+      }
+
+      if (closestNode) {
+        const vertex: any = ontology.get(closestNode.id);
+        if (vertex && vertex.label && typeof vertex.label === "string") {
+          context.font = "48px serif";
+          context.fillText(
+            `${vertex.label}${closestNode.id}`,
+            closestNode.x,
+            closestNode.y
+          );
+        }
       }
     }
   }
@@ -77,10 +94,9 @@ export const drawForceDag = (
   };
 
   const canvas = select(dagCanvasRef.current);
-  console.log("canvas", canvas);
   canvas.on("mousemove", (event) => {
-    const closestNode = simulation.find(event.clientX, event.clientY);
-    console.log(closestNode);
+    closestNode = simulation.find(event.clientX, event.clientY);
+    ticked();
   });
 
   return null;
