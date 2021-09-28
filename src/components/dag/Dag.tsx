@@ -26,8 +26,8 @@ class DAG extends React.Component<IProps, IState> {
     this.state = {
       nodes: null,
       links: null,
-      width: 4000,
-      height: 4000,
+      width: 3500,
+      height: 3500,
     };
   }
 
