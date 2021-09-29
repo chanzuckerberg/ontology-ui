@@ -1,8 +1,9 @@
 import React, { createRef } from "react";
 
 import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
-
-import { drawForceDag, createNodesAndLinks } from "./setup";
+import { greaterThanThirtyDescendants } from "./toFilter";
+import { createNodesAndLinks } from "./setup";
+import { drawForceDag } from "./draw";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: "string";
@@ -26,8 +27,8 @@ class DAG extends React.Component<IProps, IState> {
     this.state = {
       nodes: null,
       links: null,
-      width: 3500,
-      height: 3500,
+      width: 2000,
+      height: 2000,
     };
   }
 
@@ -35,20 +36,17 @@ class DAG extends React.Component<IProps, IState> {
 
   componentDidMount() {
     const { ontology } = this.props;
-    /**
-     * This is a set of nodes we don't want in the graph, because of high connectivity. Manual override.
-     * Included: cell, native cell, animal cell, eukaryotic cell, somatic cell
-     */
-    const nodesToFilter = [
-      "CL:0000000",
-      "CL:0000003",
-      "CL:0000255",
-      "CL:0000548",
-      "CL:0002371",
-      "CL:0000540",
-      "CL:0000066",
-    ];
-    const { nodes, links } = createNodesAndLinks(ontology, nodesToFilter);
+
+    ontology.forEach((v: any, id) => {
+      if (v.descendants.length > 30) {
+        console.log(id, v);
+      }
+    });
+
+    const { nodes, links } = createNodesAndLinks(
+      ontology,
+      greaterThanThirtyDescendants
+    );
     this.setState({ nodes, links });
   }
 
