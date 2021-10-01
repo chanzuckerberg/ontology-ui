@@ -8,23 +8,56 @@ import {
 } from "d3-force";
 
 import { select } from "d3-selection";
+import { polygonHull, polygonCentroid } from "d3-polygon";
 
 import { OntologyVertexDatum } from "./Dag";
-import { IOntology } from "../../d";
+import { IOntology, IVertex } from "../../d";
 
+/**
+ * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas
+ * and https://bl.ocks.org/mbostock/6f14f7b7f267a85f7cdc
+ */
 export const drawForceDag = (
   nodes: OntologyVertexDatum[],
   links: SimulationLinkDatum<any>[],
   width: number,
   height: number,
   dagCanvasRef: any,
-  ontology: IOntology
+  ontology: IOntology,
+  filteredVerticesForHulls: string[],
+  setCurrentNode: any,
+  incrementRenderCounter: any
 ) => {
-  /* via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas */
+  /**
+   * Let parent component know we rendered
+   */
+  incrementRenderCounter();
+  /**
+   * DOM element
+   */
+  const canvas: any = select(dagCanvasRef.current);
+  const context: any = dagCanvasRef.current!.getContext("2d"); //.context2d(width, height);
 
-  /* typescript this is a mashup between mouse coords and ontology attributes, which d3 has trouble with */
+  /**
+   * Hover state
+   */
   let closestNode: any = null;
 
+  /**
+   * Colors
+   */
+  const hullColor = "rgba(255,0,0,.05)";
+  const hullBorderColor = "rgb(255,0,0,.05";
+  const hullLabelColor = "rgba(0,0,0,1)";
+  const nodeColor = "rgba(100,100,100,1)";
+  const linkColor = "rgba(180,180,180,.3)";
+
+  const tooltipColor = "rgba(0,0,0,1)";
+  const closestNodeColor = "red";
+
+  /**
+   * Set up d3 force simulation
+   */
   const simulation = forceSimulation(nodes)
     .force(
       "link",
@@ -36,37 +69,63 @@ export const drawForceDag = (
     .force("x", forceX(width / 2))
     .force("y", forceY(height / 2));
 
-  const context = dagCanvasRef.current!.getContext("2d"); //.context2d(width, height);
+  // let resized = false;
 
-  simulation.on("tick", ticked);
-
-  // const decideFill = (node, closestNode, ontology) => {
-
-  // };
-
-  function ticked() {
+  /**
+   * Animation frame
+   */
+  const ticked = () => {
     if (context) {
+      /**
+       * Clear
+       */
       context.clearRect(0, 0, width, height);
 
+      const dpr = window.devicePixelRatio;
+
+      // if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+      // if (!resized) {
+      //   context.scale(0.8, 0.8);
+      //   resized = true;
+      // }
+
+      /**
+       * Draw links
+       */
+      context.lineWidth = 1;
       context.beginPath();
       links.forEach(drawLink);
-      context.strokeStyle = "rgba(150,150,150,.3)";
+      context.strokeStyle = linkColor;
       context.stroke();
 
+      /**
+       * Draw nodes
+       */
       context.strokeStyle = "#fff";
       for (const node of nodes) {
         context.beginPath();
         drawNode(node);
         context.fillStyle =
-          closestNode && closestNode.id === node.id ? "red" : "black"; //color(node);
+          closestNode && closestNode.id === node.id
+            ? closestNodeColor
+            : nodeColor; //color(node);
         context.fill();
         context.stroke();
       }
 
+      /**
+       * Draw hulls first, z index
+       */
+      drawHulls();
+
+      /**
+       * Draw text tooltip near node, on hover
+       */
       if (closestNode) {
         const vertex: any = ontology.get(closestNode.id);
         if (vertex && vertex.label && typeof vertex.label === "string") {
-          context.font = "48px serif";
+          context.fillStyle = tooltipColor;
+          context.font = "24px serif";
           context.fillText(
             `${vertex.label}${closestNode.id}`,
             closestNode.x,
@@ -75,7 +134,89 @@ export const drawForceDag = (
         }
       }
     }
-  }
+  };
+
+  /**
+   * Draw all hulls
+   */
+  const drawHulls = () => {
+    /**
+     * GIVEN ALL PRIOR FILTERED NODES
+     */
+    // filteredVerticesForHulls.forEach((vertex_id, i) => {
+    //   drawHull(vertex_id);
+    // });
+    /**
+     * CUSTOM SUBSET FOR TEST
+     */
+    //  ["CL:0002086", "CL:0002031", "CL:1000504"]
+    ["CL:0002086"].forEach((vertex_id, i) => {
+      drawHull(vertex_id);
+    });
+  };
+
+  /**
+   * Draw one hull
+   */
+  const drawHull = (vertex_id: string) => {
+    /**
+     * Retreive the vertex for its name and descendents
+     */
+    const vertex: any = ontology.get(vertex_id);
+
+    /**
+     * Filter the simulation's nodes that are descendents of the given vertex
+     * Create the hull
+     */
+    const filteredNodes = nodes.filter((node: any) => {
+      return vertex.descendants.includes(node.id);
+    });
+
+    let points: any = [];
+
+    filteredNodes.forEach((node) => {
+      points.push([node.x, node.y]);
+    });
+
+    const hull = polygonHull(points);
+    const centroid = polygonCentroid(points);
+
+    /**
+     * Paint the hull and the centroid text
+     */
+    context.beginPath();
+    if (hull) {
+      context.moveTo(hull[0][0], hull[0][1]);
+      for (var i = 1, n = hull.length; i < n; ++i) {
+        context.lineTo(hull[i][0], hull[i][1]);
+      }
+      context.closePath();
+      context.fillStyle = hullColor;
+      context.fill();
+
+      /**
+       * Hull border
+       */
+      // context.lineWidth = 1;
+      // context.strokeStyle = hullBorderColor;
+
+      // context.stroke();
+
+      /**
+       * Text on centroid of hull
+       */
+      context.fillStyle = hullLabelColor;
+      context.font = "18px helvetica";
+      context.fillText(
+        `${vertex.label}`, //${vertex_id}`
+        /**
+         * subtract some width to center text
+         */
+        centroid[0] - 100,
+        centroid[1] - 15
+      );
+    }
+  };
 
   const drawLink = (d: SimulationLinkDatum<any>) => {
     if (context) {
@@ -86,6 +227,13 @@ export const drawForceDag = (
   };
 
   const drawNode = (d: OntologyVertexDatum) => {
+    /**
+     * identify orphan nodes, eject
+     */
+    if (d.descendantCount === 0 && d.ancestorCount === 0) {
+      return;
+    }
+
     /* refactor this if statement away */
     if (context && d && typeof d.x === "number" && typeof d.y === "number") {
       context.moveTo(d.x + 3, d.y);
@@ -97,9 +245,15 @@ export const drawForceDag = (
     }
   };
 
-  const canvas = select(dagCanvasRef.current);
-  canvas.on("mousemove", (event) => {
+  /**
+   * Register listeners
+   */
+
+  simulation.on("tick", ticked);
+
+  canvas.on("mousemove", (event: any) => {
     closestNode = simulation.find(event.clientX, event.clientY);
+    setCurrentNode(closestNode);
     ticked();
   });
 

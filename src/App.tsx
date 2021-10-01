@@ -64,7 +64,13 @@ class App extends React.Component<IProps, IState> {
               <Route
                 path="/cell/dag"
                 render={({ match }) => {
-                  return <Dag ontologyName="cell" ontology={cl_ontology} />;
+                  return (
+                    <Dag
+                      ontologyName="cell"
+                      ontology={cl_ontology}
+                      lattice={lattice}
+                    />
+                  );
                 }}
               />
               <Route
@@ -79,13 +85,6 @@ class App extends React.Component<IProps, IState> {
                       lattice={lattice}
                     />
                   );
-                }}
-              />
-              {/* the specific check for /dag MUST appear in this list before the general check for :vertex, fragile */}
-              <Route
-                path="/disease/dag"
-                render={({ match }) => {
-                  return <Dag ontologyName="mondo" ontology={mondo_ontology} />;
                 }}
               />
               <Route

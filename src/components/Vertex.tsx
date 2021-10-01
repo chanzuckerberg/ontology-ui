@@ -5,8 +5,8 @@ import { IEBITerm, IEBITermAPIResponse, ILatticeTerm } from "../d";
 
 interface IProps {
   ontologyName: string;
-  ontology: Map<string, unknown | object>;
-  lattice: Map<string, unknown | object>;
+  ontology: any;
+  lattice: any;
   vertex: any;
   vertexID: string;
 }
@@ -68,7 +68,7 @@ class Vertex extends React.Component<IProps, IState> {
     }
 
     return (
-      <div>
+      <div style={{ position: "absolute", right: 100, top: 0, width: 350 }}>
         <h1>{vertex.label}</h1>
         <p>{!term && "Loading..."}</p>
         <p>{term && definition}</p>
@@ -103,11 +103,13 @@ class Vertex extends React.Component<IProps, IState> {
           {_filteredLattice &&
             _filteredLattice.map((uberonID: string) => {
               const _u: any = lattice.get(uberonID);
-              return (
-                <li key={_u.name}>
-                  <Link to={`/compartment/${uberonID}`}> {_u.name} </Link>
-                </li>
-              );
+              if (_u && _u.name) {
+                return (
+                  <li key={_u.name}>
+                    <Link to={`/compartment/${uberonID}`}> {_u.name} </Link>
+                  </li>
+                );
+              }
             })}
         </ol>
       </div>
