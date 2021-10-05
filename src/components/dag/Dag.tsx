@@ -30,6 +30,7 @@ interface IState {
   canvasRenderCounter: number;
   dagSearchText: string;
   redrawCanvas: any /* function to force render canvas */;
+  simulationRunning: boolean;
 }
 
 class DAG extends React.Component<IProps, IState> {
@@ -45,6 +46,7 @@ class DAG extends React.Component<IProps, IState> {
       canvasRenderCounter: 0,
       dagSearchText: "",
       redrawCanvas: null,
+      simulationRunning: false,
     };
   }
 
@@ -78,6 +80,11 @@ class DAG extends React.Component<IProps, IState> {
     this.setState({ canvasRenderCounter: (canvasRenderCounter += 1) });
   };
 
+  onForceSimulationEnd = () => {
+    const simulationRunning = this.state;
+    this.setState({ simulationRunning: false });
+  };
+
   initializeCanvasRenderer = (
     nodes: OntologyVertexDatum[],
     links: SimulationLinkDatum<any>[],
@@ -95,10 +102,11 @@ class DAG extends React.Component<IProps, IState> {
       greaterThanThirtyDescendants,
       this.setHoverNode,
       this.setPinnedNode,
-      this.incrementRenderCounter
+      this.incrementRenderCounter,
+      this.onForceSimulationEnd
     );
 
-    this.setState({ redrawCanvas });
+    this.setState({ redrawCanvas, simulationRunning: true });
   };
 
   /**
@@ -125,6 +133,8 @@ class DAG extends React.Component<IProps, IState> {
       pinnedNode,
       canvasRenderCounter,
       dagSearchText,
+      redrawCanvas,
+      simulationRunning,
     } = this.state;
 
     return (
@@ -153,9 +163,10 @@ class DAG extends React.Component<IProps, IState> {
         )}
         <input
           type="text"
-          style={{ fontSize: 24 }}
+          placeholder="Substring search"
+          style={{ position: "absolute", left: 10, top: 10, fontSize: 24 }}
           onChange={this.handleDagSearchChange}
-          value={dagSearchText}
+          value={simulationRunning ? "Computing layout..." : dagSearchText}
         />
         <canvas
           style={{

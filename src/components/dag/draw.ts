@@ -27,7 +27,8 @@ export const drawForceDag = (
   filteredVerticesForHulls: string[],
   setHoverNode: any,
   setPinnedNode: any,
-  incrementRenderCounter: any
+  incrementRenderCounter: any,
+  onForceSimulationEnd: any
 ) => {
   /**
    * Let parent component know we rendered
@@ -288,6 +289,7 @@ export const drawForceDag = (
    */
 
   simulation.on("tick", ticked);
+  simulation.on("end", onForceSimulationEnd);
 
   canvas.on("mousemove", (event: any) => {
     hoverNode = simulation.find(event.clientX, event.clientY);
