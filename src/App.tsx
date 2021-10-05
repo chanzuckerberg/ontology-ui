@@ -66,7 +66,7 @@ class App extends React.Component<IProps, IState> {
                 render={({ match }) => {
                   return (
                     <Dag
-                      ontologyName="cell"
+                      ontologyName="cl"
                       ontology={cl_ontology}
                       lattice={lattice}
                     />
@@ -88,6 +88,18 @@ class App extends React.Component<IProps, IState> {
                 }}
               />
               <Route
+                path="/disease/dag"
+                render={({ match }) => {
+                  return (
+                    <Dag
+                      ontologyName="mondo"
+                      ontology={mondo_ontology}
+                      lattice={lattice}
+                    />
+                  );
+                }}
+              />
+              <Route
                 path="/disease/:vertex"
                 render={({ match }) => {
                   return (
@@ -96,6 +108,18 @@ class App extends React.Component<IProps, IState> {
                       ontology={mondo_ontology}
                       vertex={mondo_ontology.get(match.params.vertex)}
                       vertexID={match.params.vertex}
+                      lattice={lattice}
+                    />
+                  );
+                }}
+              />
+              <Route
+                path="/compartment/dag"
+                render={({ match }) => {
+                  return (
+                    <Dag
+                      ontologyName="uberon"
+                      ontology={uberon_ontology}
                       lattice={lattice}
                     />
                   );

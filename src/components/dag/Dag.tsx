@@ -31,6 +31,9 @@ interface IState {
   dagSearchText: string;
   redrawCanvas: any /* function to force render canvas */;
   simulationRunning: boolean;
+  outdegreeCutoff: number /* max descendants */;
+  outDegreeFilteredNodes: string[];
+  hullsTurnedOn: boolean;
 }
 
 class DAG extends React.Component<IProps, IState> {
@@ -47,6 +50,9 @@ class DAG extends React.Component<IProps, IState> {
       dagSearchText: "",
       redrawCanvas: null,
       simulationRunning: false,
+      outdegreeCutoff: 50,
+      outDegreeFilteredNodes: [],
+      hullsTurnedOn: false,
     };
   }
 
@@ -54,18 +60,22 @@ class DAG extends React.Component<IProps, IState> {
 
   componentDidMount() {
     const { ontology } = this.props;
+    const { outdegreeCutoff } = this.state;
 
-    // ontology.forEach((v: any, id) => {
-    //   if (v.descendants.length > 30) {
-    //     console.log(id, v);
-    //   }
-    // });
+    const outDegreeFilteredNodes: string[] = [];
+
+    ontology.forEach((v: any, id) => {
+      if (v.descendants.length > outdegreeCutoff) {
+        console.log(id, v);
+        outDegreeFilteredNodes.push(id);
+      }
+    });
 
     const { nodes, links } = createNodesLinksHulls(
       ontology,
-      greaterThanThirtyDescendants
+      outDegreeFilteredNodes
     );
-    this.setState({ nodes, links });
+    this.setState({ nodes, links, outDegreeFilteredNodes });
   }
 
   setHoverNode = (hoverNode: any) => {
@@ -90,7 +100,7 @@ class DAG extends React.Component<IProps, IState> {
     links: SimulationLinkDatum<any>[],
     ontology: IOntology
   ) => {
-    const { width, height } = this.state;
+    const { width, height, hullsTurnedOn } = this.state;
 
     const redrawCanvas = drawForceDag(
       nodes,
@@ -103,7 +113,8 @@ class DAG extends React.Component<IProps, IState> {
       this.setHoverNode,
       this.setPinnedNode,
       this.incrementRenderCounter,
-      this.onForceSimulationEnd
+      this.onForceSimulationEnd,
+      hullsTurnedOn
     );
 
     this.setState({ redrawCanvas, simulationRunning: true });
@@ -123,7 +134,7 @@ class DAG extends React.Component<IProps, IState> {
   };
 
   render() {
-    const { ontology, lattice } = this.props;
+    const { ontology, ontologyName, lattice } = this.props;
     const {
       nodes,
       links,
@@ -145,7 +156,7 @@ class DAG extends React.Component<IProps, IState> {
           this.initializeCanvasRenderer(nodes, links, ontology)}
         {!pinnedNode && hoverNode && (
           <Vertex
-            ontologyName="cl"
+            ontologyName={ontologyName}
             ontology={ontology}
             vertex={ontology.get(hoverNode.id)}
             vertexID={hoverNode.id}
@@ -154,7 +165,7 @@ class DAG extends React.Component<IProps, IState> {
         )}
         {pinnedNode && (
           <Vertex
-            ontologyName="cl"
+            ontologyName={ontologyName}
             ontology={ontology}
             vertex={ontology.get(pinnedNode.id)}
             vertexID={pinnedNode.id}
@@ -170,7 +181,6 @@ class DAG extends React.Component<IProps, IState> {
         />
         <canvas
           style={{
-            border: "1px solid pink",
             position: "absolute",
             top: 0,
             left: 0,

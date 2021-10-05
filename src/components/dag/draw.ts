@@ -28,7 +28,8 @@ export const drawForceDag = (
   setHoverNode: any,
   setPinnedNode: any,
   incrementRenderCounter: any,
-  onForceSimulationEnd: any
+  onForceSimulationEnd: any,
+  hullsTurnedOn: boolean
 ) => {
   /**
    * Let parent component know we rendered
@@ -53,7 +54,7 @@ export const drawForceDag = (
   /**
    * Colors
    */
-  const hullColor = "rgba(255,0,0,.05)";
+  const hullColor = "rgba(255,0,0,.05)"; //"transparent";
   const hullBorderColor = "rgb(255,0,0,.05";
   const hullLabelColor = "rgba(0,0,0,1)";
   const nodeColor = "rgba(100,100,100,1)";
@@ -180,9 +181,9 @@ export const drawForceDag = (
     /**
      * GIVEN ALL PRIOR FILTERED NODES
      */
-    // filteredVerticesForHulls.forEach((vertex_id, i) => {
-    //   drawHull(vertex_id);
-    // });
+    filteredVerticesForHulls.forEach((vertex_id, i) => {
+      drawHull(vertex_id);
+    });
     /**
      * CUSTOM SUBSET FOR TEST
      */
@@ -218,11 +219,11 @@ export const drawForceDag = (
     const hull = polygonHull(points);
     const centroid = polygonCentroid(points);
 
-    /**
-     * Paint the hull and the centroid text
-     */
-    context.beginPath();
-    if (hull) {
+    if (hull && hullsTurnedOn) {
+      /**
+       * Paint the hull
+       */
+      context.beginPath();
       context.moveTo(hull[0][0], hull[0][1]);
       for (var i = 1, n = hull.length; i < n; ++i) {
         context.lineTo(hull[i][0], hull[i][1]);
@@ -234,10 +235,9 @@ export const drawForceDag = (
       /**
        * Hull border
        */
-      // context.lineWidth = 1;
-      // context.strokeStyle = hullBorderColor;
-
-      // context.stroke();
+      context.lineWidth = 1;
+      context.strokeStyle = hullBorderColor;
+      context.stroke();
 
       /**
        * Text on centroid of hull
