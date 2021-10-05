@@ -25,7 +25,8 @@ export const drawForceDag = (
   dagCanvasRef: any,
   ontology: IOntology,
   filteredVerticesForHulls: string[],
-  setCurrentNode: any,
+  setHoverNode: any,
+  setPinnedNode: any,
   incrementRenderCounter: any
 ) => {
   /**
@@ -41,7 +42,12 @@ export const drawForceDag = (
   /**
    * Hover state
    */
-  let closestNode: any = null;
+  let hoverNode: any = null;
+
+  /**
+   * Click state
+   */
+  let clickNode: any = null;
 
   /**
    * Colors
@@ -53,7 +59,10 @@ export const drawForceDag = (
   const linkColor = "rgba(180,180,180,.3)";
 
   const tooltipColor = "rgba(0,0,0,1)";
-  const closestNodeColor = "red";
+  const hoverNodeColor = "red";
+  const clickedNodeColor = "steelblue";
+  const nodeColorNotInSearch = "rgba(100,100,100,.2)";
+  const nodeColorInSearch = "steelblue";
 
   /**
    * Set up d3 force simulation
@@ -74,7 +83,7 @@ export const drawForceDag = (
   /**
    * Animation frame
    */
-  const ticked = () => {
+  const ticked = (searchString?: string) => {
     if (context) {
       /**
        * Clear
@@ -105,10 +114,37 @@ export const drawForceDag = (
       for (const node of nodes) {
         context.beginPath();
         drawNode(node);
-        context.fillStyle =
-          closestNode && closestNode.id === node.id
-            ? closestNodeColor
-            : nodeColor; //color(node);
+
+        /**
+         * Default color of node
+         * last true statement after takes precedence
+         */
+        context.fillStyle = nodeColor;
+        /**
+         * fade the node back if it's not in the search string
+         */
+        if (searchString) {
+          const vertex: any = ontology.get(node.id);
+          if (vertex && vertex.label) {
+            const _hit = vertex.label
+              .toLowerCase()
+              .includes(searchString.toLowerCase());
+            if (_hit) {
+              context.fillStyle = "red";
+            } else {
+              context.fillStyle = "blue";
+            }
+          }
+        }
+        /**
+         * hover & click color
+         */
+        if (hoverNode && hoverNode.id === node.id) {
+          context.fillStyle = hoverNodeColor;
+        }
+        if (clickNode && clickNode.id === node.id) {
+          context.fillStyle = clickedNodeColor;
+        }
         context.fill();
         context.stroke();
       }
@@ -121,15 +157,15 @@ export const drawForceDag = (
       /**
        * Draw text tooltip near node, on hover
        */
-      if (closestNode) {
-        const vertex: any = ontology.get(closestNode.id);
+      if (hoverNode) {
+        const vertex: any = ontology.get(hoverNode.id);
         if (vertex && vertex.label && typeof vertex.label === "string") {
           context.fillStyle = tooltipColor;
           context.font = "24px serif";
           context.fillText(
-            `${vertex.label}${closestNode.id}`,
-            closestNode.x,
-            closestNode.y
+            `${vertex.label}${hoverNode.id}`,
+            hoverNode.x,
+            hoverNode.y
           );
         }
       }
@@ -234,7 +270,9 @@ export const drawForceDag = (
       return;
     }
 
-    /* refactor this if statement away */
+    /**
+     * Draw a circle
+     */
     if (context && d && typeof d.x === "number" && typeof d.y === "number") {
       context.moveTo(d.x + 3, d.y);
       context.arc(d.x, d.y, 3, 0, 2 * Math.PI);
@@ -252,10 +290,21 @@ export const drawForceDag = (
   simulation.on("tick", ticked);
 
   canvas.on("mousemove", (event: any) => {
-    closestNode = simulation.find(event.clientX, event.clientY);
-    setCurrentNode(closestNode);
+    hoverNode = simulation.find(event.clientX, event.clientY);
+    setHoverNode(hoverNode);
+    ticked();
+  });
+  canvas.on("click", (event: any) => {
+    clickNode = simulation.find(event.clientX, event.clientY);
+    setPinnedNode(clickNode);
     ticked();
   });
 
-  return null;
+  /**
+   * We return the ticked function so that we can force redraws
+   * from the parent. This allows us to, for instance, drive
+   * the canvas visualization if we type into a search box,
+   * where the user interaction is not coming from the
+   */
+  return ticked;
 };

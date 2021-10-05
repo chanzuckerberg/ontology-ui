@@ -2,7 +2,7 @@ import React, { createRef } from "react";
 
 import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 import { greaterThanThirtyDescendants } from "./toFilter";
-import { createNodesLinksHulls } from "./setup";
+import { createNodesLinksHulls } from "./createNodesLinksHulls";
 import { drawForceDag } from "./draw";
 import Vertex from "../Vertex";
 
@@ -25,8 +25,11 @@ interface IState {
   links: SimulationLinkDatum<any>[] | null;
   width: number;
   height: number;
-  currentNode: any /* from d3 hover */;
+  hoverNode: any /* from d3 force node hover */;
+  pinnedNode: any /* from d3 force node click */;
   canvasRenderCounter: number;
+  dagSearchText: string;
+  redrawCanvas: any /* function to force render canvas */;
 }
 
 class DAG extends React.Component<IProps, IState> {
@@ -37,8 +40,11 @@ class DAG extends React.Component<IProps, IState> {
       links: null,
       width: 2000,
       height: 2000,
-      currentNode: null,
+      hoverNode: null,
+      pinnedNode: null,
       canvasRenderCounter: 0,
+      dagSearchText: "",
+      redrawCanvas: null,
     };
   }
 
@@ -60,8 +66,11 @@ class DAG extends React.Component<IProps, IState> {
     this.setState({ nodes, links });
   }
 
-  setCurrentNode = (currentNode: string) => {
-    this.setState({ currentNode });
+  setHoverNode = (hoverNode: any) => {
+    this.setState({ hoverNode });
+  };
+  setPinnedNode = (pinnedNode: any) => {
+    this.setState({ pinnedNode });
   };
 
   incrementRenderCounter = () => {
@@ -69,36 +78,85 @@ class DAG extends React.Component<IProps, IState> {
     this.setState({ canvasRenderCounter: (canvasRenderCounter += 1) });
   };
 
+  initializeCanvasRenderer = (
+    nodes: OntologyVertexDatum[],
+    links: SimulationLinkDatum<any>[],
+    ontology: IOntology
+  ) => {
+    const { width, height } = this.state;
+
+    const redrawCanvas = drawForceDag(
+      nodes,
+      links,
+      width,
+      height,
+      this.dagCanvasRef,
+      ontology,
+      greaterThanThirtyDescendants,
+      this.setHoverNode,
+      this.setPinnedNode,
+      this.incrementRenderCounter
+    );
+
+    this.setState({ redrawCanvas });
+  };
+
+  /**
+   * @param e is a react syntheticevent type, todo
+   */
+  handleDagSearchChange = (e: any) => {
+    const { redrawCanvas } = this.state;
+    this.setState({
+      dagSearchText: e.target.value,
+    });
+    if (redrawCanvas) {
+      redrawCanvas(e.target.value);
+    }
+  };
+
   render() {
     const { ontology, lattice } = this.props;
-    const { nodes, links, width, height, currentNode, canvasRenderCounter } =
-      this.state;
-    console.log("parent dag", currentNode);
+    const {
+      nodes,
+      links,
+      width,
+      height,
+      hoverNode,
+      pinnedNode,
+      canvasRenderCounter,
+      dagSearchText,
+    } = this.state;
+
     return (
       <div>
         {nodes &&
           links &&
           canvasRenderCounter < 1 &&
-          drawForceDag(
-            nodes,
-            links,
-            width,
-            height,
-            this.dagCanvasRef,
-            ontology,
-            greaterThanThirtyDescendants,
-            this.setCurrentNode,
-            this.incrementRenderCounter
-          )}
-        {currentNode && (
+          this.initializeCanvasRenderer(nodes, links, ontology)}
+        {!pinnedNode && hoverNode && (
           <Vertex
             ontologyName="cl"
             ontology={ontology}
-            vertex={ontology.get(currentNode.id)}
-            vertexID={currentNode.id}
+            vertex={ontology.get(hoverNode.id)}
+            vertexID={hoverNode.id}
             lattice={lattice}
           />
         )}
+        {pinnedNode && (
+          <Vertex
+            ontologyName="cl"
+            ontology={ontology}
+            vertex={ontology.get(pinnedNode.id)}
+            vertexID={pinnedNode.id}
+            lattice={lattice}
+          />
+        )}
+        <input
+          type="text"
+          style={{ fontSize: 24 }}
+          onChange={this.handleDagSearchChange}
+          value={dagSearchText}
+        />
         <canvas
           style={{
             border: "1px solid pink",
@@ -106,6 +164,7 @@ class DAG extends React.Component<IProps, IState> {
             top: 0,
             left: 0,
             zIndex: -9999,
+            cursor: "crosshair",
           }}
           width={width}
           height={height}
