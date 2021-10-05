@@ -60,7 +60,7 @@ export const drawForceDag = (
 
   const tooltipColor = "rgba(0,0,0,1)";
   const hoverNodeColor = "red";
-  const clickedNodeColor = "steelblue";
+  const clickedNodeColor = "green";
   const nodeColorNotInSearch = "rgba(100,100,100,.2)";
   const nodeColorInSearch = "steelblue";
 
@@ -130,9 +130,9 @@ export const drawForceDag = (
               .toLowerCase()
               .includes(searchString.toLowerCase());
             if (_hit) {
-              context.fillStyle = "red";
+              context.fillStyle = nodeColorInSearch;
             } else {
-              context.fillStyle = "blue";
+              context.fillStyle = nodeColorNotInSearch;
             }
           }
         }
