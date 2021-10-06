@@ -34,6 +34,7 @@ interface IState {
   outdegreeCutoff: number /* max descendants */;
   outDegreeFilteredNodes: string[];
   hullsTurnedOn: boolean;
+  maxRenderCounter: number;
 }
 
 class DAG extends React.Component<IProps, IState> {
@@ -50,9 +51,10 @@ class DAG extends React.Component<IProps, IState> {
       dagSearchText: "",
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoff: 50,
+      outdegreeCutoff: 40,
       outDegreeFilteredNodes: [],
       hullsTurnedOn: false,
+      maxRenderCounter: 1,
     };
   }
 
@@ -66,7 +68,6 @@ class DAG extends React.Component<IProps, IState> {
 
     ontology.forEach((v: any, id) => {
       if (v.descendants.length > outdegreeCutoff) {
-        console.log(id, v);
         outDegreeFilteredNodes.push(id);
       }
     });
@@ -146,13 +147,14 @@ class DAG extends React.Component<IProps, IState> {
       dagSearchText,
       redrawCanvas,
       simulationRunning,
+      maxRenderCounter,
     } = this.state;
 
     return (
       <div>
         {nodes &&
           links &&
-          canvasRenderCounter < 1 &&
+          canvasRenderCounter < maxRenderCounter &&
           this.initializeCanvasRenderer(nodes, links, ontology)}
         {!pinnedNode && hoverNode && (
           <Vertex

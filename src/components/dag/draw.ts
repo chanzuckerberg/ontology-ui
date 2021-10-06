@@ -59,9 +59,10 @@ export const drawForceDag = (
   const hullLabelColor = "rgba(0,0,0,1)";
   const nodeColor = "rgba(100,100,100,1)";
   const linkColor = "rgba(180,180,180,.3)";
-
   const tooltipColor = "rgba(0,0,0,1)";
   const hoverNodeColor = "red";
+  const hoverNodeDescendantColor = "LightPink";
+  const hoverNodeAncestorColor = "DarkOrchid";
   const clickedNodeColor = "green";
   const nodeColorNotInSearch = "rgba(100,100,100,.2)";
   const nodeColorInSearch = "steelblue";
@@ -127,6 +128,7 @@ export const drawForceDag = (
          */
         if (searchString) {
           const vertex: any = ontology.get(node.id);
+
           if (vertex && vertex.label) {
             const _hit = vertex.label
               .toLowerCase()
@@ -141,11 +143,20 @@ export const drawForceDag = (
         /**
          * hover & click color
          */
-        if (hoverNode && hoverNode.id === node.id) {
-          context.fillStyle = hoverNodeColor;
-        }
         if (clickNode && clickNode.id === node.id) {
           context.fillStyle = clickedNodeColor;
+        }
+
+        if (hoverNode) {
+          const hoverVertex: any = ontology.get(hoverNode.id);
+          // todo perf don't do this lookup re;
+
+          if (hoverNode.id === node.id) {
+            context.fillStyle = hoverNodeColor;
+          }
+          if (hoverVertex.descendants.includes(node.id)) {
+            context.fillStyle = hoverNodeDescendantColor;
+          }
         }
         context.fill();
         context.stroke();
@@ -154,7 +165,9 @@ export const drawForceDag = (
       /**
        * Draw hulls first, z index
        */
-      drawHulls();
+      if (hullsTurnedOn) {
+        drawHulls();
+      }
 
       /**
        * Draw text tooltip near node, on hover
@@ -219,7 +232,7 @@ export const drawForceDag = (
     const hull = polygonHull(points);
     const centroid = polygonCentroid(points);
 
-    if (hull && hullsTurnedOn) {
+    if (hull) {
       /**
        * Paint the hull
        */
@@ -292,6 +305,7 @@ export const drawForceDag = (
   simulation.on("end", onForceSimulationEnd);
 
   canvas.on("mousemove", (event: any) => {
+    // if we manage ticked() from above, this could be hoisted to the react context
     hoverNode = simulation.find(event.clientX, event.clientY);
     setHoverNode(hoverNode);
     ticked();
