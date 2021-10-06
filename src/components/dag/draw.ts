@@ -58,11 +58,11 @@ export const drawForceDag = (
   const hullBorderColor = "rgb(255,0,0,.05";
   const hullLabelColor = "rgba(0,0,0,1)";
   const nodeColor = "rgba(100,100,100,1)";
-  const linkColor = "rgba(180,180,180,.3)";
+  const linkColor = "rgba(50,50,50,.5)";
   const tooltipColor = "rgba(0,0,0,1)";
-  const hoverNodeColor = "red";
+  const hoverNodeColor = "rgba(200,200,200,1)";
   const hoverNodeDescendantColor = "LightPink";
-  const hoverNodeAncestorColor = "DarkOrchid";
+  const hoverNodeAncestorColor = "red";
   const clickedNodeColor = "green";
   const nodeColorNotInSearch = "rgba(100,100,100,.2)";
   const nodeColorInSearch = "steelblue";
@@ -156,6 +156,9 @@ export const drawForceDag = (
           }
           if (hoverVertex.descendants.includes(node.id)) {
             context.fillStyle = hoverNodeDescendantColor;
+          }
+          if (hoverVertex.ancestors.includes(node.id)) {
+            context.fillStyle = hoverNodeAncestorColor;
           }
         }
         context.fill();
@@ -287,9 +290,10 @@ export const drawForceDag = (
     /**
      * Draw a circle
      */
+    const nodeSize: number = 7;
     if (context && d && typeof d.x === "number" && typeof d.y === "number") {
-      context.moveTo(d.x + 3, d.y);
-      context.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+      context.moveTo(d.x + nodeSize, d.y);
+      context.arc(d.x, d.y, nodeSize, 0, 2 * Math.PI);
     } else {
       console.log(
         "Tried to draw a node, but d.x was not a number, see Dag.tsx drawForce() drawNode"
