@@ -52,13 +52,17 @@ export const drawForceDag = (
   let clickNode: any = null;
 
   /**
+   * Sizes
+   */
+  const nodeSize: number = 3;
+  /**
    * Colors
    */
   const hullColor = "rgba(255,0,0,.05)"; //"transparent";
   const hullBorderColor = "rgb(255,0,0,.05";
   const hullLabelColor = "rgba(0,0,0,1)";
   const nodeColor = "rgba(100,100,100,1)";
-  const linkColor = "rgba(50,50,50,.5)";
+  const linkColor = "rgba(180,180,180,.2)";
   const tooltipColor = "rgba(0,0,0,1)";
   const hoverNodeColor = "rgba(200,200,200,1)";
   const hoverNodeDescendantColor = "LightPink";
@@ -290,7 +294,7 @@ export const drawForceDag = (
     /**
      * Draw a circle
      */
-    const nodeSize: number = 7;
+
     if (context && d && typeof d.x === "number" && typeof d.y === "number") {
       context.moveTo(d.x + nodeSize, d.y);
       context.arc(d.x, d.y, nodeSize, 0, 2 * Math.PI);

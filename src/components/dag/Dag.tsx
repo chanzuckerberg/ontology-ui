@@ -51,7 +51,7 @@ class DAG extends React.Component<IProps, IState> {
       dagSearchText: "",
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoff: 40,
+      outdegreeCutoff: 50,
       outDegreeFilteredNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
