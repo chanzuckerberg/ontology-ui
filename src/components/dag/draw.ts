@@ -22,6 +22,8 @@ export const drawForceDag = (
   links: SimulationLinkDatum<any>[],
   width: number,
   height: number,
+  scaleFactor: number,
+  translateCenter: number,
   dagCanvasRef: any,
   ontology: IOntology,
   filteredVerticesForHulls: string[],

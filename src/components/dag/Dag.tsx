@@ -25,6 +25,8 @@ interface IState {
   links: SimulationLinkDatum<any>[] | null;
   width: number;
   height: number;
+  scaleFactor: number;
+  translateCenter: number;
   hoverNode: any /* from d3 force node hover */;
   pinnedNode: any /* from d3 force node click */;
   canvasRenderCounter: number;
@@ -43,8 +45,10 @@ class DAG extends React.Component<IProps, IState> {
     this.state = {
       nodes: null,
       links: null,
-      width: 2000,
-      height: 2000,
+      width: 1200,
+      height: 1200,
+      scaleFactor: 0.8,
+      translateCenter: 0,
       hoverNode: null,
       pinnedNode: null,
       canvasRenderCounter: 0,
@@ -112,13 +116,16 @@ class DAG extends React.Component<IProps, IState> {
     links: SimulationLinkDatum<any>[],
     ontology: IOntology
   ) => {
-    const { width, height, hullsTurnedOn } = this.state;
+    const { width, height, scaleFactor, translateCenter, hullsTurnedOn } =
+      this.state;
 
     const redrawCanvas = drawForceDag(
       nodes,
       links,
       width,
       height,
+      scaleFactor,
+      translateCenter,
       this.dagCanvasRef,
       ontology,
       greaterThanThirtyDescendants,
