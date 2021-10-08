@@ -1,10 +1,11 @@
 import React, { createRef } from "react";
 
 import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
-import { greaterThanThirtyDescendants } from "./toFilter";
+
 import { createNodesLinksHulls } from "./createNodesLinksHulls";
 import { drawForceDag } from "./draw";
 import Vertex from "../Vertex";
+import Sugiyama from "./Sugiyama";
 
 import { IOntology } from "../../d";
 
@@ -55,7 +56,7 @@ class DAG extends React.Component<IProps, IState> {
       dagSearchText: "",
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoff: 250,
+      outdegreeCutoff: 200,
       filteredNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
@@ -107,7 +108,6 @@ class DAG extends React.Component<IProps, IState> {
   };
 
   onForceSimulationEnd = () => {
-    const simulationRunning = this.state;
     this.setState({ simulationRunning: false });
   };
 
@@ -120,15 +120,14 @@ class DAG extends React.Component<IProps, IState> {
       this.state;
 
     const redrawCanvas = drawForceDag(
-      nodes,
-      links,
+      nodes, // todo, mutates
+      links, // todo, mutates
       width,
       height,
       scaleFactor,
       translateCenter,
       this.dagCanvasRef,
       ontology,
-      greaterThanThirtyDescendants,
       this.setHoverNode,
       this.setPinnedNode,
       this.incrementRenderCounter,
@@ -163,7 +162,6 @@ class DAG extends React.Component<IProps, IState> {
       pinnedNode,
       canvasRenderCounter,
       dagSearchText,
-      redrawCanvas,
       simulationRunning,
       maxRenderCounter,
     } = this.state;
@@ -195,14 +193,21 @@ class DAG extends React.Component<IProps, IState> {
         <input
           type="text"
           placeholder="Substring search"
-          style={{ position: "absolute", left: 10, top: 10, fontSize: 24 }}
+          style={{
+            position: "absolute",
+            left: 10,
+            top: 10,
+            fontSize: 14,
+            padding: 4,
+          }}
           onChange={this.handleDagSearchChange}
           value={simulationRunning ? "Computing layout..." : dagSearchText}
         />
+        {ontology && <Sugiyama ontology={ontology} />}
         <canvas
           style={{
             position: "absolute",
-            top: 0,
+            top: 2000,
             left: 0,
             zIndex: -9999,
             cursor: "crosshair",

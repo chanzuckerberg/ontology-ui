@@ -10,8 +10,8 @@ import {
 import { select } from "d3-selection";
 import { polygonHull, polygonCentroid } from "d3-polygon";
 
-import { OntologyVertexDatum } from "./Dag";
-import { IOntology, IVertex } from "../../d";
+import { OntologyVertexDatum } from ".";
+import { IOntology } from "../../d";
 
 /**
  * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas
@@ -26,7 +26,6 @@ export const drawForceDag = (
   translateCenter: number,
   dagCanvasRef: any,
   ontology: IOntology,
-  filteredVerticesForHulls: string[],
   setHoverNode: any,
   setPinnedNode: any,
   incrementRenderCounter: any,
@@ -99,7 +98,7 @@ export const drawForceDag = (
        */
       context.clearRect(0, 0, width, height);
 
-      const dpr = window.devicePixelRatio;
+      // const dpr = window.devicePixelRatio;
 
       // if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
       // if (!resized) {
@@ -179,7 +178,7 @@ export const drawForceDag = (
       }
 
       /**
-       * Draw text tooltip near node, on hover
+       * Draw text tooltip on hover
        */
       if (hoverNode) {
         const vertex: any = ontology.get(hoverNode.id);
@@ -188,8 +187,10 @@ export const drawForceDag = (
           context.font = "24px serif";
           context.fillText(
             `${vertex.label}${hoverNode.id}`,
-            hoverNode.x,
-            hoverNode.y
+            // hoverNode.x,
+            // hoverNode.y
+            10,
+            70
           );
         }
       }
@@ -203,9 +204,9 @@ export const drawForceDag = (
     /**
      * GIVEN ALL PRIOR FILTERED NODES
      */
-    filteredVerticesForHulls.forEach((vertex_id, i) => {
-      drawHull(vertex_id);
-    });
+    // filteredVerticesForHulls.forEach((vertex_id, i) => {
+    //   drawHull(vertex_id);
+    // });
     /**
      * CUSTOM SUBSET FOR TEST
      */

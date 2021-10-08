@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import Vertex from "./components/Vertex";
-import Dag from "./components/dag/Dag";
+import Dag from "./components/Ontology";
 import DiscoveryLog from "./components/DiscoveryLog";
 import load from "./util/load";
 import { IOntology } from "./d";
@@ -50,10 +50,10 @@ class App extends React.Component<IProps, IState> {
           id="container"
           style={{
             margin: "0 auto",
+            height: 1,
             maxWidth: "50em",
             fontFamily: "Helvetica, Arial, sans-serif",
             lineHeight: 1.5,
-            padding: "4em 1em",
             color: "#555",
           }}
         >

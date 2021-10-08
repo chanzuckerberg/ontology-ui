@@ -113,6 +113,8 @@ class Vertex extends React.Component<IProps, IState> {
                     <Link to={`/compartment/${uberonID}`}> {_u.name} </Link>
                   </li>
                 );
+              } else {
+                return null;
               }
             })}
         </ol>
