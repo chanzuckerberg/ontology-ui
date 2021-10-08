@@ -35,8 +35,10 @@ class Vertex extends React.Component<IProps, IState> {
 
   doGetEBITerm = async () => {
     const { vertexID, ontologyName } = this.props;
+    let _ebiResponse: IEBITermAPIResponse;
+    try {
     // call the ebi api
-    const _ebiResponse: IEBITermAPIResponse = await fetchEBITerm(vertexID);
+      _ebiResponse = await fetchEBITerm(vertexID);
     // filter down the terms to the ontology we're in
     // this call returns every ontology the term appears in
     const term: IEBITerm = _ebiResponse._embedded.terms.filter(
@@ -44,8 +46,10 @@ class Vertex extends React.Component<IProps, IState> {
         return term.ontology_name === ontologyName; /* ie., === cl */
       }
     )[0];
-
     this.setState({ term });
+    } catch {
+      console.log("ebi request failed");
+    }
   };
 
   render() {
