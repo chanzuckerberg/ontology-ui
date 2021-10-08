@@ -32,7 +32,7 @@ interface IState {
   redrawCanvas: any /* function to force render canvas */;
   simulationRunning: boolean;
   outdegreeCutoff: number /* max descendants */;
-  outDegreeFilteredNodes: string[];
+  filteredNodes: string[];
   hullsTurnedOn: boolean;
   maxRenderCounter: number;
 }
@@ -51,8 +51,8 @@ class DAG extends React.Component<IProps, IState> {
       dagSearchText: "",
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoff: 50,
-      outDegreeFilteredNodes: [],
+      outdegreeCutoff: 250,
+      filteredNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
     };
@@ -64,19 +64,30 @@ class DAG extends React.Component<IProps, IState> {
     const { ontology } = this.props;
     const { outdegreeCutoff } = this.state;
 
-    const outDegreeFilteredNodes: string[] = [];
+    /**
+     * this could be broken out, as a feature, as:
+     * [x] toggle off leaf nodes, descendants === 0
+     * [50] choose outdegree limit
+     * in which case we would want this to be multiple
+     * arrays that we merge, maybe easier to force remount
+     * than keep track of render count at that point?
+     */
+    const filteredNodes: string[] = [];
 
+    /**
+     * choose which nodes not to show
+     */
     ontology.forEach((v: any, id) => {
-      if (v.descendants.length > outdegreeCutoff) {
-        outDegreeFilteredNodes.push(id);
+      if (
+        v.descendants.length > outdegreeCutoff ||
+        v.descendants.length === 0
+      ) {
+        filteredNodes.push(id);
       }
     });
 
-    const { nodes, links } = createNodesLinksHulls(
-      ontology,
-      outDegreeFilteredNodes
-    );
-    this.setState({ nodes, links, outDegreeFilteredNodes });
+    const { nodes, links } = createNodesLinksHulls(ontology, filteredNodes);
+    this.setState({ nodes, links, filteredNodes });
   }
 
   setHoverNode = (hoverNode: any) => {
