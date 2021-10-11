@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import Vertex from "./components/Vertex";
-import Dag from "./components/Ontology";
+import Dag from "./components/OntologyExplorer";
 import DiscoveryLog from "./components/DiscoveryLog";
 import load from "./util/load";
 import { IOntology } from "./d";

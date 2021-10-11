@@ -24,6 +24,7 @@ interface IProps {
 interface IState {
   nodes: OntologyVertexDatum[] | null;
   links: SimulationLinkDatum<any>[] | null;
+  sugiyamaStratifyData: any;
   width: number;
   height: number;
   scaleFactor: number;
@@ -40,12 +41,13 @@ interface IState {
   maxRenderCounter: number;
 }
 
-class DAG extends React.Component<IProps, IState> {
+class OntologyExplorer extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
     this.state = {
       nodes: null,
       links: null,
+      sugiyamaStratifyData: null,
       width: 1200,
       height: 1200,
       scaleFactor: 0.8,
@@ -84,15 +86,20 @@ class DAG extends React.Component<IProps, IState> {
      */
     ontology.forEach((v: any, id) => {
       if (
-        v.descendants.length > outdegreeCutoff ||
-        v.descendants.length === 0
+        v.descendants.length > outdegreeCutoff || // more than n descendants
+        v.descendants.length === 0 || // zero descendants
+        v.label.includes("Mus musculus") || // mouse
+        !v.label.includes("B cell") // limit to b cell subset
       ) {
         filteredNodes.push(id);
       }
     });
 
-    const { nodes, links } = createNodesLinksHulls(ontology, filteredNodes);
-    this.setState({ nodes, links, filteredNodes });
+    const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
+      ontology,
+      filteredNodes
+    );
+    this.setState({ nodes, links, filteredNodes, sugiyamaStratifyData });
   }
 
   setHoverNode = (hoverNode: any) => {
@@ -156,6 +163,7 @@ class DAG extends React.Component<IProps, IState> {
     const {
       nodes,
       links,
+      sugiyamaStratifyData,
       width,
       height,
       hoverNode,
@@ -181,6 +189,7 @@ class DAG extends React.Component<IProps, IState> {
             lattice={lattice}
           />
         )}
+
         {pinnedNode && (
           <Vertex
             ontologyName={ontologyName}
@@ -203,7 +212,9 @@ class DAG extends React.Component<IProps, IState> {
           onChange={this.handleDagSearchChange}
           value={simulationRunning ? "Computing layout..." : dagSearchText}
         />
-        {ontology && <Sugiyama ontology={ontology} />}
+        {sugiyamaStratifyData && (
+          <Sugiyama sugiyamaStratifyData={sugiyamaStratifyData} />
+        )}
         <canvas
           style={{
             position: "absolute",
@@ -221,4 +232,4 @@ class DAG extends React.Component<IProps, IState> {
   }
 }
 
-export default DAG;
+export default OntologyExplorer;
