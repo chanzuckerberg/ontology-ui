@@ -17,13 +17,16 @@ import {
 } from "d3-dag/dist";
 
 import { symbolTriangle, symbol, line, curveCatmullRom } from "d3-shape";
+import { interpolateRainbow } from "d3-scale-chromatic";
+
+import { IOntology, IVertex } from "../../d";
+
 interface IProps {
   sugiyamaStratifyData: any;
+  ontology: IOntology;
 }
 
 interface IState {
-  width: number;
-  height: number;
   nodeRadius: number;
   layeringChoice: string;
   decrossingsChoice: string;
@@ -34,9 +37,7 @@ class Sugiyama extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
     this.state = {
-      width: 100,
-      height: 100,
-      nodeRadius: 3,
+      nodeRadius: 10,
       layeringChoice: "Simplex (slow)",
       decrossingsChoice: "Optimal (slow)",
       coordsChoice: "Quad (slow)",
@@ -45,8 +46,11 @@ class Sugiyama extends React.Component<IProps, IState> {
 
   render() {
     const { nodeRadius } = this.state;
-    const { sugiyamaStratifyData } = this.props;
+    const { sugiyamaStratifyData, ontology } = this.props;
 
+    /**
+     * d3-dag options
+     */
     const layerings = {
       "Simplex (slow)": layeringSimplex(),
       "Longest Path (fast)": layeringLongestPath(),
@@ -65,76 +69,85 @@ class Sugiyama extends React.Component<IProps, IState> {
       "Center (fast)": coordCenter(),
     };
 
-    const _sugiyamaLayout = sugiyama()
-      .layering(layerings["Simplex (slow)"])
-      .decross(decrossings["Two Layer (fast)"])
-      .coord(coords["Quad (slow)"])
-      .nodeSize(() => [nodeRadius * 2 * 1.5, nodeRadius * 2 * 1.5]);
+    /**
+     * Initialize d3-dag layout operator
+     */
+    const _sugiyamaLayout = sugiyama();
+    // .layering(layerings["Simplex (slow)"])
+    // .decross(decrossings["Two Layer (fast)"])
+    // .coord(coords["Quad (slow)"])
+    // .nodeSize(() => [nodeRadius * 2 * 1.5, nodeRadius * 2 * 1.5]);
 
     /**
-     * set up the generator that takes data and returns structure
+     * Initialize stratify data operator
      * https://erikbrinkman.github.io/d3-dag/interfaces/dag_create.ConnectOperator.html
      */
-    const _createDag = dagStratify();
-
-    console.log("dag", sugiyamaStratifyData);
+    const _createDagStructure = dagStratify();
 
     /**
-     * get the data structure
-     * pass in [['src', 'trgt'], ['b cell', 'type of b cell']] format
-     * we get back the data format we need
+     * transform data to d3-dag preferred format
      */
-    const stratified: Dag = _createDag(sugiyamaStratifyData);
-
-    console.log("stratified", stratified);
+    const dag: Dag = _createDagStructure(sugiyamaStratifyData);
 
     /**
      * pass the data structure to the layout generator
      */
-    const dag = _sugiyamaLayout(stratified as any); // error is here
+    const layout = _sugiyamaLayout(dag); // error is here
 
-    console.log("layout", dag);
+    const { width, height } = layout;
 
-    const { width, height } = dag;
+    /**
+     * scale multiplier, sugiyama returns small numbers it seems, between 0 and 10
+     */
+    const s = 100;
 
     const createLine = line()
       .curve(curveCatmullRom)
-      .x((d: any) => d.x)
-      .y((d: any) => d.y);
+      .x((d: any) => d.x * s)
+      .y((d: any) => d.y * s);
 
     return (
-      <svg width={width} height={height} style={{ border: "1px solid pink" }}>
-        {
-          //        const nodes = svgSelection.append('g')
-          //     .selectAll('g')
-          //     .data(dag.descendants())
-          //     .enter()
-          //     .append('g')
-          //     .attr('transform', ({x, y}) => `translate(${x}, ${y})`);
-          // nodes.append('circle')
-          // .attr('r', nodeRadius)
-          // .attr('fill', n => colorMap[n.id]);
-          // // Add text to nodes
-          // nodes.append('text')
-          // .text(d => d.id)
-          // .attr('font-weight', 'bold')
-          // .attr('font-family', 'sans-serif')
-          // .attr('text-anchor', 'middle')
-          // .attr('alignment-baseline', 'middle')
-          // .attr('fill', 'white');
-        }
-
-        {
-          // svgSelection
-          //   .append("g")
-          //   .selectAll("path")
-          //   .data(dag.links())
-          //   .enter()
-          //   .append("path")
-          //   .attr("d", ({ points }) => line(points))
-          //   .attr("fill", "none")
-          //   .attr("stroke-width", 3)
-        }
+      <svg
+        width={width * s}
+        height={height * s}
+        style={{
+          position: "absolute",
+          top: 1500,
+          left: 40,
+          border: "1px solid pink",
+        }}
+      >
+        <g>
+          {dag.links().map((link) => {
+            const { points } = link;
+            const pathString = createLine(points as any);
+            if (pathString !== null) {
+              return (
+                <path
+                  d={pathString}
+                  strokeWidth="3"
+                  stroke="rgb(230,230,230)"
+                  fill="none"
+                />
+              );
+            } else {
+              return null;
+            }
+          })}
+        </g>
+        <g>
+          {dag.descendants().map((d: any) => {
+            const vertex: any = ontology.get(d.data.id);
+            return (
+              <g key={d.data.id} transform={`translate(${d.x * s},${d.y * s})`}>
+                <circle r={nodeRadius} fill="rgb(200,200,200)"></circle>
+                <text x="-30" y="-20">
+                  {vertex.label}
+                </text>
+              </g>
+            );
+          })}
+        </g>
       </svg>
     );
   }

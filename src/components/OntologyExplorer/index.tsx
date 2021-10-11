@@ -48,8 +48,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       nodes: null,
       links: null,
       sugiyamaStratifyData: null,
-      width: 1200,
-      height: 1200,
+      width: 2000,
+      height: 2000,
       scaleFactor: 0.8,
       translateCenter: 0,
       hoverNode: null,
@@ -58,7 +58,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       dagSearchText: "",
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoff: 200,
+      outdegreeCutoff: 50,
       filteredNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
@@ -89,7 +89,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         v.descendants.length > outdegreeCutoff || // more than n descendants
         v.descendants.length === 0 || // zero descendants
         v.label.includes("Mus musculus") || // mouse
-        !v.label.includes("B cell") // limit to b cell subset
+        !v.label.includes("kidney") // limit to b cell subset
       ) {
         filteredNodes.push(id);
       }
@@ -212,13 +212,16 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           onChange={this.handleDagSearchChange}
           value={simulationRunning ? "Computing layout..." : dagSearchText}
         />
-        {sugiyamaStratifyData && (
-          <Sugiyama sugiyamaStratifyData={sugiyamaStratifyData} />
+        {sugiyamaStratifyData && sugiyamaStratifyData.length < 100 && (
+          <Sugiyama
+            sugiyamaStratifyData={sugiyamaStratifyData}
+            ontology={ontology}
+          />
         )}
         <canvas
           style={{
             position: "absolute",
-            top: 2000,
+            top: 0,
             left: 0,
             zIndex: -9999,
             cursor: "crosshair",
