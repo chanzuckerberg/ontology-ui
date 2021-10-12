@@ -99,12 +99,16 @@ class Sugiyama extends React.Component<IProps, IState> {
     /**
      * scale multiplier, sugiyama returns small numbers it seems, between 0 and 10
      */
-    const s = 100;
+    const s = 150;
 
     const createLine = line()
       .curve(curveCatmullRom)
       .x((d: any) => d.x * s)
-      .y((d: any) => d.y * s);
+      .y((d: any) => d.y * s + Math.random());
+
+    const arrow = symbol()
+      .type(symbolTriangle)
+      .size((nodeRadius * nodeRadius) / 5.0);
 
     return (
       <svg
@@ -112,14 +116,14 @@ class Sugiyama extends React.Component<IProps, IState> {
         height={height * s}
         style={{
           position: "absolute",
-          top: 1500,
+          top: 700,
           left: 40,
           border: "1px solid pink",
         }}
       >
         <g>
           {dag.links().map((link) => {
-            const { points } = link;
+            const { points, source, target } = link;
             const pathString = createLine(points as any);
             if (pathString !== null) {
               return (
@@ -141,7 +145,7 @@ class Sugiyama extends React.Component<IProps, IState> {
             return (
               <g key={d.data.id} transform={`translate(${d.x * s},${d.y * s})`}>
                 <circle r={nodeRadius} fill="rgb(200,200,200)"></circle>
-                <text x="-30" y="-20">
+                <text x="-30" y={-20}>
                   {vertex.label}
                 </text>
               </g>
@@ -154,3 +158,27 @@ class Sugiyama extends React.Component<IProps, IState> {
 }
 
 export default Sugiyama;
+
+// svgSelection
+//   .append("g")
+//   .selectAll("path")
+//   .data(dag.links())
+//   .enter()
+//   .append("path")
+//   .attr("d", arrow)
+//   .attr("transform", ({ source, target, points }) => {
+//     const [end, start] = points.slice().reverse();
+//     // This sets the arrows the node radius (20) + a little bit (3) away from the node center, on the last line segment of the edge. This means that edges that only span ine level will work perfectly, but if the edge bends, this will be a little off.
+//     const dx = start.x - end.x;
+//     const dy = start.y - end.y;
+//     const scale = (nodeRadius * 1.15) / Math.sqrt(dx * dx + dy * dy);
+//     // This is the angle of the last line segment
+//     const angle = (Math.atan2(-dy, -dx) * 180) / Math.PI + 90;
+//     console.log(angle, dx, dy);
+//     return `translate(${end.x + dx * scale}, ${
+//       end.y + dy * scale
+//     }) rotate(${angle})`;
+//   })
+//   .attr("fill", ({ target }) => colorMap[target.id])
+//   .attr("stroke", "white")
+//   .attr("stroke-width", 1.5);

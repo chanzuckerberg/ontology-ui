@@ -48,8 +48,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       nodes: null,
       links: null,
       sugiyamaStratifyData: null,
-      width: 2000,
-      height: 2000,
+      width: 700,
+      height: 700,
       scaleFactor: 0.8,
       translateCenter: 0,
       hoverNode: null,
@@ -89,7 +89,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         v.descendants.length > outdegreeCutoff || // more than n descendants
         v.descendants.length === 0 || // zero descendants
         v.label.includes("Mus musculus") || // mouse
-        !v.label.includes("kidney") // limit to b cell subset
+        !v.label.includes("B cell") // limit to b cell subset
       ) {
         filteredNodes.push(id);
       }
