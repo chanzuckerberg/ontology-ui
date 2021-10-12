@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import Vertex from "./components/Vertex";
 import Dag from "./components/OntologyExplorer";
+import ThreeOntology from "./components/ThreeOntology";
 import DiscoveryLog from "./components/DiscoveryLog";
 import load from "./util/load";
 import { IOntology } from "./d";
@@ -49,9 +50,7 @@ class App extends React.Component<IProps, IState> {
         <div
           id="container"
           style={{
-            margin: "0 auto",
             height: 1,
-            maxWidth: "50em",
             fontFamily: "Helvetica, Arial, sans-serif",
             lineHeight: 1.5,
             color: "#555",
@@ -70,6 +69,14 @@ class App extends React.Component<IProps, IState> {
                       ontology={cl_ontology}
                       lattice={lattice}
                     />
+                  );
+                }}
+              />
+              <Route
+                path="/cell/three"
+                render={({ match }) => {
+                  return (
+                    <ThreeOntology ontologyName="cl" ontology={cl_ontology} />
                   );
                 }}
               />

@@ -2,7 +2,7 @@ import React, { createRef } from "react";
 
 import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 
-import { createNodesLinksHulls } from "./createNodesLinksHulls";
+import { createNodesLinksHulls } from "../../util/createNodesLinksHulls";
 import { drawForceDag } from "./draw";
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
@@ -87,7 +87,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     ontology.forEach((v: any, id) => {
       if (
         v.descendants.length > outdegreeCutoff || // more than n descendants
-        v.descendants.length === 0 || // zero descendants
+        // v.descendants.length === 0 || // zero descendants
         v.label.includes("Mus musculus") || // mouse
         !v.label.includes("B cell") // limit to b cell subset
       ) {

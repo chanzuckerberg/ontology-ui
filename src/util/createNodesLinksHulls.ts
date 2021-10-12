@@ -1,6 +1,6 @@
 import { SimulationLinkDatum } from "d3-force";
 
-import { IOntology } from "../../d";
+import { IOntology } from "../d";
 
 export const createNodesLinksHulls = (
   ontology: IOntology,

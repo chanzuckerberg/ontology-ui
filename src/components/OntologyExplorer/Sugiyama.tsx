@@ -128,6 +128,7 @@ class Sugiyama extends React.Component<IProps, IState> {
             if (pathString !== null) {
               return (
                 <path
+                  key={pathString}
                   d={pathString}
                   strokeWidth="3"
                   stroke="rgb(230,230,230)"
@@ -146,7 +147,8 @@ class Sugiyama extends React.Component<IProps, IState> {
               <g key={d.data.id} transform={`translate(${d.x * s},${d.y * s})`}>
                 <circle r={nodeRadius} fill="rgb(200,200,200)"></circle>
                 <text x="-30" y={-20}>
-                  {vertex.label}
+                  {vertex.label.substring(0, 15)}...
+                  <title>{vertex.label}</title>
                 </text>
               </g>
             );
