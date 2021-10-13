@@ -55,23 +55,24 @@ export const drawForceDag = (
   /**
    * Sizes
    */
-  const nodeSize: number = 3;
+  const nodeSize: number = 5;
   /**
    * Colors
    */
-  const hullColor = "rgba(255,0,0,.05)"; //"transparent";
-  const hullBorderColor = "rgb(255,0,0,.05";
-  const hullLabelColor = "rgba(0,0,0,1)";
-  const nodeColor = "rgba(100,100,100,1)";
-  const linkColor = "rgba(180,180,180,.2)";
-  const tooltipColor = "rgba(0,0,0,1)";
-  const hoverNodeColor = "rgba(200,200,200,1)";
-  const hoverNodeDescendantColor = "LightPink";
-  const hoverNodeAncestorColor = "red";
+  const nodeColor = "rgba(170,170,170,1)";
+  const hoverNodeColor = "red";
+  const hoverNodeDescendantColor = "lightblue";
+  const hoverNodeAncestorColor = "steelblue";
   const clickedNodeColor = "green";
   const nodeColorNotInSearch = "rgba(100,100,100,.2)";
   const nodeColorInSearch = "steelblue";
 
+  const linkColor = "rgba(170,170,170,.5)";
+  const tooltipColor = "rgba(0,0,0,1)";
+
+  const hullColor = "rgba(255,0,0,.05)"; //"transparent";
+  const hullBorderColor = "rgb(255,0,0,.05";
+  const hullLabelColor = "rgba(0,0,0,1)";
   /**
    * Set up d3 force simulation
    */
@@ -178,7 +179,7 @@ export const drawForceDag = (
       }
 
       /**
-       * Draw text tooltip on hover
+       * Draw text tooltip on hover, debug feature, disabled as cell card does this
        */
       if (hoverNode) {
         const vertex: any = ontology.get(hoverNode.id);
@@ -186,7 +187,8 @@ export const drawForceDag = (
           context.fillStyle = tooltipColor;
           context.font = "24px serif";
           context.fillText(
-            `${vertex.label}${hoverNode.id}`,
+            "",
+            //`${vertex.label}${hoverNode.id}`,
             // hoverNode.x,
             // hoverNode.y
             10,
@@ -315,14 +317,23 @@ export const drawForceDag = (
   simulation.on("tick", ticked);
   simulation.on("end", onForceSimulationEnd);
 
+  var boundingRect = dagCanvasRef.current.getBoundingClientRect();
+
+  // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
   canvas.on("mousemove", (event: any) => {
     // if we manage ticked() from above, this could be hoisted to the react context
-    hoverNode = simulation.find(event.clientX, event.clientY);
+    hoverNode = simulation.find(
+      event.clientX - boundingRect.left,
+      event.clientY - boundingRect.top
+    );
     setHoverNode(hoverNode);
     ticked();
   });
   canvas.on("click", (event: any) => {
-    clickNode = simulation.find(event.clientX, event.clientY);
+    clickNode = simulation.find(
+      event.clientX - boundingRect.left,
+      event.clientY - boundingRect.top
+    );
     setPinnedNode(clickNode);
     ticked();
   });

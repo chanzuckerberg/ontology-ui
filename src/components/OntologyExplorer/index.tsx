@@ -25,8 +25,8 @@ interface IState {
   nodes: OntologyVertexDatum[] | null;
   links: SimulationLinkDatum<any>[] | null;
   sugiyamaStratifyData: any;
-  width: number;
-  height: number;
+  forceCanvasWidth: number;
+  forceCanvasHeight: number;
   scaleFactor: number;
   translateCenter: number;
   hoverNode: any /* from d3 force node hover */;
@@ -39,6 +39,10 @@ interface IState {
   filteredNodes: string[];
   hullsTurnedOn: boolean;
   maxRenderCounter: number;
+  sugiyamaRenderThreshold: number;
+  cardWidth: number;
+  cardHeight: number;
+  menubarHeight: number;
 }
 
 class OntologyExplorer extends React.Component<IProps, IState> {
@@ -48,10 +52,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       nodes: null,
       links: null,
       sugiyamaStratifyData: null,
-      width: 700,
-      height: 700,
       scaleFactor: 0.8,
-      translateCenter: 0,
+      translateCenter: -350,
       hoverNode: null,
       pinnedNode: null,
       canvasRenderCounter: 0,
@@ -62,6 +64,12 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       filteredNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
+      sugiyamaRenderThreshold: 100,
+      forceCanvasWidth: 1100,
+      forceCanvasHeight: 1100,
+      cardWidth: 350,
+      cardHeight: 1100,
+      menubarHeight: 70,
     };
   }
 
@@ -87,7 +95,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     ontology.forEach((v: any, id) => {
       if (
         v.descendants.length > outdegreeCutoff || // more than n descendants
-        // v.descendants.length === 0 || // zero descendants
+        v.descendants.length === 0 || // zero descendants
         v.label.includes("Mus musculus") || // mouse
         !v.label.includes("B cell") // limit to b cell subset
       ) {
@@ -123,14 +131,19 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     links: SimulationLinkDatum<any>[],
     ontology: IOntology
   ) => {
-    const { width, height, scaleFactor, translateCenter, hullsTurnedOn } =
-      this.state;
+    const {
+      forceCanvasWidth,
+      forceCanvasHeight,
+      scaleFactor,
+      translateCenter,
+      hullsTurnedOn,
+    } = this.state;
 
     const redrawCanvas = drawForceDag(
       nodes, // todo, mutates
       links, // todo, mutates
-      width,
-      height,
+      forceCanvasWidth,
+      forceCanvasHeight,
       scaleFactor,
       translateCenter,
       this.dagCanvasRef,
@@ -164,72 +177,144 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       nodes,
       links,
       sugiyamaStratifyData,
-      width,
-      height,
+      forceCanvasWidth,
+      forceCanvasHeight,
       hoverNode,
       pinnedNode,
       canvasRenderCounter,
       dagSearchText,
       simulationRunning,
       maxRenderCounter,
+      sugiyamaRenderThreshold,
+      cardWidth,
+      cardHeight,
+      menubarHeight,
     } = this.state;
 
     return (
-      <div>
-        {nodes &&
-          links &&
-          canvasRenderCounter < maxRenderCounter &&
-          this.initializeCanvasRenderer(nodes, links, ontology)}
-        {!pinnedNode && hoverNode && (
-          <Vertex
-            ontologyName={ontologyName}
-            ontology={ontology}
-            vertex={ontology.get(hoverNode.id)}
-            vertexID={hoverNode.id}
-            lattice={lattice}
-          />
-        )}
-
-        {pinnedNode && (
-          <Vertex
-            ontologyName={ontologyName}
-            ontology={ontology}
-            vertex={ontology.get(pinnedNode.id)}
-            vertexID={pinnedNode.id}
-            lattice={lattice}
-          />
-        )}
-        <input
-          type="text"
-          placeholder="Substring search"
+      <div id="ontologyExplorerContainer">
+        {/**
+         * Render controls
+         */}
+        <div
+          id="menubar"
           style={{
-            position: "absolute",
-            left: 10,
-            top: 10,
-            fontSize: 14,
-            padding: 4,
+            height: menubarHeight,
+            // border: "1px solid lightblue",
+            width: "100%",
           }}
-          onChange={this.handleDagSearchChange}
-          value={simulationRunning ? "Computing layout..." : dagSearchText}
-        />
-        {sugiyamaStratifyData && sugiyamaStratifyData.length < 100 && (
-          <Sugiyama
-            sugiyamaStratifyData={sugiyamaStratifyData}
-            ontology={ontology}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-start",
+              alignItems: "center",
+              paddingLeft: 10,
+              paddingRight: 10,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 24,
+                fontWeight: 900,
+                margin: 0,
+                marginRight: 10,
+                padding: 0,
+              }}
+            >
+              ontology explorer
+            </p>
+            <input
+              type="text"
+              placeholder="Substring search"
+              style={{
+                fontSize: 14,
+                margin: 0,
+                marginRight: 10,
+              }}
+              onChange={this.handleDagSearchChange}
+              value={simulationRunning ? "Computing layout..." : dagSearchText}
+            />
+            <p>help</p>
+          </div>
+        </div>
+        <div id="horizontalScroll">
+          <div
+            id="card"
+            style={{
+              width: cardWidth,
+              height: cardHeight,
+              overflow: "scroll",
+              // border: "1px solid blue",
+              margin: 0,
+            }}
+          >
+            <div
+              id="innerDivToPreventPaddingSizeIncrease"
+              style={{ padding: 10 }}
+            >
+              {/**
+               * Render cards
+               */}
+              {!pinnedNode && hoverNode && (
+                <Vertex
+                  ontologyName={ontologyName}
+                  ontology={ontology}
+                  vertex={ontology.get(hoverNode.id)}
+                  vertexID={hoverNode.id}
+                  lattice={lattice}
+                />
+              )}
+              {pinnedNode && (
+                <Vertex
+                  ontologyName={ontologyName}
+                  ontology={ontology}
+                  vertex={ontology.get(pinnedNode.id)}
+                  vertexID={pinnedNode.id}
+                  lattice={lattice}
+                />
+              )}
+            </div>
+          </div>
+          {/**
+           * Render ontology force layout
+           */}
+          {nodes &&
+            links &&
+            canvasRenderCounter < maxRenderCounter &&
+            this.initializeCanvasRenderer(nodes, links, ontology)}
+          <canvas
+            style={{
+              position: "absolute",
+              top: menubarHeight,
+              left: cardWidth,
+              zIndex: 9999,
+              cursor: "crosshair",
+              // border: "1px solid green",
+            }}
+            width={forceCanvasWidth}
+            height={forceCanvasHeight}
+            ref={this.dagCanvasRef}
           />
-        )}
-        <canvas
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: -9999,
-            cursor: "crosshair",
-          }}
-          width={width}
-          height={height}
-          ref={this.dagCanvasRef}
-        />
+          {/**
+           * Render sugiyama
+           */}
+          {sugiyamaStratifyData &&
+            sugiyamaStratifyData.length < sugiyamaRenderThreshold && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: menubarHeight,
+                  left: cardWidth + forceCanvasWidth,
+                }}
+              >
+                <Sugiyama
+                  sugiyamaStratifyData={sugiyamaStratifyData}
+                  ontology={ontology}
+                />
+              </div>
+            )}
+        </div>
       </div>
     );
   }

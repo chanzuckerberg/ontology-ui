@@ -111,16 +111,7 @@ class Sugiyama extends React.Component<IProps, IState> {
       .size((nodeRadius * nodeRadius) / 5.0);
 
     return (
-      <svg
-        width={width * s}
-        height={height * s}
-        style={{
-          position: "absolute",
-          top: 700,
-          left: 40,
-          border: "1px solid pink",
-        }}
-      >
+      <svg width={width * s} height={height * s}>
         <g>
           {dag.links().map((link) => {
             const { points, source, target } = link;

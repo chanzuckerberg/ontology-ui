@@ -72,7 +72,7 @@ class Vertex extends React.Component<IProps, IState> {
     }
 
     return (
-      <div style={{ position: "absolute", right: 100, top: 0, width: 350 }}>
+      <div>
         <h1>{vertex.label}</h1>
         <p>{!term && "Loading..."}</p>
         <p>{term && definition}</p>

@@ -50,7 +50,6 @@ class App extends React.Component<IProps, IState> {
         <div
           id="container"
           style={{
-            height: 1,
             fontFamily: "Helvetica, Arial, sans-serif",
             lineHeight: 1.5,
             color: "#555",
@@ -61,7 +60,7 @@ class App extends React.Component<IProps, IState> {
           {cl_ontology && mondo_ontology && uberon_ontology && lattice && (
             <Switch>
               <Route
-                path="/cell/dag"
+                path="/cell/ontology"
                 render={({ match }) => {
                   return (
                     <Dag
