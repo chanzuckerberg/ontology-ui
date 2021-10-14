@@ -60,10 +60,12 @@ export const drawForceDag = (
    * Colors
    */
   const nodeColor = "rgba(170,170,170,1)";
-  const hoverNodeColor = "red";
+  const nodeStrokeColor = "white";
+  const hoverNodeColor = "rgba(170,170,170,1)";
+  const hoverStrokeColor = "rgba(50,50,50,1)";
   const hoverNodeDescendantColor = "lightblue";
   const hoverNodeAncestorColor = "steelblue";
-  const clickedNodeColor = "green";
+  const clickedNodeColor = "red";
   const nodeColorNotInSearch = "rgba(100,100,100,.2)";
   const nodeColorInSearch = "steelblue";
 
@@ -119,7 +121,6 @@ export const drawForceDag = (
       /**
        * Draw nodes
        */
-      context.strokeStyle = "#fff";
       for (const node of nodes) {
         context.beginPath();
         drawNode(node);
@@ -155,10 +156,11 @@ export const drawForceDag = (
 
         if (hoverNode) {
           const hoverVertex: any = ontology.get(hoverNode.id);
-          // todo perf don't do this lookup re;
+          // todo perf don't do this lookup here
 
           if (hoverNode.id === node.id) {
-            context.fillStyle = hoverNodeColor;
+            // context.fillStyle = hoverNodeColor;
+            context.strokeStyle = hoverStrokeColor;
           }
           if (hoverVertex.descendants.includes(node.id)) {
             context.fillStyle = hoverNodeDescendantColor;
@@ -167,8 +169,10 @@ export const drawForceDag = (
             context.fillStyle = hoverNodeAncestorColor;
           }
         }
+
         context.fill();
         context.stroke();
+        context.strokeStyle = nodeStrokeColor; // reset, in case it was hover
       }
 
       /**
