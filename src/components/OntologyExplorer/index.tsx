@@ -65,10 +65,10 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       hullsTurnedOn: false,
       maxRenderCounter: 1,
       sugiyamaRenderThreshold: 100,
-      forceCanvasWidth: 1100,
-      forceCanvasHeight: 1100,
+      forceCanvasWidth: 850,
+      forceCanvasHeight: 850,
       cardWidth: 350,
-      cardHeight: 1100,
+      cardHeight: 850, // 850 default, 2000 full
       menubarHeight: 70,
     };
   }
@@ -95,9 +95,9 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     ontology.forEach((v: any, id) => {
       if (
         v.descendants.length > outdegreeCutoff || // more than n descendants
-        v.descendants.length === 0 || // zero descendants
+        // v.descendants.length === 0 || // zero descendants
         v.label.includes("Mus musculus") || // mouse
-        !v.label.includes("B cell") // limit to b cell subset
+        !v.label.includes("kidney") // limit to b cell subset
       ) {
         filteredNodes.push(id);
       }

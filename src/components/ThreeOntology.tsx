@@ -26,7 +26,7 @@ class ThreeOntology extends React.Component<IProps, IState> {
     this.state = {
       nodes: null,
       links: null,
-      outdegreeCutoff: 50,
+      outdegreeCutoff: 100,
     };
   }
   private threeRef = createRef<HTMLDivElement>();
@@ -51,8 +51,8 @@ class ThreeOntology extends React.Component<IProps, IState> {
       if (
         v.descendants.length > outdegreeCutoff || // more than n descendants
         // v.descendants.length === 0 || // zero descendants
-        v.label.includes("Mus musculus") || // mouse
-        !v.label.includes("kidney") // limit to b cell subset
+        v.label.includes("Mus musculus") // mouse
+        // !v.label.includes("kidney") // limit to b cell subset
       ) {
         filteredNodes.push(id);
       }
@@ -109,7 +109,7 @@ class ThreeOntology extends React.Component<IProps, IState> {
     /**
      * Link direction particles
      */
-    Graph.linkDirectionalParticles(2);
+    // Graph.linkDirectionalParticles(2);
 
     Graph.onNodeClick((node: any) => {
       // Aim at node from outside it

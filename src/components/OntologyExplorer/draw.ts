@@ -63,7 +63,7 @@ export const drawForceDag = (
   const hoverNodeColor = "red";
   const hoverNodeDescendantColor = "lightblue";
   const hoverNodeAncestorColor = "steelblue";
-  const clickedNodeColor = "green";
+  const clickedNodeColor = "red";
   const nodeColorNotInSearch = "rgba(100,100,100,.2)";
   const nodeColorInSearch = "steelblue";
 

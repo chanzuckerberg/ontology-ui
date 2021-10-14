@@ -31,6 +31,10 @@ interface IState {
   layeringChoice: string;
   decrossingsChoice: string;
   coordsChoice: string;
+  dag: any;
+  scaleMultiplier: number;
+  sugiyamaWidthAspectRatio: number | null;
+  sugiyamaHeightAspectRatio: number | null;
 }
 
 class Sugiyama extends React.Component<IProps, IState> {
@@ -41,12 +45,19 @@ class Sugiyama extends React.Component<IProps, IState> {
       layeringChoice: "Simplex (slow)",
       decrossingsChoice: "Optimal (slow)",
       coordsChoice: "Quad (slow)",
+      scaleMultiplier: 150,
+      dag: null,
+      sugiyamaWidthAspectRatio: null,
+      sugiyamaHeightAspectRatio: null,
     };
   }
+  componentDidMount = () => {
+    this.setup();
+  };
 
-  render() {
+  setup = () => {
+    const { sugiyamaStratifyData } = this.props;
     const { nodeRadius } = this.state;
-    const { sugiyamaStratifyData, ontology } = this.props;
 
     /**
      * d3-dag options
@@ -99,21 +110,43 @@ class Sugiyama extends React.Component<IProps, IState> {
     /**
      * scale multiplier, sugiyama returns small numbers it seems, between 0 and 10
      */
-    const s = 150;
-
-    const createLine = line()
-      .curve(curveCatmullRom)
-      .x((d: any) => d.x * s)
-      .y((d: any) => d.y * s + Math.random());
 
     const arrow = symbol()
       .type(symbolTriangle)
       .size((nodeRadius * nodeRadius) / 5.0);
 
+    this.setState({
+      dag,
+      sugiyamaWidthAspectRatio: width,
+      sugiyamaHeightAspectRatio: height,
+    });
+  };
+
+  render() {
+    const {
+      nodeRadius,
+      sugiyamaWidthAspectRatio,
+      sugiyamaHeightAspectRatio,
+      dag,
+      scaleMultiplier,
+    } = this.state;
+    const { sugiyamaStratifyData, ontology } = this.props;
+
+    if (!dag || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio)
+      return null;
+
+    const createLine = line()
+      .curve(curveCatmullRom)
+      .x((d: any) => d.x * scaleMultiplier)
+      .y((d: any) => d.y * scaleMultiplier + Math.random());
+
     return (
-      <svg width={width * s} height={height * s}>
+      <svg
+        width={sugiyamaWidthAspectRatio * scaleMultiplier}
+        height={sugiyamaHeightAspectRatio * scaleMultiplier}
+      >
         <g>
-          {dag.links().map((link) => {
+          {dag.links().map((link: any) => {
             const { points, source, target } = link;
             const pathString = createLine(points as any);
             if (pathString !== null) {
@@ -135,7 +168,12 @@ class Sugiyama extends React.Component<IProps, IState> {
           {dag.descendants().map((d: any) => {
             const vertex: any = ontology.get(d.data.id);
             return (
-              <g key={d.data.id} transform={`translate(${d.x * s},${d.y * s})`}>
+              <g
+                key={d.data.id}
+                transform={`translate(${d.x * scaleMultiplier},${
+                  d.y * scaleMultiplier
+                })`}
+              >
                 <circle r={nodeRadius} fill="rgb(200,200,200)"></circle>
                 <text x="-30" y={-20}>
                   {vertex.label.substring(0, 15)}...
