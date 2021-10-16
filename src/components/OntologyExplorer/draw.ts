@@ -89,7 +89,7 @@ export const drawForceDag = (
     .force("x", forceX(width / 2))
     .force("y", forceY(height / 2));
 
-  // let resized = false;
+  let resized = false;
 
   /**
    * Animation frame
@@ -101,11 +101,15 @@ export const drawForceDag = (
        */
       context.clearRect(0, 0, width, height);
 
+      /**
+       * Scale up or down depending on number of nodes
+       */
       // const dpr = window.devicePixelRatio;
 
       // if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
       // if (!resized) {
-      //   context.scale(0.8, 0.8);
+      //   context.translate(125, 125);
+      //   context.scale(0., 0.7);
       //   resized = true;
       // }
 

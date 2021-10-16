@@ -4,30 +4,37 @@ import { IOntology } from "../d";
 
 export const createNodesLinksHulls = (
   ontology: IOntology,
-  nodesToFilter: string[]
+  nodesToFilter: string[],
+  subtree?: string[]
 ) => {
   const nodes: any = [];
   const links: any = [];
   const sugiyamaStratifyData: any = [];
 
   ontology.forEach((vertex: any, vertexID: string) => {
-    nodes.push({
-      id: vertexID,
-      descendantCount: vertex.descendants.length,
-      ancestorCount: vertex.ancestors.length,
-    });
-    vertex.descendants.forEach((descendent: string) => {
-      links.push({
-        source: vertexID,
-        target: descendent,
+    /**
+     * If there's a subtree, and the vertex exists in it, push it.
+     */
+    if (!subtree || subtree.includes(vertexID)) {
+      nodes.push({
+        id: vertexID,
+        descendantCount: vertex.descendants.length,
+        ancestorCount: vertex.ancestors.length,
       });
-    });
-    sugiyamaStratifyData.push({
-      id: vertexID,
-      parentIds: vertex.ancestors.filter((n: string) => {
-        return !nodesToFilter.includes(n);
-      }),
-    });
+      vertex.descendants.forEach((descendent: string) => {
+        links.push({
+          source: vertexID,
+          target: descendent,
+        });
+      });
+
+      sugiyamaStratifyData.push({
+        id: vertexID,
+        parentIds: vertex.ancestors.filter((a: string) => {
+          return !nodesToFilter.includes(a) && subtree?.includes(a); // if it's NOT filtered out and it IS in the subtree, assuming we have one
+        }),
+      });
+    }
   });
 
   /**

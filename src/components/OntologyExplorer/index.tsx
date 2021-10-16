@@ -8,6 +8,7 @@ import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 
 import { IOntology } from "../../d";
+import { max } from "lodash";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: "string";
@@ -33,10 +34,12 @@ interface IState {
   pinnedNode: any /* from d3 force node click */;
   canvasRenderCounter: number;
   dagSearchText: string;
+  subtreeRootID: string | null;
+  isSubset: boolean;
   redrawCanvas: any /* function to force render canvas */;
   simulationRunning: boolean;
   outdegreeCutoff: number /* max descendants */;
-  filteredNodes: string[];
+  filteredOutNodes: string[];
   hullsTurnedOn: boolean;
   maxRenderCounter: number;
   sugiyamaRenderThreshold: number;
@@ -58,10 +61,12 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       pinnedNode: null,
       canvasRenderCounter: 0,
       dagSearchText: "",
+      subtreeRootID: "CL:0000210", // parathyroid is "CL:1001593" ... precursor B is "CL:0000817" ... photo receptor is "CL:0000210"
+      isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
       outdegreeCutoff: 50,
-      filteredNodes: [],
+      filteredOutNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
       sugiyamaRenderThreshold: 100,
@@ -76,8 +81,41 @@ class OntologyExplorer extends React.Component<IProps, IState> {
   private dagCanvasRef = createRef<HTMLCanvasElement>();
 
   componentDidMount() {
+    this.createDag();
+  }
+
+  createDag = () => {
     const { ontology } = this.props;
-    const { outdegreeCutoff } = this.state;
+    const { outdegreeCutoff, subtreeRootID } = this.state;
+
+    /**
+     * Choose which nodes to show, given a root, recursively grab get all descendants
+     */
+    const subtreeFromRootNode: string[] = [];
+
+    const traceSubtree = (vertexID: string) => {
+      const vertex: any = ontology.get(vertexID);
+      if (vertex && vertex.descendants && vertex.descendants.length) {
+        vertex.descendants.forEach((vertex: string) => {
+          subtreeFromRootNode.push(vertex);
+          traceSubtree(vertex);
+        });
+      }
+    };
+
+    if (subtreeRootID) {
+      subtreeFromRootNode.push(subtreeRootID);
+      traceSubtree(subtreeRootID);
+    }
+
+    /**
+     * de duplicate subtree after recursive iteration, because dag
+     */
+    function onlyUnique(vertexID: string, index: number, subtree: string[]) {
+      return subtree.indexOf(vertexID) === index;
+    }
+
+    const uniqueSubtreeFromRootNode = subtreeFromRootNode.filter(onlyUnique);
 
     /**
      * this could be broken out, as a feature, as:
@@ -87,34 +125,54 @@ class OntologyExplorer extends React.Component<IProps, IState> {
      * arrays that we merge, maybe easier to force remount
      * than keep track of render count at that point?
      */
-    const filteredNodes: string[] = [];
-
+    const filteredOutNodes: string[] = [];
     /**
-     * choose which nodes not to show
+     * choose which nodes not to show, from entire ontology
      */
     ontology.forEach((v: any, id) => {
       if (
         v.descendants.length > outdegreeCutoff || // more than n descendants
         // v.descendants.length === 0 || // zero descendants
-        v.label.includes("Mus musculus") || // mouse
-        !v.label.includes("kidney") // limit to b cell subset
+        v.label.includes("Mus musculus") // mouse
+        // !v.label.includes("kidney") // limit to b cell subset
       ) {
-        filteredNodes.push(id);
+        filteredOutNodes.push(id);
       }
     });
 
     const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
       ontology,
-      filteredNodes
+      filteredOutNodes, // get rid of stuff!
+      uniqueSubtreeFromRootNode // include only this stuff!
     );
-    this.setState({ nodes, links, filteredNodes, sugiyamaStratifyData });
-  }
+    this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
+  };
 
   setHoverNode = (hoverNode: any) => {
     this.setState({ hoverNode });
   };
   setPinnedNode = (pinnedNode: any) => {
     this.setState({ pinnedNode });
+  };
+
+  subsetToNode = () => {
+    const { pinnedNode, maxRenderCounter } = this.state;
+    this.setState({
+      subtreeRootID: pinnedNode,
+      isSubset: true,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+  };
+
+  resetSubset = () => {
+    const { maxRenderCounter } = this.state;
+
+    this.setState({
+      pinnedNode: null,
+      subtreeRootID: null,
+      isSubset: false,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
   };
 
   incrementRenderCounter = () => {
@@ -189,6 +247,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       cardWidth,
       cardHeight,
       menubarHeight,
+      isSubset,
     } = this.state;
 
     return (
@@ -208,21 +267,21 @@ class OntologyExplorer extends React.Component<IProps, IState> {
             style={{
               display: "flex",
               justifyContent: "flex-start",
-              alignItems: "center",
+              alignItems: "baseline",
               paddingLeft: 10,
               paddingRight: 10,
             }}
           >
             <p
               style={{
-                fontSize: 24,
+                fontSize: 16,
                 fontWeight: 900,
                 margin: 0,
                 marginRight: 10,
                 padding: 0,
               }}
             >
-              ontology explorer
+              ONTOLOGY EXPLORER
             </p>
             <input
               type="text"
@@ -235,6 +294,16 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               onChange={this.handleDagSearchChange}
               value={simulationRunning ? "Computing layout..." : dagSearchText}
             />
+            {pinnedNode && !isSubset && (
+              <button onClick={this.subsetToNode} style={{ marginRight: 10 }}>
+                subset to {pinnedNode.id}
+              </button>
+            )}
+            {pinnedNode && isSubset && (
+              <button onClick={this.resetSubset} style={{ marginRight: 10 }}>
+                reset to whole
+              </button>
+            )}
             <p>help</p>
           </div>
         </div>

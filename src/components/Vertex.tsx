@@ -76,6 +76,7 @@ class Vertex extends React.Component<IProps, IState> {
         <h1>{vertex.label}</h1>
         <p>{!term && "Loading..."}</p>
         <p>{term && definition}</p>
+        <pre>{vertexID}</pre>
 
         <h3> Ancestors </h3>
 
