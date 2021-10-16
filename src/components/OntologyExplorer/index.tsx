@@ -61,7 +61,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       pinnedNode: null,
       canvasRenderCounter: 0,
       dagSearchText: "",
-      subtreeRootID: "CL:0000210", // parathyroid is "CL:1001593" ... precursor B is "CL:0000817" ... photo receptor is "CL:0000210"
+      subtreeRootID: null, // "CL:0000210", // parathyroid is "CL:1001593" ... precursor B is "CL:0000817" ... photo receptor is "CL:0000210"
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
@@ -84,9 +84,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     this.createDag();
   }
 
-  createDag = () => {
+  createDag = (subtreeRootID?: string) => {
     const { ontology } = this.props;
-    const { outdegreeCutoff, subtreeRootID } = this.state;
+    const { outdegreeCutoff } = this.state;
+
+    console.log("subtree root is ", subtreeRootID);
 
     /**
      * Choose which nodes to show, given a root, recursively grab get all descendants
@@ -140,12 +142,20 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       }
     });
 
-    const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
-      ontology,
-      filteredOutNodes, // get rid of stuff!
-      uniqueSubtreeFromRootNode // include only this stuff!
-    );
-    this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
+    if (subtreeRootID) {
+      const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
+        ontology,
+        filteredOutNodes, // get rid of stuff!
+        uniqueSubtreeFromRootNode // include only this stuff!
+      );
+      this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
+    } else {
+      const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
+        ontology,
+        filteredOutNodes // get rid of stuff!
+      );
+      this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
+    }
   };
 
   setHoverNode = (hoverNode: any) => {
@@ -157,11 +167,13 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
   subsetToNode = () => {
     const { pinnedNode, maxRenderCounter } = this.state;
+    console.log(pinnedNode);
     this.setState({
-      subtreeRootID: pinnedNode,
+      subtreeRootID: pinnedNode.id,
       isSubset: true,
       maxRenderCounter: maxRenderCounter + 1,
     });
+    this.createDag(pinnedNode.id);
   };
 
   resetSubset = () => {
@@ -173,6 +185,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       maxRenderCounter: maxRenderCounter + 1,
     });
+    this.createDag();
   };
 
   incrementRenderCounter = () => {
