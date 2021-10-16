@@ -8,7 +8,6 @@ import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 
 import { IOntology } from "../../d";
-import { max } from "lodash";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: "string";
@@ -65,15 +64,15 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoff: 50,
+      outdegreeCutoff: 100,
       filteredOutNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
       sugiyamaRenderThreshold: 100,
-      forceCanvasWidth: 850,
-      forceCanvasHeight: 850,
+      forceCanvasWidth: 2000,
+      forceCanvasHeight: 2000,
       cardWidth: 350,
-      cardHeight: 850, // 850 default, 2000 full
+      cardHeight: 2000, // 850 default, 2000 full
       menubarHeight: 70,
     };
   }

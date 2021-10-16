@@ -13,6 +13,8 @@ import { polygonHull, polygonCentroid } from "d3-polygon";
 import { OntologyVertexDatum } from ".";
 import { IOntology } from "../../d";
 
+import { tabulaSapiensCelltypes } from "../../tabulaSapiensCelltypes";
+
 /**
  * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas
  * and https://bl.ocks.org/mbostock/6f14f7b7f267a85f7cdc
@@ -32,6 +34,12 @@ export const drawForceDag = (
   onForceSimulationEnd: any,
   hullsTurnedOn: boolean
 ) => {
+  
+  tabulaSapiensCelltypes.forEach((celltypeid) => {
+    const __vertex: any = ontology.get(celltypeid)
+    console.log("celltype: ", __vertex.label, __vertex.descendants.length)
+  })
+
   /**
    * Let parent component know we rendered
    */
@@ -174,9 +182,32 @@ export const drawForceDag = (
           }
         }
 
+        if (tabulaSapiensCelltypes.includes(node.id)) {
+          context.fillStyle = clickedNodeColor;
+        }
+
         context.fill();
         context.stroke();
+
+        /**
+         * end, reset cases
+         */
         context.strokeStyle = nodeStrokeColor; // reset, in case it was hover
+      }
+
+      for (const node of nodes) {
+        if (tabulaSapiensCelltypes.includes(node.id)) {
+          const vertex: any = ontology.get(node.id);
+          if (vertex && vertex.label && typeof vertex.label === "string") {
+            context.fillStyle = tooltipColor;
+            context.font = "18px serif";
+            context.fillText(
+              `${vertex.label.substring(0, 10)}`,
+              node.x,
+              node.y
+            );
+          }
+        }
       }
 
       /**

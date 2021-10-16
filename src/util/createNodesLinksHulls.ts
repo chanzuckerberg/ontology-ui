@@ -47,7 +47,14 @@ export const createNodesLinksHulls = (
     return !nodesToFilter.includes(node.id);
   });
 
-  /* remove specified nodes */
+  // consider cells x y z, where x → y → z, remove links from x to z, so, if a descendant of x has a link to z, remove the link
+
+  /**
+   * remove specified links to filtered nodes...
+   * this is necessary because a node may have as a descendant
+   * a node which has been filtered, in which case, things will
+   * tend to explode.
+   */
   const _links = links.filter((l: SimulationLinkDatum<any>) => {
     return (
       !nodesToFilter.includes(l.source) && !nodesToFilter.includes(l.target)

@@ -144,6 +144,7 @@ class Sugiyama extends React.Component<IProps, IState> {
       <svg
         width={sugiyamaWidthAspectRatio * scaleMultiplier}
         height={sugiyamaHeightAspectRatio * scaleMultiplier}
+        style={{ marginRight: 20 }}
       >
         <g>
           {dag.links().map((link: any) => {
@@ -176,7 +177,8 @@ class Sugiyama extends React.Component<IProps, IState> {
               >
                 <circle r={nodeRadius} fill="rgb(200,200,200)"></circle>
                 <text x="-30" y={-20}>
-                  {vertex.label.substring(0, 15)}...
+                  {vertex.label.substring(0, 15)}
+                  {vertex.label.length > 16 ? "..." : null}
                   <title>{vertex.label}</title>
                 </text>
               </g>
