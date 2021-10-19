@@ -3,12 +3,11 @@ import React, { createRef } from "react";
 import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 
 import { createNodesLinksHulls } from "../../util/createNodesLinksHulls";
-
 import { drawForceDag } from "./draw";
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
-import Force from "./Force";
-import Controls from "./Controls";
+
+import { majorCompartments } from "../../majorCompartments";
 
 import { IOntology } from "../../d";
 
@@ -173,15 +172,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     this.setState({ pinnedNode });
   };
 
-  setCompartment = (compartmentID: string) => {
-    const { maxRenderCounter } = this.state;
-
-    this.setState({
-      compartment: compartmentID,
-      maxRenderCounter: maxRenderCounter + 1,
-    });
-  };
-
   subsetToNode = () => {
     const { pinnedNode, maxRenderCounter } = this.state;
     console.log(pinnedNode);
@@ -306,20 +296,97 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
     return (
       <div id="ontologyExplorerContainer">
-        <Controls
-          pinnedNode={pinnedNode}
-          dagSearchText={dagSearchText}
-          simulationRunning={simulationRunning}
-          menubarHeight={menubarHeight}
-          isSubset={isSubset}
-          outdegreeCutoffNodes={outdegreeCutoffNodes}
-          uberon={uberon}
-          handleDagSearchChange={this.handleDagSearchChange}
-          subsetToNode={this.subsetToNode}
-          handleOutdegreeCutoffChange={this.handleOutdegreeCutoffChange}
-          resetSubset={this.resetSubset}
-          setCompartment={this.setCompartment}
-        />
+        {/**
+         * Render controls
+         */}
+        <div
+          id="menubar"
+          style={{
+            height: menubarHeight,
+            // border: "1px solid lightblue",
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-start",
+              alignItems: "baseline",
+              paddingLeft: 10,
+              paddingRight: 10,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 16,
+                fontWeight: 900,
+                margin: 0,
+                marginRight: 10,
+                padding: 0,
+              }}
+            >
+              cellxgene-ontology
+            </p>
+            <input
+              type="text"
+              placeholder="Substring search"
+              style={{
+                fontSize: 14,
+                margin: 0,
+                marginRight: 10,
+              }}
+              onChange={this.handleDagSearchChange}
+              value={simulationRunning ? "Computing layout..." : dagSearchText}
+            />
+            <p style={{ marginLeft: 50 }}>
+              Remove nodes if outdegree greater than:
+            </p>
+            <p>1</p>
+            <input
+              type="range"
+              onChange={this.handleOutdegreeCutoffChange}
+              min="1"
+              max="5000"
+              value={outdegreeCutoffNodes}
+              id="changeOutdegreeCutoffNodes"
+            />
+            <p style={{ marginRight: 50 }}>Max (tbd, 5000)</p>
+
+            {pinnedNode && !isSubset && (
+              <button onClick={this.subsetToNode} style={{ marginRight: 10 }}>
+                subset to {pinnedNode.id}
+              </button>
+            )}
+            {pinnedNode && isSubset && (
+              <button onClick={this.resetSubset} style={{ marginRight: 10 }}>
+                reset to whole
+              </button>
+            )}
+            {uberon &&
+              majorCompartments.map((compartmentID: string) => {
+                const _compartment: any = uberon.get(compartmentID);
+                if (_compartment && _compartment.label) {
+                  return (
+                    <button
+                      key={compartmentID}
+                      onClick={() => {
+                        this.setState({
+                          compartment: compartmentID,
+                          maxRenderCounter: maxRenderCounter + 1,
+                        });
+                      }}
+                      type="button"
+                    >
+                      {_compartment.label}
+                    </button>
+                  );
+                } else {
+                  return null;
+                }
+              })}
+            <p>help</p>
+          </div>
+        </div>
         <div id="horizontalScroll">
           <div
             id="card"
@@ -378,7 +445,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
             height={forceCanvasHeight}
             ref={this.dagCanvasRef}
           />
-          {/* <Force /> */}
           {/**
            * Render sugiyama
            */}
