@@ -70,16 +70,16 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoffNodes: 15, // for filter nodes
-      outdegreeCutoffXYZ: 15,
+      outdegreeCutoffNodes: 3, // for filter nodes
+      outdegreeCutoffXYZ: 3,
       filteredOutNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
-      sugiyamaRenderThreshold: 200,
-      forceCanvasWidth: 850,
-      forceCanvasHeight: 850,
+      sugiyamaRenderThreshold: 100,
+      forceCanvasWidth: 1000,
+      forceCanvasHeight: 1000,
       cardWidth: 350,
-      cardHeight: 850, // 850 default, 2000 full
+      cardHeight: 1000, // 850 default, 2000 full
       menubarHeight: 70,
     };
   }

@@ -29,12 +29,21 @@ export const createNodesLinksHulls = (
         });
       });
 
-      sugiyamaStratifyData.push({
-        id: vertexID,
-        parentIds: vertex.ancestors.filter((a: string) => {
-          return !nodesToFilter.includes(a) && subtree?.includes(a); // if it's NOT filtered out and it IS in the subtree, assuming we have one
-        }),
-      });
+      if (subtree) {
+        sugiyamaStratifyData.push({
+          id: vertexID,
+          parentIds: vertex.ancestors.filter((a: string) => {
+            return !nodesToFilter.includes(a) && subtree.includes(a); // if it's NOT filtered out and it IS in the subtree, assuming we have one
+          }),
+        });
+      } else {
+        sugiyamaStratifyData.push({
+          id: vertexID,
+          parentIds: vertex.ancestors.filter((a: string) => {
+            return !nodesToFilter.includes(a);
+          }),
+        });
+      }
     }
   });
 
