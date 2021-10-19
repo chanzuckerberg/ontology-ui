@@ -130,10 +130,12 @@ class Sugiyama extends React.Component<IProps, IState> {
       dag,
       scaleMultiplier,
     } = this.state;
-    const { sugiyamaStratifyData, ontology } = this.props;
+    const { ontology } = this.props;
 
     if (!dag || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio)
       return null;
+
+    console.log("dag", dag.links());
 
     const createLine = line()
       .curve(curveCatmullRom)

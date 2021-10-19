@@ -7,6 +7,8 @@ import { drawForceDag } from "./draw";
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 
+import { majorCompartments } from "../../majorCompartments";
+
 import { IOntology } from "../../d";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
@@ -19,6 +21,7 @@ interface IProps {
   ontologyName: string;
   ontology: Map<string, unknown | object>;
   lattice: null | IOntology;
+  uberon: null | IOntology;
 }
 
 interface IState {
@@ -31,6 +34,7 @@ interface IState {
   translateCenter: number;
   hoverNode: any /* from d3 force node hover */;
   pinnedNode: any /* from d3 force node click */;
+  compartment: string | null;
   canvasRenderCounter: number;
   dagSearchText: string;
   subtreeRootID: string | null;
@@ -59,22 +63,23 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       translateCenter: -350,
       hoverNode: null,
       pinnedNode: null,
+      compartment: null,
       canvasRenderCounter: 0,
       dagSearchText: "",
-      subtreeRootID: null, // "CL:0000210", // parathyroid is "CL:1001593" ... precursor B is "CL:0000817" ... photo receptor is "CL:0000210"
+      subtreeRootID: null,
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoffNodes: 50, // for filter nodes
-      outdegreeCutoffXYZ: 1000000,
+      outdegreeCutoffNodes: 15, // for filter nodes
+      outdegreeCutoffXYZ: 15,
       filteredOutNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
-      sugiyamaRenderThreshold: 100,
-      forceCanvasWidth: 2000,
-      forceCanvasHeight: 2000,
+      sugiyamaRenderThreshold: 200,
+      forceCanvasWidth: 850,
+      forceCanvasHeight: 850,
       cardWidth: 350,
-      cardHeight: 2000, // 850 default, 2000 full
+      cardHeight: 850, // 850 default, 2000 full
       menubarHeight: 70,
     };
   }
@@ -132,7 +137,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
      */
     ontology.forEach((v: any, id) => {
       if (
-        v.descendants.length > outdegreeCutoffNodes || // more than n descendants ... sometimes we want to remove the nodes, sometimes we want to xyz the links
+        // v.descendants.length > outdegreeCutoffNodes || // more than n descendants ... sometimes we want to remove the nodes, sometimes we want to xyz the links
+        v.descendants.length < outdegreeCutoffNodes || // remove nodes with less than n descendants ... sometimes we want to start at cell and show the big stuff only
         // v.descendants.length === 0 || // zero descendants
         v.label.includes("Mus musculus") // mouse
         // !v.label.includes("kidney") // limit to b cell subset
@@ -219,7 +225,18 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       scaleFactor,
       translateCenter,
       hullsTurnedOn,
+      compartment,
     } = this.state;
+
+    const { lattice } = this.props;
+
+    const _latticeCL = new Map();
+
+    lattice?.forEach((value: any, key: any) => {
+      if (key.includes("CL")) {
+        _latticeCL.set(key, value);
+      }
+    });
 
     const redrawCanvas = drawForceDag(
       nodes, // todo, mutates
@@ -234,7 +251,9 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       this.setPinnedNode,
       this.incrementRenderCounter,
       this.onForceSimulationEnd,
-      hullsTurnedOn
+      hullsTurnedOn,
+      _latticeCL,
+      compartment
     );
 
     this.setState({ redrawCanvas, simulationRunning: true });
@@ -254,7 +273,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
   };
 
   render() {
-    const { ontology, ontologyName, lattice } = this.props;
+    const { ontology, ontologyName, lattice, uberon } = this.props;
     const {
       nodes,
       links,
@@ -306,7 +325,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
                 padding: 0,
               }}
             >
-              ONTOLOGY EXPLORER
+              cellxgene-ontology
             </p>
             <input
               type="text"
@@ -343,6 +362,28 @@ class OntologyExplorer extends React.Component<IProps, IState> {
                 reset to whole
               </button>
             )}
+            {uberon &&
+              majorCompartments.map((compartmentID: string) => {
+                const _compartment: any = uberon.get(compartmentID);
+                if (_compartment && _compartment.label) {
+                  return (
+                    <button
+                      key={compartmentID}
+                      onClick={() => {
+                        this.setState({
+                          compartment: compartmentID,
+                          maxRenderCounter: maxRenderCounter + 1,
+                        });
+                      }}
+                      type="button"
+                    >
+                      {_compartment.label}
+                    </button>
+                  );
+                } else {
+                  return null;
+                }
+              })}
             <p>help</p>
           </div>
         </div>

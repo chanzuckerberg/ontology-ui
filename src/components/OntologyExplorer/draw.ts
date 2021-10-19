@@ -32,7 +32,9 @@ export const drawForceDag = (
   setPinnedNode: any,
   incrementRenderCounter: any,
   onForceSimulationEnd: any,
-  hullsTurnedOn: boolean
+  hullsTurnedOn: boolean,
+  _latticeCL: any,
+  compartment: string | null
 ) => {
   /**
    * Debug logging to check sapiens contents
@@ -41,6 +43,7 @@ export const drawForceDag = (
   //   const __vertex: any = ontology.get(celltypeid);
   //   console.log("celltype: ", __vertex.label, __vertex.descendants.length);
   // });
+  // console.log("lattice", _latticeCL, compartment);
 
   /**
    * Let parent component know we rendered
@@ -92,29 +95,29 @@ export const drawForceDag = (
     /**
      * circular layout, if xyz nodes included
      */
+    // .force(
+    //   "link",
+    //   forceLink(links).id((d: any) => d.id)
+    // )
+    // .force("charge", forceManyBody())
+    // // we are disjoint because we're disconnecting the dag to get territories
+    // // https://observablehq.com/@d3/disjoint-force-directed-graph
+    // .force("x", forceX(width / 2))
+    // .force("y", forceY(height / 2));
+
+    /**
+     * Tree layout, if xyz nodes excluded
+     */
     .force(
       "link",
-      forceLink(links).id((d: any) => d.id)
+      forceLink(links)
+        .id((d: any) => d.id)
+        .distance(0)
+        .strength(1)
     )
-    .force("charge", forceManyBody())
-    // we are disjoint because we're disconnecting the dag to get territories
-    // https://observablehq.com/@d3/disjoint-force-directed-graph
+    .force("charge", forceManyBody().strength(-50))
     .force("x", forceX(width / 2))
     .force("y", forceY(height / 2));
-
-  /**
-   * Tree layout, if xyz nodes excluded
-   */
-  // .force(
-  //   "link",
-  //   forceLink(links)
-  //     .id((d: any) => d.id)
-  //     .distance(0)
-  //     .strength(1)
-  // )
-  // .force("charge", forceManyBody().strength(-50))
-  // .force("x", forceX(width / 2))
-  // .force("y", forceY(height / 2));
 
   let resized = false;
 
@@ -201,11 +204,26 @@ export const drawForceDag = (
           }
         }
 
+        /**
+         * check dataset distribution in ontology
+         */
         /* 
         if (tabulaSapiensCelltypes.includes(node.id)) {
           context.fillStyle = clickedNodeColor;
         }
         */
+
+        /**
+         * check compartment distribution in ontology
+         */
+        if (_latticeCL && compartment) {
+          const celltype_is_in_compartment = _latticeCL
+            .get(node.id)
+            .ancestors.includes(compartment);
+          if (celltype_is_in_compartment) {
+            context.fillStyle = "orange";
+          }
+        }
 
         context.fill();
         context.stroke();
@@ -216,6 +234,10 @@ export const drawForceDag = (
         context.strokeStyle = nodeStrokeColor; // reset, in case it was hover
       }
 
+      /**
+       * Draw text on nodes, for alpha, this writes tabula sapiens nodes out
+       */
+      /*
       for (const node of nodes) {
         if (tabulaSapiensCelltypes.includes(node.id)) {
           const vertex: any = ontology.get(node.id);
@@ -230,6 +252,7 @@ export const drawForceDag = (
           }
         }
       }
+      */
 
       /**
        * Draw hulls first, z index

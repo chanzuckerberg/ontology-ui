@@ -67,6 +67,7 @@ class App extends React.Component<IProps, IState> {
                       ontologyName="cl"
                       ontology={cl_ontology}
                       lattice={lattice}
+                      uberon={uberon_ontology}
                     />
                   );
                 }}
@@ -101,6 +102,7 @@ class App extends React.Component<IProps, IState> {
                       ontologyName="mondo"
                       ontology={mondo_ontology}
                       lattice={lattice}
+                      uberon={uberon_ontology}
                     />
                   );
                 }}
@@ -127,6 +129,7 @@ class App extends React.Component<IProps, IState> {
                       ontologyName="uberon"
                       ontology={uberon_ontology}
                       lattice={lattice}
+                      uberon={uberon_ontology}
                     />
                   );
                 }}
