@@ -1,5 +1,5 @@
 import React, { createRef } from "react";
-import { forceSimulation } from "d3-force-3d";
+import { forceSimulation, forceCollide } from "d3-force-3d";
 import ForceGraph3D from "3d-force-graph";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass.js";
@@ -26,7 +26,7 @@ class ThreeOntology extends React.Component<IProps, IState> {
     this.state = {
       nodes: null,
       links: null,
-      outdegreeCutoff: 100,
+      outdegreeCutoff: 250,
     };
   }
   private threeRef = createRef<HTMLDivElement>();
@@ -60,7 +60,8 @@ class ThreeOntology extends React.Component<IProps, IState> {
 
     const { nodes, links } = createNodesLinksHulls(
       ontology,
-      filteredNodes // filter
+      filteredNodes, // filter
+      outdegreeCutoff
     );
     this.setState({ nodes, links });
   }

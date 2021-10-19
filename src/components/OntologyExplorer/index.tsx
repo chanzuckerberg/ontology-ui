@@ -37,7 +37,8 @@ interface IState {
   isSubset: boolean;
   redrawCanvas: any /* function to force render canvas */;
   simulationRunning: boolean;
-  outdegreeCutoff: number /* max descendants */;
+  outdegreeCutoffNodes: number /* max descendants */;
+  outdegreeCutoffXYZ: number /* max descendants */;
   filteredOutNodes: string[];
   hullsTurnedOn: boolean;
   maxRenderCounter: number;
@@ -64,7 +65,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoff: 100,
+      outdegreeCutoffNodes: 50, // for filter nodes
+      outdegreeCutoffXYZ: 1000000,
       filteredOutNodes: [],
       hullsTurnedOn: false,
       maxRenderCounter: 1,
@@ -85,9 +87,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
   createDag = (subtreeRootID?: string) => {
     const { ontology } = this.props;
-    const { outdegreeCutoff } = this.state;
-
-    console.log("subtree root is ", subtreeRootID);
+    const { outdegreeCutoffNodes, outdegreeCutoffXYZ } = this.state;
 
     /**
      * Choose which nodes to show, given a root, recursively grab get all descendants
@@ -132,7 +132,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
      */
     ontology.forEach((v: any, id) => {
       if (
-        v.descendants.length > outdegreeCutoff || // more than n descendants
+        v.descendants.length > outdegreeCutoffNodes || // more than n descendants ... sometimes we want to remove the nodes, sometimes we want to xyz the links
         // v.descendants.length === 0 || // zero descendants
         v.label.includes("Mus musculus") // mouse
         // !v.label.includes("kidney") // limit to b cell subset
@@ -145,13 +145,15 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
         ontology,
         filteredOutNodes, // get rid of stuff!
+        outdegreeCutoffXYZ,
         uniqueSubtreeFromRootNode // include only this stuff!
       );
       this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
     } else {
       const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
         ontology,
-        filteredOutNodes // get rid of stuff!
+        filteredOutNodes, // get rid of stuff!
+        outdegreeCutoffXYZ // remove xyz
       );
       this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
     }
@@ -194,6 +196,16 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
   onForceSimulationEnd = () => {
     this.setState({ simulationRunning: false });
+  };
+
+  handleOutdegreeCutoffChange = (e: any) => {
+    const { maxRenderCounter } = this.state;
+    console.log("e.target", e.target.value);
+    this.setState({
+      outdegreeCutoffNodes: e.target.value,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+    this.createDag();
   };
 
   initializeCanvasRenderer = (
@@ -260,6 +272,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       cardHeight,
       menubarHeight,
       isSubset,
+      outdegreeCutoffNodes,
     } = this.state;
 
     return (
@@ -306,6 +319,20 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               onChange={this.handleDagSearchChange}
               value={simulationRunning ? "Computing layout..." : dagSearchText}
             />
+            <p style={{ marginLeft: 50 }}>
+              Remove nodes if outdegree greater than:
+            </p>
+            <p>1</p>
+            <input
+              type="range"
+              onChange={this.handleOutdegreeCutoffChange}
+              min="1"
+              max="5000"
+              value={outdegreeCutoffNodes}
+              id="changeOutdegreeCutoffNodes"
+            />
+            <p style={{ marginRight: 50 }}>Max (tbd, 5000)</p>
+
             {pinnedNode && !isSubset && (
               <button onClick={this.subsetToNode} style={{ marginRight: 10 }}>
                 subset to {pinnedNode.id}

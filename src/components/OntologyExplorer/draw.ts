@@ -34,11 +34,13 @@ export const drawForceDag = (
   onForceSimulationEnd: any,
   hullsTurnedOn: boolean
 ) => {
-  
-  tabulaSapiensCelltypes.forEach((celltypeid) => {
-    const __vertex: any = ontology.get(celltypeid)
-    console.log("celltype: ", __vertex.label, __vertex.descendants.length)
-  })
+  /**
+   * Debug logging to check sapiens contents
+   */
+  // tabulaSapiensCelltypes.forEach((celltypeid) => {
+  //   const __vertex: any = ontology.get(celltypeid);
+  //   console.log("celltype: ", __vertex.label, __vertex.descendants.length);
+  // });
 
   /**
    * Let parent component know we rendered
@@ -71,8 +73,8 @@ export const drawForceDag = (
   const nodeStrokeColor = "white";
   const hoverNodeColor = "rgba(170,170,170,1)";
   const hoverStrokeColor = "rgba(50,50,50,1)";
-  const hoverNodeDescendantColor = "lightblue";
-  const hoverNodeAncestorColor = "steelblue";
+  const hoverNodeDescendantColor = "pink";
+  const hoverNodeAncestorColor = "red";
   const clickedNodeColor = "red";
   const nodeColorNotInSearch = "rgba(100,100,100,.2)";
   const nodeColorInSearch = "steelblue";
@@ -87,6 +89,9 @@ export const drawForceDag = (
    * Set up d3 force simulation
    */
   const simulation = forceSimulation(nodes)
+    /**
+     * circular layout, if xyz nodes included
+     */
     .force(
       "link",
       forceLink(links).id((d: any) => d.id)
@@ -96,6 +101,20 @@ export const drawForceDag = (
     // https://observablehq.com/@d3/disjoint-force-directed-graph
     .force("x", forceX(width / 2))
     .force("y", forceY(height / 2));
+
+  /**
+   * Tree layout, if xyz nodes excluded
+   */
+  // .force(
+  //   "link",
+  //   forceLink(links)
+  //     .id((d: any) => d.id)
+  //     .distance(0)
+  //     .strength(1)
+  // )
+  // .force("charge", forceManyBody().strength(-50))
+  // .force("x", forceX(width / 2))
+  // .force("y", forceY(height / 2));
 
   let resized = false;
 
@@ -182,9 +201,11 @@ export const drawForceDag = (
           }
         }
 
+        /* 
         if (tabulaSapiensCelltypes.includes(node.id)) {
           context.fillStyle = clickedNodeColor;
         }
+        */
 
         context.fill();
         context.stroke();
