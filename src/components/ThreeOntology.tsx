@@ -83,7 +83,7 @@ class ThreeOntology extends React.Component<IProps, IState> {
       .linkDirectionalArrowLength(3.5)
       .linkDirectionalArrowRelPos(1);
 
-    Graph.backgroundColor("#146f9b");
+    Graph.backgroundColor("white");
 
     /**
      * Store the scene and camera for other consumers
@@ -104,7 +104,7 @@ class ThreeOntology extends React.Component<IProps, IState> {
      */
     Graph.nodeColor((d: any) => {
       console.log(d);
-      return d.descendantCount === 0 ? "white" : "blue";
+      return d.descendantCount === 0 ? "black" : "red";
     });
 
     /**

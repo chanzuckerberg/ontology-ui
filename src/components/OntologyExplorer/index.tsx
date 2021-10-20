@@ -4,10 +4,9 @@ import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 
 import { createNodesLinksHulls } from "../../util/createNodesLinksHulls";
 
-import { drawForceDag } from "./draw";
+import { drawForceDag } from "./drawForce";
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
-import Force from "./Force";
 import Controls from "./Controls";
 
 import { IOntology } from "../../d";
@@ -35,6 +34,7 @@ interface IState {
   translateCenter: number;
   hoverNode: any /* from d3 force node hover */;
   pinnedNode: any /* from d3 force node click */;
+  highlightAncestors: boolean;
   compartment: string | null;
   canvasRenderCounter: number;
   dagSearchText: string;
@@ -64,6 +64,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       translateCenter: -350,
       hoverNode: null,
       pinnedNode: null,
+      highlightAncestors: false,
       compartment: null,
       canvasRenderCounter: 0,
       dagSearchText: "",
@@ -236,6 +237,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       translateCenter,
       hullsTurnedOn,
       compartment,
+      highlightAncestors,
     } = this.state;
 
     const { lattice } = this.props;
@@ -263,7 +265,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       this.onForceSimulationEnd,
       hullsTurnedOn,
       _latticeCL,
-      compartment
+      compartment,
+      highlightAncestors
     );
 
     this.setState({ redrawCanvas, simulationRunning: true });
@@ -378,7 +381,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
             height={forceCanvasHeight}
             ref={this.dagCanvasRef}
           />
-          {/* <Force /> */}
           {/**
            * Render sugiyama
            */}

@@ -8,12 +8,13 @@ import {
 } from "d3-force";
 
 import { select } from "d3-selection";
-import { polygonHull, polygonCentroid } from "d3-polygon";
 
-import { OntologyVertexDatum } from ".";
-import { IOntology } from "../../d";
+import { OntologyVertexDatum } from "..";
+import { IOntology } from "../../../d";
 
-import { tabulaSapiensCelltypes } from "../../tabulaSapiensCelltypes";
+import { drawHulls } from "./hulls";
+
+import { tabulaSapiensCelltypes } from "../../../tabulaSapiensCelltypes";
 
 /**
  * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas
@@ -34,7 +35,8 @@ export const drawForceDag = (
   onForceSimulationEnd: any,
   hullsTurnedOn: boolean,
   _latticeCL: any,
-  compartment: string | null
+  compartment: string | null,
+  highlightAncestors: boolean
 ) => {
   /**
    * Debug logging to check sapiens contents
@@ -199,7 +201,7 @@ export const drawForceDag = (
           if (hoverVertex.descendants.includes(node.id)) {
             context.fillStyle = hoverNodeDescendantColor;
           }
-          if (hoverVertex.ancestors.includes(node.id)) {
+          if (hoverVertex.ancestors.includes(node.id) && highlightAncestors) {
             context.fillStyle = hoverNodeAncestorColor;
           }
         }
@@ -258,7 +260,14 @@ export const drawForceDag = (
        * Draw hulls first, z index
        */
       if (hullsTurnedOn) {
-        drawHulls();
+        drawHulls(
+          ontology,
+          nodes,
+          context,
+          hullColor,
+          hullBorderColor,
+          hullLabelColor
+        );
       }
 
       /**
@@ -279,87 +288,6 @@ export const drawForceDag = (
           );
         }
       }
-    }
-  };
-
-  /**
-   * Draw all hulls
-   */
-  const drawHulls = () => {
-    /**
-     * GIVEN ALL PRIOR FILTERED NODES
-     */
-    // filteredVerticesForHulls.forEach((vertex_id, i) => {
-    //   drawHull(vertex_id);
-    // });
-    /**
-     * CUSTOM SUBSET FOR TEST
-     */
-    //  ["CL:0002086", "CL:0002031", "CL:1000504"]
-    ["CL:0002086"].forEach((vertex_id, i) => {
-      drawHull(vertex_id);
-    });
-  };
-
-  /**
-   * Draw one hull
-   */
-  const drawHull = (vertex_id: string) => {
-    /**
-     * Retreive the vertex for its name and descendents
-     */
-    const vertex: any = ontology.get(vertex_id);
-
-    /**
-     * Filter the simulation's nodes that are descendents of the given vertex
-     * Create the hull
-     */
-    const filteredNodes = nodes.filter((node: any) => {
-      return vertex.descendants.includes(node.id);
-    });
-
-    let points: any = [];
-
-    filteredNodes.forEach((node) => {
-      points.push([node.x, node.y]);
-    });
-
-    const hull = polygonHull(points);
-    const centroid = polygonCentroid(points);
-
-    if (hull) {
-      /**
-       * Paint the hull
-       */
-      context.beginPath();
-      context.moveTo(hull[0][0], hull[0][1]);
-      for (var i = 1, n = hull.length; i < n; ++i) {
-        context.lineTo(hull[i][0], hull[i][1]);
-      }
-      context.closePath();
-      context.fillStyle = hullColor;
-      context.fill();
-
-      /**
-       * Hull border
-       */
-      context.lineWidth = 1;
-      context.strokeStyle = hullBorderColor;
-      context.stroke();
-
-      /**
-       * Text on centroid of hull
-       */
-      context.fillStyle = hullLabelColor;
-      context.font = "18px helvetica";
-      context.fillText(
-        `${vertex.label}`, //${vertex_id}`
-        /**
-         * subtract some width to center text
-         */
-        centroid[0] - 100,
-        centroid[1] - 15
-      );
     }
   };
 
