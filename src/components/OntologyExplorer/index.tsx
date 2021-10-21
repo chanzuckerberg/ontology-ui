@@ -45,12 +45,13 @@ interface IState {
   outdegreeCutoffNodes: number /* max descendants */;
   outdegreeCutoffXYZ: number /* max descendants */;
   filteredOutNodes: string[];
-  hullsTurnedOn: boolean;
+  hullsEnabled: boolean;
   maxRenderCounter: number;
   sugiyamaRenderThreshold: number;
   cardWidth: number;
   cardHeight: number;
   menubarHeight: number;
+  showTabulaSapiensDataset: boolean;
 }
 
 class OntologyExplorer extends React.Component<IProps, IState> {
@@ -75,14 +76,15 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       outdegreeCutoffNodes: 3, // for filter nodes
       outdegreeCutoffXYZ: 3,
       filteredOutNodes: [],
-      hullsTurnedOn: false,
+      hullsEnabled: false,
       maxRenderCounter: 1,
       sugiyamaRenderThreshold: 100,
       forceCanvasWidth: 1000,
       forceCanvasHeight: 1000,
       cardWidth: 350,
       cardHeight: 1000, // 850 default, 2000 full
-      menubarHeight: 70,
+      menubarHeight: 50,
+      showTabulaSapiensDataset: false,
     };
   }
 
@@ -138,11 +140,33 @@ class OntologyExplorer extends React.Component<IProps, IState> {
      * choose which nodes not to show, from entire ontology
      */
     ontology.forEach((v: any, id) => {
+      const nonhuman =
+        v.label.includes("Mus musculus") || // mouse
+        v.label.includes("conidium") || //fungus
+        v.label.includes("fungal") ||
+        v.label.includes("spore");
+
+      const bigTroublesomeMetadataCells = // unify the above with this list
+        id === "CL:0000988" || // hematopoietic cell
+        id === "CL:0000393" || // electrically active
+        id === "CL:0000219" || // motile cell
+        id === "CL:0002371" || // somatic cell
+        id === "CL:0000066" || // epithelial cell
+        id === "CL:0000000" || // cell
+        id === "CL:0000325" || // stuff accumulating cell
+        id === "CL:0000151" || // secratory cell
+        id === "CL:0000548" || // animal cell
+        id === "CL:0000234" || // phagocyte
+        id === "CL:0002319" || // neural cell
+        id === "CL:0000003"; // native cell
+
       if (
         // v.descendants.length > outdegreeCutoffNodes || // more than n descendants ... sometimes we want to remove the nodes, sometimes we want to xyz the links
         v.descendants.length < outdegreeCutoffNodes || // remove nodes with less than n descendants ... sometimes we want to start at cell and show the big stuff only
         // v.descendants.length === 0 || // zero descendants
-        v.label.includes("Mus musculus") // mouse
+        nonhuman ||
+        bigTroublesomeMetadataCells
+
         // !v.label.includes("kidney") // limit to b cell subset
       ) {
         filteredOutNodes.push(id);
@@ -235,9 +259,10 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       forceCanvasHeight,
       scaleFactor,
       translateCenter,
-      hullsTurnedOn,
+      hullsEnabled,
       compartment,
       highlightAncestors,
+      showTabulaSapiensDataset,
     } = this.state;
 
     const { lattice } = this.props;
@@ -263,10 +288,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       this.setPinnedNode,
       this.incrementRenderCounter,
       this.onForceSimulationEnd,
-      hullsTurnedOn,
+      hullsEnabled,
       _latticeCL,
       compartment,
-      highlightAncestors
+      highlightAncestors,
+      showTabulaSapiensDataset
     );
 
     this.setState({ redrawCanvas, simulationRunning: true });
@@ -283,6 +309,29 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     if (redrawCanvas) {
       redrawCanvas(e.target.value);
     }
+  };
+
+  handleHullChange = (e: any) => {
+    const { hullsEnabled, maxRenderCounter } = this.state;
+    this.setState({
+      hullsEnabled: !hullsEnabled,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+  };
+
+  handleHighlightAncestorChange = (e: any) => {
+    const { highlightAncestors, maxRenderCounter } = this.state;
+    this.setState({
+      highlightAncestors: !highlightAncestors,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+  };
+  handleShowTabulaSapiensChange = (e: any) => {
+    const { showTabulaSapiensDataset, maxRenderCounter } = this.state;
+    this.setState({
+      showTabulaSapiensDataset: !showTabulaSapiensDataset,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
   };
 
   render() {
@@ -305,6 +354,9 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       menubarHeight,
       isSubset,
       outdegreeCutoffNodes,
+      hullsEnabled,
+      highlightAncestors,
+      showTabulaSapiensDataset,
     } = this.state;
 
     return (
@@ -322,6 +374,12 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           handleOutdegreeCutoffChange={this.handleOutdegreeCutoffChange}
           resetSubset={this.resetSubset}
           setCompartment={this.setCompartment}
+          hullsEnabled={hullsEnabled}
+          handleHullChange={this.handleHullChange}
+          highlightAncestors={highlightAncestors}
+          handleHighlightAncestorChange={this.handleHighlightAncestorChange}
+          showTabulaSapiensDataset={showTabulaSapiensDataset}
+          handleShowTabulaSapiensChange={this.handleShowTabulaSapiensChange}
         />
         <div id="horizontalScroll">
           <div
@@ -373,7 +431,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               position: "absolute",
               top: menubarHeight,
               left: cardWidth,
-              zIndex: 9999,
               cursor: "crosshair",
               // border: "1px solid green",
             }}

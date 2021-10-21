@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import { Helmet } from "react-helmet";
 
 import Vertex from "./components/Vertex";
 import Dag from "./components/OntologyExplorer";
@@ -56,6 +57,10 @@ class App extends React.Component<IProps, IState> {
           }}
         >
           {!cl_ontology && "Loading..."}
+          <Helmet>
+            <meta charSet="utf-8" />
+            <title>Cell Ontology</title>
+          </Helmet>
 
           {cl_ontology && mondo_ontology && uberon_ontology && lattice && (
             <Switch>

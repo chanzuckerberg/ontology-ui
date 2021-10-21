@@ -8,6 +8,7 @@ import {
 } from "d3-force";
 
 import { select } from "d3-selection";
+import { interpolateSinebow } from "d3-scale-chromatic";
 
 import { OntologyVertexDatum } from "..";
 import { IOntology } from "../../../d";
@@ -36,7 +37,8 @@ export const drawForceDag = (
   hullsTurnedOn: boolean,
   _latticeCL: any,
   compartment: string | null,
-  highlightAncestors: boolean
+  highlightAncestors: boolean,
+  showTabulaSapiensDataset: boolean
 ) => {
   /**
    * Debug logging to check sapiens contents
@@ -68,6 +70,35 @@ export const drawForceDag = (
   let clickNode: any = null;
 
   /**
+   * Hull root vertices
+   */
+  const hullRoots: string[] = [
+    // hardcoded for the alpha, to be inferred with a heuristic
+    "CL:0002086",
+    "CL:0000542",
+    // "CL:0000540",
+    "CL:0000084",
+    "CL:0000236",
+    "CL:1000497",
+    "CL:0000039",
+    "CL:0000125",
+    "CL:0000101",
+    "CL:0000099",
+    "CL:0002563",
+    // "CL:0000988",
+    "CL:0000451",
+    "CL:0008007",
+    "CL:0002368",
+    // "CL:0000763",
+    "CL:0000163",
+    "CL:0000147",
+    "CL:0011026",
+    "CL:0000094",
+    "CL:0000100",
+    "CL:0001035",
+  ];
+
+  /**
    * Sizes
    */
   const nodeSize: number = 5;
@@ -76,20 +107,18 @@ export const drawForceDag = (
    */
   const nodeColor = "rgba(170,170,170,1)";
   const nodeStrokeColor = "white";
-  const hoverNodeColor = "rgba(170,170,170,1)";
-  const hoverStrokeColor = "red";
+  const hoverStrokeColor = "black";
   const hoverNodeDescendantColor = "pink";
   const hoverNodeAncestorColor = "red";
   const clickedNodeColor = "black";
   const nodeColorNotInSearch = "rgba(100,100,100,.2)";
   const nodeColorInSearch = "steelblue";
-
   const linkColor = "rgba(170,170,170,.5)";
-  const tooltipColor = "rgba(0,0,0,1)";
-
-  const hullColor = "rgba(255,0,0,.05)"; //"transparent";
+  const tooltipColor = "rgb(30, 30, 30)";
   const hullBorderColor = "rgb(255,0,0,.05";
   const hullLabelColor = "rgba(0,0,0,1)";
+  const datasetDistributionColor = interpolateSinebow(0.9);
+
   /**
    * Set up d3 force simulation
    */
@@ -209,11 +238,13 @@ export const drawForceDag = (
         /**
          * check dataset distribution in ontology
          */
-        /* 
-        if (tabulaSapiensCelltypes.includes(node.id)) {
-          context.fillStyle = clickedNodeColor;
+
+        if (
+          showTabulaSapiensDataset &&
+          tabulaSapiensCelltypes.includes(node.id)
+        ) {
+          context.fillStyle = datasetDistributionColor;
         }
-        */
 
         /**
          * check compartment distribution in ontology
@@ -239,35 +270,63 @@ export const drawForceDag = (
       /**
        * Draw text on nodes, for alpha, this writes tabula sapiens nodes out
        */
-      /*
-      for (const node of nodes) {
-        if (tabulaSapiensCelltypes.includes(node.id)) {
-          const vertex: any = ontology.get(node.id);
-          if (vertex && vertex.label && typeof vertex.label === "string") {
-            context.fillStyle = tooltipColor;
-            context.font = "18px serif";
-            context.fillText(
-              `${vertex.label.substring(0, 10)}`,
-              node.x,
-              node.y
-            );
+      if (showTabulaSapiensDataset) {
+        for (const node of nodes) {
+          if (tabulaSapiensCelltypes.includes(node.id)) {
+            const vertex: any = ontology.get(node.id);
+            if (vertex && vertex.label && typeof vertex.label === "string") {
+              context.fillStyle = tooltipColor;
+              context.font = "18px serif";
+              context.fillText(
+                `${vertex.label.substring(0, 10)}`,
+                node.x,
+                node.y
+              );
+            }
           }
         }
       }
-      */
 
-      /**
-       * Draw hulls first, z index
-       */
       if (hullsTurnedOn) {
+        /**
+         * Draw hulls
+         */
         drawHulls(
           ontology,
           nodes,
           context,
-          hullColor,
           hullBorderColor,
-          hullLabelColor
+          hullLabelColor,
+          hullRoots
         );
+
+        /**
+         * Draw text on hull nodes
+         */
+        for (const node of nodes) {
+          if (hullRoots.includes(node.id)) {
+            const vertex: any = ontology.get(node.id);
+            if (
+              vertex &&
+              vertex.label &&
+              typeof vertex.label === "string" &&
+              node.x &&
+              node.y
+            ) {
+              context.fillStyle = tooltipColor;
+              context.font = "14px monospace";
+              const _maxLength = 15;
+              const _length = vertex.label.length;
+              context.fillText(
+                `${vertex.label.substring(0, _maxLength)}${
+                  _length > _maxLength ? "..." : ""
+                }`,
+                node.x + 7,
+                node.y + 3
+              );
+            }
+          }
+        }
       }
 
       /**
