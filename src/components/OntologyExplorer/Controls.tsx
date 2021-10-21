@@ -110,7 +110,9 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           </p>
           <InputGroup
             type="text"
-            placeholder="Substring search"
+            leftIcon="geosearch"
+            placeholder="cell type search"
+            disabled={simulationRunning}
             style={{
               fontSize: 14,
               margin: 0,
@@ -119,7 +121,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
             onChange={(e) => {
               handleDagSearchChange(e);
             }}
-            value={simulationRunning ? "Computing layout..." : dagSearchText}
+            value={simulationRunning ? "computing layout..." : dagSearchText}
           />
 
           {pinnedNode && !isSubset && (
@@ -151,57 +153,76 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           >
             <div className={Classes.DRAWER_BODY}>
               <div className={Classes.DIALOG_BODY}>
-                <h4>Reproject the ontology</h4>
-                <p>Different tasks require different parameters. </p>
-                <h4>Hulls</h4>
+                <p>
+                  Customizations to interface and interactivity, and
+                  modifications to the cell types and links shown.
+                </p>
+                <h2> Interactivity </h2>
+                <p>
+                  Change the behavior of interactions with the graph, such as
+                  hovering and hiding parts of the interface
+                </p>
+                <Checkbox
+                  checked={highlightAncestors}
+                  label="Highlight ancestors of hovered cell"
+                  onChange={handleHighlightAncestorChange}
+                />
+                <Checkbox
+                  checked={true}
+                  label="Show cell type force graph"
+                  onChange={() => {}}
+                  disabled
+                />
+                <Checkbox
+                  checked={true}
+                  label="Show sugiyama directed cyclic graph"
+                  onChange={() => {}}
+                  disabled
+                />
+                <h2> Graph overlays </h2>
+                <p>
+                  Show specific data on top of the graph to accomplish certain
+                  tasks
+                </p>
+                {/* <h4>Hulls</h4> */}
                 <Checkbox
                   checked={hullsEnabled}
                   label="Show hulls"
                   onChange={handleHullChange}
                 />
-                <h4>Node size</h4>
-                <h4>Force layout, radial or tree</h4>
-                <h4>Dataset</h4>
                 <Checkbox
                   checked={showTabulaSapiensDataset}
                   label="Show distribution of Tabula Sapiens cell types"
                   onChange={handleShowTabulaSapiensChange}
                 />
-                <h4>Highlight ancestors</h4>
-                <Checkbox
-                  checked={highlightAncestors}
-                  label="Show ancestors on hover"
-                  onChange={handleHighlightAncestorChange}
-                />
-                <h4>Automatic highlighting</h4>
+                <h4>Node size</h4>
+                <h4>Force layout, radial or tree</h4>
                 <p>Show descendants, show ancestors</p>
-                <h2> Graph filtering & subsetting </h2>
-                <h4>Organism</h4>
+                <h2> Cell type filtering & subsetting </h2>
                 <p>
                   You can subset to a contiguous sugraph by clicking any node
-                  and clicking subset
+                  and clicking subset. Click any cell type
                 </p>
+                <h4>Organism</h4>
                 <Checkbox
                   checked={true}
-                  label="Remove mouse nodes"
+                  label="Remove mouse cell types"
                   onChange={() => {}}
                   disabled
                 />
                 <Checkbox
                   checked={true}
-                  label="Remove fungal nodes"
+                  label="Remove fungal cell types"
                   onChange={() => {}}
                   disabled
                 />
-                <h4>Naive substring subset</h4>
-                <p></p>
                 <h4>Colors</h4>
                 Hover, click,
                 <h4>Link pruning</h4>
                 <p>{`Sometimes, links from parents to subchildren are helpful for tightening up highly related areas of the graph, in the case of x-->y-->z, this would be links between x and z. Other times, like from animal cell to thousands of descendants, this is undesireable and these nodes should be pruned. Setting this as a threshold facilitates both.`}</p>
               </div>
             </div>
-            <div className={Classes.DRAWER_FOOTER}>Footer</div>
+            <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
           </Drawer>
           <Button>Compartment</Button>
           <Button icon="settings" onClick={this.handleOpen} />
@@ -250,3 +271,5 @@ export default OntologyExplorer;
 // <p>Ways to make the graph cleaner</p>
 // <p>Some guidance</p>
 // <p>What you can do with this</p>
+
+/* <h4>Naive substring subset</h4> */

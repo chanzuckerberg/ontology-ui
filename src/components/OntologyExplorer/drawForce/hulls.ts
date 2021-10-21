@@ -103,8 +103,8 @@ const drawHull = (
     /**
      * Hull border
      */
-    context.lineWidth = 1;
-    context.strokeStyle = hullBorderColor;
+    context.lineWidth = 0;
+    context.strokeStyle = hullColor;
     context.stroke();
 
     /**
