@@ -42,7 +42,8 @@ interface IState {
   isSubset: boolean;
   redrawCanvas: any /* function to force render canvas */;
   simulationRunning: boolean;
-  outdegreeCutoffNodes: number /* max descendants */;
+  minimumOutdegree: number /* max descendants */;
+  maximumOutdegree: number;
   outdegreeCutoffXYZ: number /* max descendants */;
   filteredOutNodes: string[];
   hullsEnabled: boolean;
@@ -61,7 +62,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       nodes: null,
       links: null,
       sugiyamaStratifyData: null,
-      scaleFactor: 0.8,
+      scaleFactor: 0.09,
       translateCenter: -350,
       hoverNode: null,
       pinnedNode: null,
@@ -73,16 +74,17 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      outdegreeCutoffNodes: 3, // for filter nodes
+      minimumOutdegree: 1, // for filter nodes
+      maximumOutdegree: 50,
       outdegreeCutoffXYZ: 3,
       filteredOutNodes: [],
       hullsEnabled: false,
       maxRenderCounter: 1,
-      sugiyamaRenderThreshold: 100,
-      forceCanvasWidth: 1000,
-      forceCanvasHeight: 1000,
+      sugiyamaRenderThreshold: 49,
+      forceCanvasWidth: 850,
+      forceCanvasHeight: 850,
       cardWidth: 350,
-      cardHeight: 1000, // 850 default, 2000 full
+      cardHeight: 850, // 850 default, 2000 full
       menubarHeight: 50,
       showTabulaSapiensDataset: false,
     };
@@ -96,7 +98,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
   createDag = (subtreeRootID?: string) => {
     const { ontology } = this.props;
-    const { outdegreeCutoffNodes, outdegreeCutoffXYZ } = this.state;
+    const { minimumOutdegree, maximumOutdegree, outdegreeCutoffXYZ } =
+      this.state;
 
     /**
      * Choose which nodes to show, given a root, recursively grab get all descendants
@@ -161,13 +164,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         id === "CL:0000003"; // native cell
 
       if (
-        // v.descendants.length > outdegreeCutoffNodes || // more than n descendants ... sometimes we want to remove the nodes, sometimes we want to xyz the links
-        v.descendants.length < outdegreeCutoffNodes || // remove nodes with less than n descendants ... sometimes we want to start at cell and show the big stuff only
+        v.descendants.length > maximumOutdegree || // more than n descendants ... sometimes we want to remove the nodes, sometimes we want to xyz the links
+        v.descendants.length < minimumOutdegree || // remove nodes with less than n descendants ... sometimes we want to start at cell and show the big stuff only
         // v.descendants.length === 0 || // zero descendants
-        nonhuman ||
-        bigTroublesomeMetadataCells
-
-        // !v.label.includes("kidney") // limit to b cell subset
+        nonhuman
+        // bigTroublesomeMetadataCells
       ) {
         filteredOutNodes.push(id);
       }
@@ -189,64 +190,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       );
       this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
     }
-  };
-
-  setHoverNode = (hoverNode: any) => {
-    this.setState({ hoverNode });
-  };
-  setPinnedNode = (pinnedNode: any) => {
-    this.setState({ pinnedNode });
-  };
-
-  setCompartment = (compartmentID: string) => {
-    const { maxRenderCounter } = this.state;
-
-    this.setState({
-      compartment: compartmentID,
-      maxRenderCounter: maxRenderCounter + 1,
-    });
-  };
-
-  subsetToNode = () => {
-    const { pinnedNode, maxRenderCounter } = this.state;
-    console.log(pinnedNode);
-    this.setState({
-      subtreeRootID: pinnedNode.id,
-      isSubset: true,
-      maxRenderCounter: maxRenderCounter + 1,
-    });
-    this.createDag(pinnedNode.id);
-  };
-
-  resetSubset = () => {
-    const { maxRenderCounter } = this.state;
-
-    this.setState({
-      pinnedNode: null,
-      subtreeRootID: null,
-      isSubset: false,
-      maxRenderCounter: maxRenderCounter + 1,
-    });
-    this.createDag();
-  };
-
-  incrementRenderCounter = () => {
-    let { canvasRenderCounter } = this.state;
-    this.setState({ canvasRenderCounter: (canvasRenderCounter += 1) });
-  };
-
-  onForceSimulationEnd = () => {
-    this.setState({ simulationRunning: false });
-  };
-
-  handleOutdegreeCutoffChange = (e: any) => {
-    const { maxRenderCounter } = this.state;
-    console.log("e.target", e.target.value);
-    this.setState({
-      outdegreeCutoffNodes: e.target.value,
-      maxRenderCounter: maxRenderCounter + 1,
-    });
-    this.createDag();
   };
 
   initializeCanvasRenderer = (
@@ -298,42 +241,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     this.setState({ redrawCanvas, simulationRunning: true });
   };
 
-  /**
-   * @param e is a react syntheticevent type, todo
-   */
-  handleDagSearchChange = (e: any) => {
-    const { redrawCanvas } = this.state;
-    this.setState({
-      dagSearchText: e.target.value,
-    });
-    if (redrawCanvas) {
-      redrawCanvas(e.target.value);
-    }
-  };
-
-  handleHullChange = (e: any) => {
-    const { hullsEnabled, maxRenderCounter } = this.state;
-    this.setState({
-      hullsEnabled: !hullsEnabled,
-      maxRenderCounter: maxRenderCounter + 1,
-    });
-  };
-
-  handleHighlightAncestorChange = (e: any) => {
-    const { highlightAncestors, maxRenderCounter } = this.state;
-    this.setState({
-      highlightAncestors: !highlightAncestors,
-      maxRenderCounter: maxRenderCounter + 1,
-    });
-  };
-  handleShowTabulaSapiensChange = (e: any) => {
-    const { showTabulaSapiensDataset, maxRenderCounter } = this.state;
-    this.setState({
-      showTabulaSapiensDataset: !showTabulaSapiensDataset,
-      maxRenderCounter: maxRenderCounter + 1,
-    });
-  };
-
   render() {
     const { ontology, ontologyName, lattice, uberon } = this.props;
     const {
@@ -353,7 +260,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       cardHeight,
       menubarHeight,
       isSubset,
-      outdegreeCutoffNodes,
+      minimumOutdegree,
       hullsEnabled,
       highlightAncestors,
       showTabulaSapiensDataset,
@@ -367,11 +274,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           simulationRunning={simulationRunning}
           menubarHeight={menubarHeight}
           isSubset={isSubset}
-          outdegreeCutoffNodes={outdegreeCutoffNodes}
+          outdegreeCutoffNodes={minimumOutdegree}
           uberon={uberon}
           handleDagSearchChange={this.handleDagSearchChange}
           subsetToNode={this.subsetToNode}
-          handleOutdegreeCutoffChange={this.handleOutdegreeCutoffChange}
+          handleMinOutdegreeChange={this.handleMinOutdegreeChange}
           resetSubset={this.resetSubset}
           setCompartment={this.setCompartment}
           hullsEnabled={hullsEnabled}
@@ -380,6 +287,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           handleHighlightAncestorChange={this.handleHighlightAncestorChange}
           showTabulaSapiensDataset={showTabulaSapiensDataset}
           handleShowTabulaSapiensChange={this.handleShowTabulaSapiensChange}
+          minimumOutdegree={minimumOutdegree + ""}
         />
         <div id="horizontalScroll">
           <div
@@ -432,7 +340,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               top: menubarHeight,
               left: cardWidth,
               cursor: "crosshair",
-              // border: "1px solid green",
+              border: "1px solid green",
             }}
             width={forceCanvasWidth}
             height={forceCanvasHeight}
@@ -460,6 +368,98 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       </div>
     );
   }
+
+  /**
+   * @param e is a react syntheticevent type, todo
+   */
+  handleDagSearchChange = (e: any) => {
+    const { redrawCanvas } = this.state;
+    this.setState({
+      dagSearchText: e.target.value,
+    });
+    if (redrawCanvas) {
+      redrawCanvas(e.target.value);
+    }
+  };
+
+  handleHullChange = (e: any) => {
+    const { hullsEnabled, maxRenderCounter } = this.state;
+    this.setState({
+      hullsEnabled: !hullsEnabled,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+  };
+
+  handleHighlightAncestorChange = (e: any) => {
+    const { highlightAncestors, maxRenderCounter } = this.state;
+    this.setState({
+      highlightAncestors: !highlightAncestors,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+  };
+  handleShowTabulaSapiensChange = (e: any) => {
+    const { showTabulaSapiensDataset, maxRenderCounter } = this.state;
+    this.setState({
+      showTabulaSapiensDataset: !showTabulaSapiensDataset,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+  };
+  setHoverNode = (hoverNode: any) => {
+    this.setState({ hoverNode });
+  };
+  setPinnedNode = (pinnedNode: any) => {
+    this.setState({ pinnedNode });
+  };
+
+  setCompartment = (compartmentID: string) => {
+    const { maxRenderCounter } = this.state;
+
+    this.setState({
+      compartment: compartmentID,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+  };
+
+  subsetToNode = () => {
+    const { pinnedNode, maxRenderCounter } = this.state;
+    this.setState({
+      subtreeRootID: pinnedNode.id,
+      isSubset: true,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+    this.createDag(pinnedNode.id);
+  };
+
+  resetSubset = () => {
+    const { maxRenderCounter } = this.state;
+
+    this.setState({
+      pinnedNode: null,
+      subtreeRootID: null,
+      isSubset: false,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+    this.createDag();
+  };
+
+  incrementRenderCounter = () => {
+    let { canvasRenderCounter } = this.state;
+    this.setState({ canvasRenderCounter: (canvasRenderCounter += 1) });
+  };
+
+  onForceSimulationEnd = () => {
+    this.setState({ simulationRunning: false });
+  };
+
+  handleMinOutdegreeChange = (e: any) => {
+    const { maxRenderCounter } = this.state;
+
+    this.setState({
+      minimumOutdegree: +e.target.value,
+      maxRenderCounter: maxRenderCounter + 1,
+    });
+    this.createDag();
+  };
 }
 
 export default OntologyExplorer;
