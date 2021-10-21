@@ -135,8 +135,6 @@ class Sugiyama extends React.Component<IProps, IState> {
     if (!dag || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio)
       return null;
 
-    console.log("dag", dag.links());
-
     const createLine = line()
       .curve(curveCatmullRom)
       .x((d: any) => d.x * scaleMultiplier)
