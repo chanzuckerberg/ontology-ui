@@ -41,15 +41,6 @@ export const drawForceDag = (
   showTabulaSapiensDataset: boolean
 ) => {
   /**
-   * Debug logging to check sapiens contents
-   */
-  // tabulaSapiensCelltypes.forEach((celltypeid) => {
-  //   const __vertex: any = ontology.get(celltypeid);
-  //   console.log("celltype: ", __vertex.label, __vertex.descendants.length);
-  // });
-  // console.log("lattice", _latticeCL, compartment);
-
-  /**
    * Let parent component know we rendered
    */
   incrementRenderCounter();
@@ -58,6 +49,8 @@ export const drawForceDag = (
    */
   const canvas: any = select(dagCanvasRef.current);
   const context: any = dagCanvasRef.current!.getContext("2d"); //.context2d(width, height);
+  const boundingRect = dagCanvasRef.current.getBoundingClientRect();
+  const dpr = window.devicePixelRatio;
 
   /**
    * Hover state
@@ -96,6 +89,11 @@ export const drawForceDag = (
     "CL:0000094",
     "CL:0000100",
     "CL:0001035",
+    "CL:0001065",
+    "CL:0000786",
+    "CL:1000854",
+    "CL:0000235",
+    "CL:0000210",
   ];
 
   /**
@@ -107,7 +105,7 @@ export const drawForceDag = (
    */
   const nodeColor = "rgba(170,170,170,1)";
   const nodeStrokeColor = "white";
-  const hoverStrokeColor = "black";
+  const hoverStrokeColor = "red";
   const hoverNodeDescendantColor = "pink";
   const hoverNodeAncestorColor = "red";
   const clickedNodeColor = "black";
@@ -147,16 +145,16 @@ export const drawForceDag = (
         .strength(1)
     )
     .force("charge", forceManyBody().strength(-50))
-    .force("x", forceX(width / 2))
-    .force("y", forceY(height / 2));
-
-  let resized = false;
+    .force("x", forceX(dagCanvasRef.current.clientWidth)) //(width * dpr) / 2))
+    .force("y", forceY(dagCanvasRef.current.clientHeight)); //(height * dpr) / 2));
 
   /**
    * Animation frame
    */
   const ticked = (searchString?: string) => {
     if (context) {
+      context.save();
+
       /**
        * Clear
        */
@@ -165,14 +163,16 @@ export const drawForceDag = (
       /**
        * Scale up or down depending on number of nodes
        */
-      // const dpr = window.devicePixelRatio;
 
-      // if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-      // if (!resized) {
-      //   context.translate(125, 125);
-      //   context.scale(0., 0.7);
-      //   resized = true;
-      // }
+      if (
+        boundingRect.width !== dagCanvasRef.current.clientWidth * dpr ||
+        boundingRect.height !== dagCanvasRef.current.clientHeight * dpr
+      ) {
+        context.scale(dpr, dpr);
+        context.scale(dpr * scaleFactor, dpr * scaleFactor);
+      }
+
+      // 		renderer.setSize( width, height, false );
 
       /**
        * Draw links
@@ -347,6 +347,8 @@ export const drawForceDag = (
           );
         }
       }
+
+      context.restore();
     }
   };
 
@@ -387,15 +389,18 @@ export const drawForceDag = (
   simulation.on("tick", ticked);
   simulation.on("end", onForceSimulationEnd);
 
-  var boundingRect = dagCanvasRef.current.getBoundingClientRect();
-
   // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
   canvas.on("mousemove", (event: any) => {
+    const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
+    const zeroY = event.clientY - boundingRect.top;
+    const makeBigX = (zeroX * dpr) / scaleFactor; // scale for retina
+    const makeBigY = (zeroY * dpr) / scaleFactor;
+
     // if we manage ticked() from above, this could be hoisted to the react context
-    hoverNode = simulation.find(
-      event.clientX - boundingRect.left,
-      event.clientY - boundingRect.top
-    );
+    // context.scale(dpr, dpr);
+    // context.translate(offset, offset);
+    // context.scale(dpr * scaleFactor, dpr * scaleFactor);
+    hoverNode = simulation.find(makeBigX, makeBigY);
     setHoverNode(hoverNode);
     ticked();
   });
