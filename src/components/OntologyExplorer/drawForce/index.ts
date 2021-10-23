@@ -96,6 +96,8 @@ export const drawForceDag = (
     "CL:0000094",
     "CL:0000100",
     "CL:0001035",
+    "CL:0001065",
+    "CL:0000159",
   ];
 
   /**
@@ -126,9 +128,25 @@ export const drawForceDag = (
     /**
      * circular layout, if xyz nodes included
      */
+    .force(
+      "link",
+      forceLink(links).id((d: any) => d.id)
+    )
+    .force("charge", forceManyBody())
+    // we are disjoint because we're disconnecting the dag to get territories
+    // https://observablehq.com/@d3/disjoint-force-directed-graph
+    .force("x", forceX(width / 2))
+    .force("y", forceY(height / 2));
+
+  /**
+   * Tree layout, if xyz nodes excluded
+   */
     // .force(
     //   "link",
-    //   forceLink(links).id((d: any) => d.id)
+  //   forceLink(links)
+  //     .id((d: any) => d.id)
+  //     .distance(0)
+  //     .strength(1)
     // )
     // .force("charge", forceManyBody())
     // // we are disjoint because we're disconnecting the dag to get territories
