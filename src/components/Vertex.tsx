@@ -93,7 +93,8 @@ class Vertex extends React.Component<IProps, IState> {
 
         <h3> Descendents </h3>
         <ol>
-          {vertex.descendants.map((descendant: string) => {
+          {vertex.descendants.map((descendant: string, i: number) => {
+            if (i > 100) return;
             const _d: any = ontology.get(descendant);
             return (
               <li key={descendant}>
