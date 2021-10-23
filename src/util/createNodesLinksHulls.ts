@@ -6,6 +6,7 @@ export const createNodesLinksHulls = (
   ontology: IOntology,
   nodesToFilter: string[],
   outdegreeCutoff: number,
+  doCreateSugiyamaDatastructure: boolean,
   subtree?: string[]
 ) => {
   const nodes: any = [];
@@ -29,14 +30,14 @@ export const createNodesLinksHulls = (
         });
       });
 
-      if (subtree) {
+      if (subtree && doCreateSugiyamaDatastructure) {
         sugiyamaStratifyData.push({
           id: vertexID,
           parentIds: vertex.ancestors.filter((a: string) => {
             return !nodesToFilter.includes(a) && subtree.includes(a); // if it's NOT filtered out and it IS in the subtree, assuming we have one
           }),
         });
-      } else {
+      } else if (doCreateSugiyamaDatastructure) {
         sugiyamaStratifyData.push({
           id: vertexID,
           parentIds: vertex.ancestors.filter((a: string) => {
