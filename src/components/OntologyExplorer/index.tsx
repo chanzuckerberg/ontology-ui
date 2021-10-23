@@ -53,6 +53,7 @@ interface IState {
   cardHeight: number;
   menubarHeight: number;
   showTabulaSapiensDataset: boolean;
+  doCreateSugiyamaDatastructure: boolean;
 }
 
 class OntologyExplorer extends React.Component<IProps, IState> {
@@ -74,19 +75,20 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      minimumOutdegree: 1, // for filter nodes
-      maximumOutdegree: 50,
-      outdegreeCutoffXYZ: 3,
+      minimumOutdegree: 3, // for filter nodes
+      maximumOutdegree: 1000000,
+      outdegreeCutoffXYZ: 0,
       filteredOutNodes: [],
       hullsEnabled: false,
       maxRenderCounter: 1,
-      sugiyamaRenderThreshold: 49,
-      forceCanvasWidth: 850,
-      forceCanvasHeight: 850,
+      sugiyamaRenderThreshold: 100,
+      forceCanvasWidth: 2000,
+      forceCanvasHeight: 2000,
       cardWidth: 350,
-      cardHeight: 850, // 850 default, 2000 full
+      cardHeight: 2000, // 850 default, 2000 full
       menubarHeight: 50,
       showTabulaSapiensDataset: false,
+      doCreateSugiyamaDatastructure: true,
     };
   }
 
@@ -98,8 +100,12 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
   createDag = (subtreeRootID?: string) => {
     const { ontology } = this.props;
-    const { minimumOutdegree, maximumOutdegree, outdegreeCutoffXYZ } =
-      this.state;
+    const {
+      minimumOutdegree,
+      maximumOutdegree,
+      outdegreeCutoffXYZ,
+      doCreateSugiyamaDatastructure,
+    } = this.state;
 
     /**
      * Choose which nodes to show, given a root, recursively grab get all descendants
@@ -179,6 +185,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         ontology,
         filteredOutNodes, // get rid of stuff!
         outdegreeCutoffXYZ,
+        doCreateSugiyamaDatastructure,
         uniqueSubtreeFromRootNode // include only this stuff!
       );
       this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
@@ -186,7 +193,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
         ontology,
         filteredOutNodes, // get rid of stuff!
-        outdegreeCutoffXYZ // remove xyz
+        outdegreeCutoffXYZ, // remove xyz
+        doCreateSugiyamaDatastructure
       );
       this.setState({ nodes, links, filteredOutNodes, sugiyamaStratifyData });
     }
@@ -340,7 +348,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               top: menubarHeight,
               left: cardWidth,
               cursor: "crosshair",
-              border: "1px solid green",
+              // border: "1px solid green",
             }}
             width={forceCanvasWidth}
             height={forceCanvasHeight}
