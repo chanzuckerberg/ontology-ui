@@ -272,6 +272,25 @@ class OntologyExplorer extends React.Component<IProps, IState> {
                 <Radio label="Radial" value="radial" />
                 <Radio label="Tree" value="tree" />
               </RadioGroup>
+              {uberon &&
+                majorCompartments.map((compartmentID: string) => {
+                  const _compartment: any = uberon.get(compartmentID);
+                  if (_compartment && _compartment.label) {
+                    return (
+                      <Button
+                        key={compartmentID}
+                        onClick={() => {
+                          setCompartment(compartmentID);
+                        }}
+                        type="button"
+                      >
+                        {_compartment.label}
+                      </Button>
+                    );
+                  } else {
+                    return null;
+                  }
+                })}
               <h4>Colors</h4>
               Hover, click,
               <h4>Link pruning</h4>
@@ -292,25 +311,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
 export default OntologyExplorer;
 
-// {uberon &&
-// majorCompartments.map((compartmentID: string) => {
-//   const _compartment: any = uberon.get(compartmentID);
-//   if (_compartment && _compartment.label) {
-//     return (
-//       <Button
-//         key={compartmentID}
-//         onClick={() => {
-//           setCompartment(compartmentID);
-//         }}
-//         type="button"
-//       >
-//         {_compartment.label}
-//       </Button>
-//     );
-//   } else {
-//     return null;
-//   }
-// })}
 // <p>
 // <strong>Hooking up live data</strong>
 // </p>
