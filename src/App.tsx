@@ -127,7 +127,7 @@ class App extends React.Component<IProps, IState> {
                 }}
               />
               <Route
-                path="/compartment/dag"
+                path="/compartment/ontology"
                 render={({ match }) => {
                   return (
                     <Dag
