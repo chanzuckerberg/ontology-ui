@@ -18,6 +18,7 @@ interface IState {
   nodes: any;
   links: any;
   outdegreeCutoff: number;
+  doCreateSugiyamaDatastructure: boolean;
 }
 
 class ThreeOntology extends React.Component<IProps, IState> {
@@ -27,12 +28,13 @@ class ThreeOntology extends React.Component<IProps, IState> {
       nodes: null,
       links: null,
       outdegreeCutoff: 250,
+      doCreateSugiyamaDatastructure: false,
     };
   }
   private threeRef = createRef<HTMLDivElement>();
   componentDidMount() {
     const { ontology } = this.props;
-    const { outdegreeCutoff } = this.state;
+    const { outdegreeCutoff, doCreateSugiyamaDatastructure } = this.state;
 
     /**
      * this could be broken out, as a feature, as:
@@ -61,7 +63,8 @@ class ThreeOntology extends React.Component<IProps, IState> {
     const { nodes, links } = createNodesLinksHulls(
       ontology,
       filteredNodes, // filter
-      outdegreeCutoff
+      outdegreeCutoff,
+      doCreateSugiyamaDatastructure
     );
     this.setState({ nodes, links });
   }
