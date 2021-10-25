@@ -58,11 +58,12 @@ interface IState {
 class OntologyExplorer extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
+
     this.state = {
       nodes: null,
       links: null,
       sugiyamaStratifyData: null,
-      scaleFactor: 0.09,
+      scaleFactor: 0.165,
       translateCenter: -350,
       hoverNode: null,
       pinnedNode: null,
@@ -74,9 +75,9 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      minimumOutdegree: 1, // for filter nodes
-      maximumOutdegree: 50,
-      outdegreeCutoffXYZ: 3,
+      minimumOutdegree: 3, // for filter nodes
+      maximumOutdegree: 100000,
+      outdegreeCutoffXYZ: 50,
       filteredOutNodes: [],
       hullsEnabled: false,
       maxRenderCounter: 1,
@@ -341,9 +342,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               left: cardWidth,
               cursor: "crosshair",
               border: "1px solid green",
+              width: forceCanvasWidth,
+              height: forceCanvasHeight,
             }}
-            width={forceCanvasWidth}
-            height={forceCanvasHeight}
+            width={forceCanvasWidth * 2}
+            height={forceCanvasHeight * 2}
             ref={this.dagCanvasRef}
           />
           {/**

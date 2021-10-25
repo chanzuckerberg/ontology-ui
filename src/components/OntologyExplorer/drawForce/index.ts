@@ -124,55 +124,48 @@ export const drawForceDag = (
     /**
      * circular layout, if xyz nodes included
      */
-    // .force(
-    //   "link",
-    //   forceLink(links).id((d: any) => d.id)
-    // )
-    // .force("charge", forceManyBody())
-    // // we are disjoint because we're disconnecting the dag to get territories
-    // // https://observablehq.com/@d3/disjoint-force-directed-graph
-    // .force("x", forceX(width / 2))
-    // .force("y", forceY(height / 2));
-
-    /**
-     * Tree layout, if xyz nodes excluded
-     */
     .force(
       "link",
-      forceLink(links)
-        .id((d: any) => d.id)
-        .distance(0)
-        .strength(1)
+      forceLink(links).id((d: any) => d.id)
     )
-    .force("charge", forceManyBody().strength(-50))
-    .force("x", forceX(dagCanvasRef.current.clientWidth)) //(width * dpr) / 2))
-    .force("y", forceY(dagCanvasRef.current.clientHeight)); //(height * dpr) / 2));
+    .force("charge", forceManyBody())
+    // we are disjoint because we're disconnecting the dag to get territories
+    // https://observablehq.com/@d3/disjoint-force-directed-graph
+    .force("x", forceX((width * dpr) / 2))
+    .force("y", forceY((height * dpr) / 2));
+
+  /**
+   * Tree layout, if xyz nodes excluded
+   */
+  // .force(
+  //   "link",
+  //   forceLink(links)
+  //     .id((d: any) => d.id)
+  //     .distance(0)
+  //     .strength(1)
+  // )
+  // .force("charge", forceManyBody().strength(-50))
+  // .force("x", forceX((width * dpr) / 2)) //(width * dpr) / 2))
+  // .force("y", forceY((height * dpr) / 2)); //(height * dpr) / 2));
 
   /**
    * Animation frame
    */
   const ticked = (searchString?: string) => {
     if (context) {
-      context.save();
-
       /**
        * Clear
        */
-      context.clearRect(0, 0, width, height);
+      context.save();
+
+      context.clearRect(0, 0, width * dpr, height * dpr);
 
       /**
        * Scale up or down depending on number of nodes
        */
 
-      if (
-        boundingRect.width !== dagCanvasRef.current.clientWidth * dpr ||
-        boundingRect.height !== dagCanvasRef.current.clientHeight * dpr
-      ) {
-        context.scale(dpr, dpr);
-        context.scale(dpr * scaleFactor, dpr * scaleFactor);
-      }
-
-      // 		renderer.setSize( width, height, false );
+      // context.scale(2, 2);
+      // context.translate(-width / 2, -height / 2);
 
       /**
        * Draw links
@@ -393,22 +386,16 @@ export const drawForceDag = (
   canvas.on("mousemove", (event: any) => {
     const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
     const zeroY = event.clientY - boundingRect.top;
-    const makeBigX = (zeroX * dpr) / scaleFactor; // scale for retina
-    const makeBigY = (zeroY * dpr) / scaleFactor;
 
-    // if we manage ticked() from above, this could be hoisted to the react context
-    // context.scale(dpr, dpr);
-    // context.translate(offset, offset);
-    // context.scale(dpr * scaleFactor, dpr * scaleFactor);
-    hoverNode = simulation.find(makeBigX, makeBigY);
+    hoverNode = simulation.find(zeroX * dpr, zeroY * dpr);
     setHoverNode(hoverNode);
     ticked();
   });
   canvas.on("click", (event: any) => {
-    clickNode = simulation.find(
-      event.clientX - boundingRect.left,
-      event.clientY - boundingRect.top
-    );
+    const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
+    const zeroY = event.clientY - boundingRect.top;
+
+    clickNode = simulation.find(zeroX * dpr, zeroY * dpr);
     setPinnedNode(clickNode);
     ticked();
   });
