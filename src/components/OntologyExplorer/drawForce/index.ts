@@ -141,32 +141,18 @@ export const drawForceDag = (
   /**
    * Tree layout, if xyz nodes excluded
    */
-    // .force(
-    //   "link",
+  // .force(
+  //   "link",
   //   forceLink(links)
   //     .id((d: any) => d.id)
   //     .distance(0)
   //     .strength(1)
-    // )
-    // .force("charge", forceManyBody())
-    // // we are disjoint because we're disconnecting the dag to get territories
-    // // https://observablehq.com/@d3/disjoint-force-directed-graph
-    // .force("x", forceX(width / 2))
-    // .force("y", forceY(height / 2));
-
-    /**
-     * Tree layout, if xyz nodes excluded
-     */
-    .force(
-      "link",
-      forceLink(links)
-        .id((d: any) => d.id)
-        .distance(0)
-        .strength(1)
-    )
-    .force("charge", forceManyBody().strength(-50))
-    .force("x", forceX(width / 2))
-    .force("y", forceY(height / 2));
+  // )
+  // .force("charge", forceManyBody())
+  // // we are disjoint because we're disconnecting the dag to get territories
+  // // https://observablehq.com/@d3/disjoint-force-directed-graph
+  // .force("x", forceX(width / 2))
+  // .force("y", forceY(height / 2));
 
   let resized = false;
 
