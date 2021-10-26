@@ -23,9 +23,10 @@ import {
   InputGroup,
   Checkbox,
 } from "@blueprintjs/core";
+import { OntologyVertexDatum } from ".";
 
 interface IProps {
-  pinnedNode: IVertex;
+  pinnedNode: OntologyVertexDatum | undefined;
   dagSearchText: string;
   simulationRunning: boolean;
   menubarHeight: number;

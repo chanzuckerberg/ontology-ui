@@ -8,6 +8,7 @@ import {
 } from "d3-force";
 
 import { select } from "d3-selection";
+
 import { interpolateSinebow } from "d3-scale-chromatic";
 
 import { OntologyVertexDatum } from "..";
@@ -16,6 +17,7 @@ import { IOntology } from "../../../d";
 import { drawHulls } from "./hulls";
 
 import { tabulaSapiensCelltypes } from "../../../tabulaSapiensCelltypes";
+import React from "react";
 
 /**
  * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas
@@ -28,10 +30,10 @@ export const drawForceDag = (
   height: number,
   scaleFactor: number,
   translateCenter: number,
-  dagCanvasRef: any,
+  dagCanvasRef: React.RefObject<HTMLCanvasElement>,
   ontology: IOntology,
-  setHoverNode: any,
-  setPinnedNode: any,
+  setHoverNode: (node: OntologyVertexDatum | undefined) => void,
+  setPinnedNode: (node: OntologyVertexDatum | undefined) => void,
   incrementRenderCounter: any,
   onForceSimulationEnd: any,
   hullsTurnedOn: boolean,
@@ -44,23 +46,24 @@ export const drawForceDag = (
    * Let parent component know we rendered
    */
   incrementRenderCounter();
+  if (!dagCanvasRef || !dagCanvasRef.current) return null;
   /**
    * DOM element
    */
-  const canvas: any = select(dagCanvasRef.current);
-  const context: any = dagCanvasRef.current!.getContext("2d"); //.context2d(width, height);
+  const canvas = select(dagCanvasRef.current);
+  const context = dagCanvasRef.current!.getContext("2d"); //.context2d(width, height);
   const boundingRect = dagCanvasRef.current.getBoundingClientRect();
   const dpr = window.devicePixelRatio;
 
   /**
    * Hover state
    */
-  let hoverNode: any = null;
+  let hoverNode: OntologyVertexDatum | undefined;
 
   /**
    * Click state
    */
-  let clickNode: any = null;
+  let clickNode: OntologyVertexDatum | undefined;
 
   /**
    * Hull root vertices
@@ -270,6 +273,14 @@ export const drawForceDag = (
             if (vertex && vertex.label && typeof vertex.label === "string") {
               context.fillStyle = tooltipColor;
               context.font = "18px serif";
+
+              if (typeof node.x !== "number" || typeof node.y !== "number") {
+                console.log(
+                  "in drawForceDag/ticked: while attempting to context.fillText, node.x or node.y was not a number"
+                );
+                return;
+              }
+
               context.fillText(
                 `${vertex.label.substring(0, 10)}`,
                 node.x,
@@ -383,7 +394,7 @@ export const drawForceDag = (
   simulation.on("end", onForceSimulationEnd);
 
   // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
-  canvas.on("mousemove", (event: any) => {
+  canvas.on("mousemove", (event: MouseEvent) => {
     const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
     const zeroY = event.clientY - boundingRect.top;
 
@@ -391,7 +402,7 @@ export const drawForceDag = (
     setHoverNode(hoverNode);
     ticked();
   });
-  canvas.on("click", (event: any) => {
+  canvas.on("click", (event: MouseEvent) => {
     const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
     const zeroY = event.clientY - boundingRect.top;
 

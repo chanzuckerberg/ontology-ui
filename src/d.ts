@@ -1,5 +1,7 @@
 // This is the entire CL ontology converted to JavaScript map type
-export interface IOntology extends Map<string, IVertex | unknown | object> {}
+export type IOntology = Map<string, IVertex>;
+
+export type ILatticeOntology = Map<string, ILatticeTerm>;
 
 export interface ILatticeTerm {
   name: string;
@@ -8,12 +10,10 @@ export interface ILatticeTerm {
 }
 
 export interface IVertex {
-  [key: string]: {
-    label: string;
-    deprecated: boolean;
-    ancestors: string[];
-    descendants: string[];
-  };
+  label: string;
+  deprecated: boolean;
+  ancestors: string[];
+  descendants: string[];
 }
 
 export interface IEBITerm {

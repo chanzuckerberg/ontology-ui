@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import fetchEBITerm from "../util/fetchEBITerm";
 import { IEBITerm, IEBITermAPIResponse, ILatticeTerm } from "../d";
 
+import { IOntology } from "../d";
+
 interface IProps {
   ontologyName: string;
-  ontology: any;
+  ontology: IOntology;
   lattice: any;
   vertex: any;
   vertexID: string;
@@ -94,8 +96,13 @@ class Vertex extends React.Component<IProps, IState> {
         <h3> Descendents </h3>
         <ol>
           {vertex.descendants.map((descendant: string, i: number) => {
-            if (i > 100) return;
-            const _d: any = ontology.get(descendant);
+            const _d = ontology.get(descendant);
+            if (!_d || !_d.label) {
+              console.log(
+                "In vertex.tsx, while rendering descendents, ontology.get failed to return a vertex, possible bad ID"
+              );
+              return;
+            }
             return (
               <li key={descendant}>
                 <Link to={descendant}> {_d.label} </Link>

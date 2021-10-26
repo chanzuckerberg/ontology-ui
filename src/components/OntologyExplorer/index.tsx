@@ -9,19 +9,19 @@ import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
 
-import { IOntology } from "../../d";
+import { ILatticeOntology, IOntology } from "../../d";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
-  id: "string";
+  id: string;
   ancestorCount: number;
   descendantCount: number;
 }
 
 interface IProps {
   ontologyName: string;
-  ontology: Map<string, unknown | object>;
-  lattice: null | IOntology;
-  uberon: null | IOntology;
+  ontology: IOntology;
+  lattice: ILatticeOntology;
+  uberon: IOntology;
 }
 
 interface IState {
@@ -32,8 +32,8 @@ interface IState {
   forceCanvasHeight: number;
   scaleFactor: number;
   translateCenter: number;
-  hoverNode: any /* from d3 force node hover */;
-  pinnedNode: any /* from d3 force node click */;
+  hoverNode: OntologyVertexDatum | undefined /* from d3 force node hover */;
+  pinnedNode: OntologyVertexDatum | undefined /* from d3 force node click */;
   highlightAncestors: boolean;
   compartment: string | null;
   canvasRenderCounter: number;
@@ -66,8 +66,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       sugiyamaStratifyData: null,
       scaleFactor: 0.165,
       translateCenter: -350,
-      hoverNode: null,
-      pinnedNode: null,
+      hoverNode: undefined,
+      pinnedNode: undefined,
       highlightAncestors: false,
       compartment: null,
       canvasRenderCounter: 0,
@@ -416,11 +416,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       maxRenderCounter: maxRenderCounter + 1,
     });
   };
-  setHoverNode = (hoverNode: any) => {
-    this.setState({ hoverNode });
+  setHoverNode = (node: OntologyVertexDatum | undefined) => {
+    this.setState({ hoverNode: node });
   };
-  setPinnedNode = (pinnedNode: any) => {
-    this.setState({ pinnedNode });
+  setPinnedNode = (node: OntologyVertexDatum | undefined) => {
+    this.setState({ pinnedNode: node });
   };
 
   setCompartment = (compartmentID: string) => {
@@ -434,6 +434,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
   subsetToNode = () => {
     const { pinnedNode, maxRenderCounter } = this.state;
+
+    if (!pinnedNode || !pinnedNode.id) {
+      console.log("in subsetToNode, there was no pinned node");
+      return null;
+    }
     this.setState({
       subtreeRootID: pinnedNode.id,
       isSubset: true,
@@ -446,7 +451,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     const { maxRenderCounter } = this.state;
 
     this.setState({
-      pinnedNode: null,
+      pinnedNode: undefined,
       subtreeRootID: null,
       isSubset: false,
       maxRenderCounter: maxRenderCounter + 1,
