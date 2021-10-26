@@ -76,7 +76,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       redrawCanvas: null,
       simulationRunning: false,
       minimumOutdegree: 3, // for filter nodes
-      maximumOutdegree: 100000,
+      maximumOutdegree: 12345,
       outdegreeCutoffXYZ: 50,
       filteredOutNodes: [],
       hullsEnabled: false,
@@ -262,6 +262,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       menubarHeight,
       isSubset,
       minimumOutdegree,
+      maximumOutdegree,
       hullsEnabled,
       highlightAncestors,
       showTabulaSapiensDataset,
@@ -289,6 +290,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           showTabulaSapiensDataset={showTabulaSapiensDataset}
           handleShowTabulaSapiensChange={this.handleShowTabulaSapiensChange}
           minimumOutdegree={minimumOutdegree + ""}
+          maximumOutdegree={maximumOutdegree + ""}
         />
         <div id="horizontalScroll">
           <div
@@ -341,12 +343,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               top: menubarHeight,
               left: cardWidth,
               cursor: "crosshair",
-              border: "1px solid green",
-              width: forceCanvasWidth,
+              width: forceCanvasWidth, // scale back down with css if we scaled up for retina
               height: forceCanvasHeight,
             }}
-            width={forceCanvasWidth * 2}
-            height={forceCanvasHeight * 2}
+            width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina
+            height={forceCanvasHeight * window.devicePixelRatio}
             ref={this.dagCanvasRef}
           />
           {/**

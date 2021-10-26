@@ -43,6 +43,7 @@ interface IProps {
   showTabulaSapiensDataset: boolean;
   handleShowTabulaSapiensChange: any;
   minimumOutdegree: string;
+  maximumOutdegree: string;
   handleMinOutdegreeChange: any;
 }
 
@@ -78,6 +79,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       showTabulaSapiensDataset,
       handleShowTabulaSapiensChange,
       minimumOutdegree,
+      maximumOutdegree,
       handleMinOutdegreeChange,
     } = this.props;
 
@@ -91,7 +93,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           // border: "1px solid lightblue",
           width: "100%",
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "flex-start",
           alignItems: "center",
           paddingLeft: 10,
           paddingRight: 10,
@@ -101,34 +103,35 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           style={{
             fontSize: 16,
             fontWeight: 900,
-            margin: 0,
-            marginRight: 10,
-            padding: 0,
+            position: "relative",
+            top: 5,
+            marginRight: 40,
           }}
         >
           cellxgene-ontology
         </p>
-        <InputGroup
-          type="text"
-          leftIcon="geosearch"
-          placeholder="cell type search"
-          disabled={simulationRunning}
-          style={{
-            fontSize: 14,
-            margin: 0,
-            marginRight: 10,
-          }}
-          onChange={(e) => {
-            handleDagSearchChange(e);
-          }}
-          value={simulationRunning ? "computing layout..." : dagSearchText}
-        />
+        <div style={{ marginRight: 20 }}>
+          <InputGroup
+            type="text"
+            leftIcon="geosearch"
+            placeholder="cell type search"
+            disabled={simulationRunning}
+            style={{
+              fontSize: 14,
+              marginRight: 20,
+            }}
+            onChange={(e) => {
+              handleDagSearchChange(e);
+            }}
+            value={simulationRunning ? "computing layout..." : dagSearchText}
+          />
+        </div>
 
         {pinnedNode && !isSubset && (
           <Button
             icon="pie-chart"
             onClick={subsetToNode}
-            style={{ marginRight: 10 }}
+            style={{ marginRight: 20 }}
           >
             subset to {pinnedNode.id}
           </Button>
@@ -137,7 +140,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           <Button
             icon="full-circle"
             onClick={resetSubset}
-            style={{ marginRight: 10 }}
+            style={{ marginRight: 20 }}
           >
             reset to whole
           </Button>
@@ -222,7 +225,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               />
               <h4>Minimum outdegree / prune edges</h4>
               <RadioGroup
-                label="Hide cell types with less than N descendants. Set to 1 to remove all terminal nodes in the tree. Set to 250 to remove all the small stuff, to get a  good look at the root of the tree."
+                label="Hide cell types with less than N descendants. Set to 1 to remove all terminal nodes in the tree. Set to 250 to remove all the small stuff, to get a good look at the root of the tree."
                 onChange={(e) => {
                   handleMinOutdegreeChange(e);
                 }}
@@ -246,6 +249,27 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               <RadioGroup
                 label="Hide cell types with more than N descendants. Set to 250 to remove highly connected cell types like 'electrically active cell' which has over 450 descendants. Set to 10 for lots of little disjoint graphs. 50 is a happy medium."
                 onChange={() => {}}
+                selectedValue={maximumOutdegree}
+                disabled
+              >
+                <Radio label="10" value={"10"} />
+                <Radio label="50" value={"50"} />
+                <Radio label="100" value={"100"} />
+                <Radio label="250" value={"250"} />
+                <Radio label="1000" value={"1000"} />
+                <Radio label="off" value={"12345"} />
+              </RadioGroup>
+              <Checkbox
+                checked={false}
+                label="Show aggregator nodes for max"
+                onChange={() => {}}
+                disabled
+              />
+              <h4>Link pruning</h4>
+
+              <RadioGroup
+                label="Sometimes, links from parents to subchildren are helpful for tightening up highly related areas of the graph, in the case of x-->y-->z, this would be links between x and z. Other times, like from animal cell to thousands of descendants, this is undesireable and these nodes should be pruned. Setting this as a threshold facilitates both."
+                onChange={() => {}}
                 selectedValue={12345}
                 disabled
               >
@@ -256,12 +280,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
                 <Radio label="1000" value={1000} />
                 <Radio label="off" value={12345} />
               </RadioGroup>
-              <Checkbox
-                checked={false}
-                label="Show aggregator nodes for max"
-                onChange={() => {}}
-                disabled
-              />
               <h2>Force layout</h2>
               <RadioGroup
                 label=""
@@ -272,16 +290,17 @@ class OntologyExplorer extends React.Component<IProps, IState> {
                 <Radio label="Radial" value="radial" />
                 <Radio label="Tree" value="tree" />
               </RadioGroup>
-              <h4>Colors</h4>
-              Hover, click,
-              <h4>Link pruning</h4>
-              <p>{`Sometimes, links from parents to subchildren are helpful for tightening up highly related areas of the graph, in the case of x-->y-->z, this would be links between x and z. Other times, like from animal cell to thousands of descendants, this is undesireable and these nodes should be pruned. Setting this as a threshold facilitates both.`}</p>
+              <h2>Colors</h2>
             </div>
           </div>
           <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
         </Drawer>
-        <Button>Compartment (c)</Button>
-        <Button icon="settings" onClick={this.handleOpen} />
+        <Button style={{ marginRight: 20 }}>Compartment (c)</Button>
+        <Button
+          style={{ marginRight: 20 }}
+          icon="settings"
+          onClick={this.handleOpen}
+        />
       </div>
     );
   }

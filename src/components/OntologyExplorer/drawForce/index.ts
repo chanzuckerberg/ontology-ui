@@ -307,7 +307,7 @@ export const drawForceDag = (
               node.y
             ) {
               context.fillStyle = tooltipColor;
-              context.font = "14px monospace";
+              context.font = "18px monospace";
               const _maxLength = 15;
               const _length = vertex.label.length;
               context.fillText(
