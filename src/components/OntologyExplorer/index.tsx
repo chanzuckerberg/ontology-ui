@@ -9,7 +9,7 @@ import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
 
-import { ILatticeOntology, IOntology } from "../../d";
+import { ILatticeOntology, IOntology, IVertex } from "../../d";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: string;
@@ -276,6 +276,12 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       showTabulaSapiensDataset,
     } = this.state;
 
+    const hoverVertex: IVertex | undefined =
+      hoverNode && ontology.get(hoverNode.id);
+
+    const pinnedVertex: IVertex | undefined =
+      pinnedNode && ontology.get(pinnedNode.id);
+
     return (
       <div id="ontologyExplorerContainer">
         <Controls
@@ -322,8 +328,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
                 <Vertex
                   ontologyName={ontologyName}
                   ontology={ontology}
-                  vertex={ontology.get(hoverNode.id)}
-                  vertexID={hoverNode.id}
+                  vertex={hoverVertex}
+                  vertexID={hoverNode && hoverNode.id}
                   lattice={lattice}
                 />
               )}
@@ -331,8 +337,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
                 <Vertex
                   ontologyName={ontologyName}
                   ontology={ontology}
-                  vertex={ontology.get(pinnedNode.id)}
-                  vertexID={pinnedNode.id}
+                  vertex={pinnedVertex}
+                  vertexID={pinnedNode && pinnedNode.id}
                   lattice={lattice}
                 />
               )}

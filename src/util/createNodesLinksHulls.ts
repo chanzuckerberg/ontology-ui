@@ -1,6 +1,8 @@
+import { NodeDatum } from "d3-dag/dist/sugiyama/utils";
 import { SimulationLinkDatum } from "d3-force";
+import { OntologyVertexDatum } from "../components/OntologyExplorer";
 
-import { IOntology } from "../d";
+import { IOntology, IVertex } from "../d";
 
 export const createNodesLinksHulls = (
   ontology: IOntology,
@@ -9,11 +11,11 @@ export const createNodesLinksHulls = (
   doCreateSugiyamaDatastructure: boolean,
   subtree?: string[]
 ) => {
-  const nodes: any = [];
-  const links: any = [];
-  const sugiyamaStratifyData: any = [];
+  const nodes: OntologyVertexDatum[] = [];
+  const links: { source: string; target: string }[] = [];
+  const sugiyamaStratifyData: { id: string; parentIds: string[] }[] = [];
 
-  ontology.forEach((vertex: any, vertexID: string) => {
+  ontology.forEach((vertex: IVertex, vertexID: string) => {
     /**
      * If there's a subtree, and the vertex exists in it, push it.
      */
@@ -54,9 +56,11 @@ export const createNodesLinksHulls = (
    * descendents
    */
 
-  const _nodes = nodes.filter((node: any) => {
-    return !nodesToFilter.includes(node.id);
-  });
+  const _nodes: OntologyVertexDatum[] = nodes.filter(
+    (node: OntologyVertexDatum) => {
+      return !nodesToFilter.includes(node.id);
+    }
+  );
 
   /**
    * remove specified links to filtered nodes...
@@ -80,15 +84,19 @@ export const createNodesLinksHulls = (
      * if a and b both have links to e, the condition is met, and same for b and c both having links to e
      * so this may be enough
      */
-    const parentVertex: any = ontology.get(l.source);
-    if (parentVertex.descendants.length > outdegreeCutoff)
+    const parentVertex: IVertex | undefined = ontology.get(l.source);
+    if (parentVertex && parentVertex.descendants.length > outdegreeCutoff)
       parentVertex.descendants.forEach((descendantID: string) => {
-        const descendantVertex: any = ontology.get(descendantID);
+        const descendantVertex: IVertex | undefined =
+          ontology.get(descendantID);
 
-        // check if these descendants have in their own descendants any of the members of parentVertex.descendants
+        // check if these descendants have in their own descendants members of parentVertex.descendants
         // if the descendants of the descendant include the target
         // that is, if y includes z, remove it
-        if (descendantVertex.descendants.includes(l.target)) {
+        if (
+          descendantVertex &&
+          descendantVertex.descendants.includes(l.target)
+        ) {
           keep = false;
         }
       });

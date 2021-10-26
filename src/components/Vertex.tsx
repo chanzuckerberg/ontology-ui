@@ -1,15 +1,20 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import fetchEBITerm from "../util/fetchEBITerm";
-import { IEBITerm, IEBITermAPIResponse, ILatticeTerm } from "../d";
-
-import { IOntology } from "../d";
+import {
+  IEBITerm,
+  IEBITermAPIResponse,
+  ILatticeOntology,
+  ILatticeTerm,
+  IOntology,
+  IVertex,
+} from "../d";
 
 interface IProps {
   ontologyName: string;
   ontology: IOntology;
-  lattice: any;
-  vertex: any;
+  lattice: ILatticeOntology;
+  vertex: IVertex | undefined;
   vertexID: string;
 }
 
@@ -63,7 +68,7 @@ class Vertex extends React.Component<IProps, IState> {
       term && term.annotation.definition && term.annotation.definition[0];
 
     /* UBERON compartment linkage, if present */
-    const _lattice: ILatticeTerm | any = lattice.get(vertexID);
+    const _lattice: ILatticeTerm | undefined = lattice.get(vertexID);
 
     let _filteredLattice: string[] | null = null;
 
@@ -75,7 +80,7 @@ class Vertex extends React.Component<IProps, IState> {
 
     return (
       <div>
-        <h1>{vertex.label}</h1>
+        <h1>{vertex && vertex.label}</h1>
         <p>{!term && "Loading..."}</p>
         <p>{term && definition}</p>
         <pre>{vertexID}</pre>
@@ -83,48 +88,58 @@ class Vertex extends React.Component<IProps, IState> {
         <h3> Ancestors </h3>
 
         <ol>
-          {vertex.ancestors.map((ancestor: string) => {
-            const _a: any = ontology.get(ancestor);
-            return (
-              <li key={ancestor}>
-                <Link to={ancestor}>{_a.label}</Link>
-              </li>
-            );
-          })}
+          {vertex &&
+            vertex.ancestors.map((ancestor: string) => {
+              const _a: IVertex | undefined = ontology.get(ancestor);
+              if (!_a || !_a.label) {
+                console.log(
+                  "In vertex.tsx, while rendering ancestors, ontology.get failed to return a vertex, possible bad ID"
+                );
+                return;
+              }
+              return (
+                <li key={ancestor}>
+                  <Link to={ancestor}>{_a.label}</Link>
+                </li>
+              );
+            })}
         </ol>
 
         <h3> Descendents </h3>
         <ol>
-          {vertex.descendants.map((descendant: string, i: number) => {
-            const _d = ontology.get(descendant);
-            if (!_d || !_d.label) {
-              console.log(
-                "In vertex.tsx, while rendering descendents, ontology.get failed to return a vertex, possible bad ID"
+          {vertex &&
+            vertex.descendants.map((descendant: string, i: number) => {
+              const _d = ontology.get(descendant);
+              if (!_d || !_d.label) {
+                console.log(
+                  "In vertex.tsx, while rendering descendents, ontology.get failed to return a vertex, possible bad ID"
+                );
+                return;
+              }
+              return (
+                <li key={descendant}>
+                  <Link to={descendant}> {_d.label} </Link>
+                </li>
               );
-              return;
-            }
-            return (
-              <li key={descendant}>
-                <Link to={descendant}> {_d.label} </Link>
-              </li>
-            );
-          })}
+            })}
         </ol>
 
         <h3> Compartments </h3>
         <ol>
           {_filteredLattice &&
             _filteredLattice.map((uberonID: string) => {
-              const _u: any = lattice.get(uberonID);
-              if (_u && _u.name) {
-                return (
-                  <li key={_u.name}>
-                    <Link to={`/compartment/${uberonID}`}> {_u.name} </Link>
-                  </li>
+              const _u: ILatticeTerm | undefined = lattice.get(uberonID);
+              if (!_u || !_u.name) {
+                console.log(
+                  "In vertex.tsx, while rendering lattice uberon compartments, lattice.get failed to return a vertex, possible bad ID"
                 );
-              } else {
-                return null;
+                return;
               }
+              return (
+                <li key={_u.name}>
+                  <Link to={`/compartment/${uberonID}`}> {_u.name} </Link>
+                </li>
+              );
             })}
         </ol>
       </div>
