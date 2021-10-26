@@ -59,11 +59,12 @@ interface IState {
 class OntologyExplorer extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
+
     this.state = {
       nodes: null,
       links: null,
       sugiyamaStratifyData: null,
-      scaleFactor: 0.09,
+      scaleFactor: 0.165,
       translateCenter: -350,
       hoverNode: null,
       pinnedNode: null,
@@ -76,16 +77,16 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       redrawCanvas: null,
       simulationRunning: false,
       minimumOutdegree: 3, // for filter nodes
-      maximumOutdegree: 1000000,
-      outdegreeCutoffXYZ: 0,
+      maximumOutdegree: 12345,
+      outdegreeCutoffXYZ: 50,
       filteredOutNodes: [],
       hullsEnabled: false,
       maxRenderCounter: 1,
       sugiyamaRenderThreshold: 100,
-      forceCanvasWidth: 2000,
-      forceCanvasHeight: 2000,
+      forceCanvasWidth: 850,
+      forceCanvasHeight: 850,
       cardWidth: 350,
-      cardHeight: 2000, // 850 default, 2000 full
+      cardHeight: 850, // 850 default, 2000 full
       menubarHeight: 50,
       showTabulaSapiensDataset: false,
       doCreateSugiyamaDatastructure: true,
@@ -269,6 +270,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       menubarHeight,
       isSubset,
       minimumOutdegree,
+      maximumOutdegree,
       hullsEnabled,
       highlightAncestors,
       showTabulaSapiensDataset,
@@ -296,6 +298,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           showTabulaSapiensDataset={showTabulaSapiensDataset}
           handleShowTabulaSapiensChange={this.handleShowTabulaSapiensChange}
           minimumOutdegree={minimumOutdegree + ""}
+          maximumOutdegree={maximumOutdegree + ""}
         />
         <div id="horizontalScroll">
           <div
@@ -348,10 +351,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               top: menubarHeight,
               left: cardWidth,
               cursor: "crosshair",
-              // border: "1px solid green",
+              width: forceCanvasWidth, // scale back down with css if we scaled up for retina
+              height: forceCanvasHeight,
             }}
-            width={forceCanvasWidth}
-            height={forceCanvasHeight}
+            width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina
+            height={forceCanvasHeight * window.devicePixelRatio}
             ref={this.dagCanvasRef}
           />
           {/**

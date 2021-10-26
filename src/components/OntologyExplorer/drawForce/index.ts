@@ -41,15 +41,6 @@ export const drawForceDag = (
   showTabulaSapiensDataset: boolean
 ) => {
   /**
-   * Debug logging to check sapiens contents
-   */
-  // tabulaSapiensCelltypes.forEach((celltypeid) => {
-  //   const __vertex: any = ontology.get(celltypeid);
-  //   console.log("celltype: ", __vertex.label, __vertex.descendants.length);
-  // });
-  // console.log("lattice", _latticeCL, compartment);
-
-  /**
    * Let parent component know we rendered
    */
   incrementRenderCounter();
@@ -58,6 +49,8 @@ export const drawForceDag = (
    */
   const canvas: any = select(dagCanvasRef.current);
   const context: any = dagCanvasRef.current!.getContext("2d"); //.context2d(width, height);
+  const boundingRect = dagCanvasRef.current.getBoundingClientRect();
+  const dpr = window.devicePixelRatio;
 
   /**
    * Hover state
@@ -97,7 +90,10 @@ export const drawForceDag = (
     "CL:0000100",
     "CL:0001035",
     "CL:0001065",
-    "CL:0000159",
+    "CL:0000786",
+    "CL:1000854",
+    "CL:0000235",
+    "CL:0000210",
   ];
 
   /**
@@ -109,7 +105,7 @@ export const drawForceDag = (
    */
   const nodeColor = "rgba(170,170,170,1)";
   const nodeStrokeColor = "white";
-  const hoverStrokeColor = "black";
+  const hoverStrokeColor = "red";
   const hoverNodeDescendantColor = "pink";
   const hoverNodeAncestorColor = "red";
   const clickedNodeColor = "black";
@@ -135,8 +131,8 @@ export const drawForceDag = (
     .force("charge", forceManyBody())
     // we are disjoint because we're disconnecting the dag to get territories
     // https://observablehq.com/@d3/disjoint-force-directed-graph
-    .force("x", forceX(width / 2))
-    .force("y", forceY(height / 2));
+    .force("x", forceX((width * dpr) / 2))
+    .force("y", forceY((height * dpr) / 2));
 
   /**
    * Tree layout, if xyz nodes excluded
@@ -148,13 +144,9 @@ export const drawForceDag = (
   //     .distance(0)
   //     .strength(1)
   // )
-  // .force("charge", forceManyBody())
-  // // we are disjoint because we're disconnecting the dag to get territories
-  // // https://observablehq.com/@d3/disjoint-force-directed-graph
-  // .force("x", forceX(width / 2))
-  // .force("y", forceY(height / 2));
-
-  let resized = false;
+  // .force("charge", forceManyBody().strength(-50))
+  // .force("x", forceX((width * dpr) / 2)) //(width * dpr) / 2))
+  // .force("y", forceY((height * dpr) / 2)); //(height * dpr) / 2));
 
   /**
    * Animation frame
@@ -164,19 +156,16 @@ export const drawForceDag = (
       /**
        * Clear
        */
-      context.clearRect(0, 0, width, height);
+      context.save();
+
+      context.clearRect(0, 0, width * dpr, height * dpr);
 
       /**
        * Scale up or down depending on number of nodes
        */
-      // const dpr = window.devicePixelRatio;
 
-      // if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-      // if (!resized) {
-      //   context.translate(125, 125);
-      //   context.scale(0., 0.7);
-      //   resized = true;
-      // }
+      // context.scale(2, 2);
+      // context.translate(-width / 2, -height / 2);
 
       /**
        * Draw links
@@ -318,7 +307,7 @@ export const drawForceDag = (
               node.y
             ) {
               context.fillStyle = tooltipColor;
-              context.font = "14px monospace";
+              context.font = "18px monospace";
               const _maxLength = 15;
               const _length = vertex.label.length;
               context.fillText(
@@ -351,6 +340,8 @@ export const drawForceDag = (
           );
         }
       }
+
+      context.restore();
     }
   };
 
@@ -391,23 +382,20 @@ export const drawForceDag = (
   simulation.on("tick", ticked);
   simulation.on("end", onForceSimulationEnd);
 
-  var boundingRect = dagCanvasRef.current.getBoundingClientRect();
-
   // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
   canvas.on("mousemove", (event: any) => {
-    // if we manage ticked() from above, this could be hoisted to the react context
-    hoverNode = simulation.find(
-      event.clientX - boundingRect.left,
-      event.clientY - boundingRect.top
-    );
+    const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
+    const zeroY = event.clientY - boundingRect.top;
+
+    hoverNode = simulation.find(zeroX * dpr, zeroY * dpr);
     setHoverNode(hoverNode);
     ticked();
   });
   canvas.on("click", (event: any) => {
-    clickNode = simulation.find(
-      event.clientX - boundingRect.left,
-      event.clientY - boundingRect.top
-    );
+    const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
+    const zeroY = event.clientY - boundingRect.top;
+
+    clickNode = simulation.find(zeroX * dpr, zeroY * dpr);
     setPinnedNode(clickNode);
     ticked();
   });
