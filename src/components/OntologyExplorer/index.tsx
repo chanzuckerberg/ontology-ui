@@ -76,8 +76,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      minimumOutdegree: 3, // for filter nodes
-      maximumOutdegree: 12345,
+      minimumOutdegree: 0, // for filter nodes
+      maximumOutdegree: 50,
       outdegreeCutoffXYZ: 50,
       filteredOutNodes: [],
       hullsEnabled: false,
@@ -429,11 +429,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     this.setState({ pinnedNode: node });
   };
 
-  setCompartment = (compartmentID: string) => {
+  setCompartment = (compartment: { uberonID: string; label: string }) => {
     const { maxRenderCounter } = this.state;
-
+    console.log("comp", compartment);
     this.setState({
-      compartment: compartmentID,
+      compartment: compartment.uberonID,
       maxRenderCounter: maxRenderCounter + 1,
     });
   };

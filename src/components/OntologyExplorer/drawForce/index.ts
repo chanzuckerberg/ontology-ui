@@ -138,7 +138,7 @@ export const drawForceDag = (
     .force("y", forceY((height * dpr) / 2));
 
   /**
-   * Tree layout, if xyz nodes excluded
+   * Tree layout, if xyz nodes excluded ... may be able to get rid of this entirely, or may be useful in some limited small-ish circumstances
    */
   // .force(
   //   "link",

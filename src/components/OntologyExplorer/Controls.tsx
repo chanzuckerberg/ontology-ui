@@ -22,8 +22,16 @@ import {
   Radio,
   InputGroup,
   Checkbox,
+  MenuItem,
 } from "@blueprintjs/core";
 import { OntologyVertexDatum } from ".";
+
+import {
+  IItemRendererProps,
+  ItemRenderer,
+  ItemPredicate,
+  Omnibar,
+} from "@blueprintjs/select";
 
 interface IProps {
   pinnedNode: OntologyVertexDatum | undefined;
@@ -49,16 +57,48 @@ interface IProps {
 }
 
 interface IState {
-  isOpen: boolean;
+  settingsIsOpen: boolean;
+  compartmentSearchIsOpen: boolean;
+  uberonVerticesAsArray: ICompartmentOmnibarItem[];
 }
+
+interface ICompartmentOmnibarItem {
+  uberonID: string;
+  label: string;
+}
+
+const CompartmentOmnibar = Omnibar.ofType<ICompartmentOmnibarItem>();
 
 class OntologyExplorer extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
     this.state = {
-      isOpen: false,
+      settingsIsOpen: false,
+      compartmentSearchIsOpen: false,
+      uberonVerticesAsArray: [],
     };
   }
+
+  componentDidMount = () => {
+    const { uberon } = this.props;
+    const _uberonVerticesAsArray: ICompartmentOmnibarItem[] = [];
+
+    uberon?.forEach((v: IVertex, id) => {
+      _uberonVerticesAsArray.push({ uberonID: id, label: v.label });
+    });
+
+    function onlyUnique(
+      value: ICompartmentOmnibarItem,
+      index: number,
+      self: ICompartmentOmnibarItem[]
+    ) {
+      return self.indexOf(value) === index;
+    }
+
+    this.setState({
+      uberonVerticesAsArray: _uberonVerticesAsArray.filter(onlyUnique),
+    });
+  };
 
   render() {
     const {
@@ -84,7 +124,8 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       handleMinOutdegreeChange,
     } = this.props;
 
-    const { isOpen } = this.state;
+    const { settingsIsOpen, compartmentSearchIsOpen, uberonVerticesAsArray } =
+      this.state;
 
     return (
       <div
@@ -148,9 +189,9 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         )}
 
         <Drawer
-          isOpen={isOpen}
+          isOpen={settingsIsOpen}
           size={560}
-          onClose={this.handleClose}
+          onClose={this.handleSettingsClose}
           hasBackdrop={false}
           canOutsideClickClose={true}
           title="Graph configuration"
@@ -296,31 +337,76 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           </div>
           <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
         </Drawer>
-        <Button style={{ marginRight: 20 }}>Compartment (c)</Button>
+        <Button
+          style={{ marginRight: 20 }}
+          onClick={this.handleCompartmentSearchOpen}
+        >
+          Compartment (c)
+        </Button>
+        <CompartmentOmnibar
+          isOpen={compartmentSearchIsOpen}
+          onClose={this.handleCompartmentSearchClose}
+          onItemSelect={setCompartment}
+          items={uberonVerticesAsArray}
+          itemRenderer={this.renderCompartmentOption}
+          itemPredicate={this.filterCompartment}
+          noResults={<MenuItem disabled={true} text="No results." />}
+          resetOnSelect={true}
+        />
         <Button
           style={{ marginRight: 20 }}
           icon="settings"
-          onClick={this.handleOpen}
+          onClick={this.handleSettingsOpen}
         />
       </div>
     );
   }
 
-  private handleOpen = () => this.setState({ isOpen: true });
-  private handleClose = () => this.setState({ isOpen: false });
+  renderCompartmentOption: ItemRenderer<ICompartmentOmnibarItem> = (
+    compartment,
+    { handleClick, modifiers, query }
+  ) => {
+    if (!modifiers.matchesPredicate) {
+      return null;
+    }
+
+    return (
+      <MenuItem
+        label={compartment.uberonID}
+        key={compartment.uberonID}
+        onClick={handleClick}
+        text={compartment.label}
+      />
+    );
+  };
+
+  escapeRegExpChars = (text: string) => {
+    return text.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+  };
+
+  filterCompartment: ItemPredicate<ICompartmentOmnibarItem> = (
+    query,
+    compartment,
+    _index,
+    exactMatch
+  ) => {
+    const normalizedTitle = compartment.label.toLowerCase();
+    const normalizedQuery = query.toLowerCase();
+
+    if (exactMatch) {
+      return normalizedTitle === normalizedQuery;
+    } else {
+      return `${compartment.label}`.indexOf(normalizedQuery) >= 0;
+    }
+  };
+
+  private handleSettingsOpen = () => this.setState({ settingsIsOpen: true });
+  private handleSettingsClose = () => this.setState({ settingsIsOpen: false });
+
+  private handleCompartmentSearchOpen = () =>
+    this.setState({ compartmentSearchIsOpen: true });
+  private handleCompartmentSearchClose = () =>
+    this.setState({ compartmentSearchIsOpen: false });
 }
 
 export default OntologyExplorer;
-
-// <p>
-// <strong>Hooking up live data</strong>
-// </p>
-// <p>Ways to make the graph cleaner</p>
-// <p>Some guidance</p>
-// <p>What you can do with this</p>
-
-{
-  /* <h4>Node size</h4> */
-}
-
-/* <h4>Naive substring subset</h4> */
