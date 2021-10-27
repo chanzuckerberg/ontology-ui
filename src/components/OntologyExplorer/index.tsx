@@ -76,13 +76,13 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      minimumOutdegree: 0, // for filter nodes
-      maximumOutdegree: 50,
+      minimumOutdegree: 3, // for filter nodes
+      maximumOutdegree: 12345,
       outdegreeCutoffXYZ: 50,
       filteredOutNodes: [],
       hullsEnabled: false,
       maxRenderCounter: 1,
-      sugiyamaRenderThreshold: 100,
+      sugiyamaRenderThreshold: 49,
       forceCanvasWidth: 850,
       forceCanvasHeight: 850,
       cardWidth: 350,
