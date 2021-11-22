@@ -23,6 +23,8 @@ Terminal 2:
 
 ### Routing
 
+Start here: `/cell/ontology`
+
 `/:vertex`
 
 ### Proxying requests
