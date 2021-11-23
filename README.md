@@ -34,3 +34,7 @@ Requests to the EBI API are proxied using https://www.npmjs.com/package/http-ser
 ### Typescript
 
 Types can be found in `src/d.ts`
+
+### Security
+
+Please note: If you believe you have found a security issue, please responsibly disclose by contacting us at security@chanzuckerberg.com
