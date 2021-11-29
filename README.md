@@ -8,6 +8,8 @@ React, with create-react-app
 
 ### Usage
 
+Important note: this repository assumes a public folder with ontology files. In the future, it is probable these will be checked in and versioned.
+
 From the root of the project:
 
 `$ npm install`
