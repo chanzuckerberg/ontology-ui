@@ -10,28 +10,14 @@ React, with create-react-app
 
 Important note: this repository assumes a public folder with ontology files. In the future, it is probable these will be checked in and versioned.
 
-From the root of the project:
+From the root of the project, execute the following commands:
 
-`$ npm install`
-`$ npm install -g http-server`
+```
+$ npm ci
+$ npm run start
+```
 
-prototype code is hardcoded to look for localhost port 8080, which is the default for `http-server`
-
-Terminal 1:
-`$ http-server ./public --gzip --cors --proxy http://www.ebi.ac.uk/ols/api`
-
-Terminal 2:
-`$ npm start`
-
-### Routing
-
-Start here: `/cell/ontology`
-
-`/:vertex`
-
-### Proxying requests
-
-Requests to the EBI API are proxied using https://www.npmjs.com/package/http-server's proxy for unhandled requests locally, for development purposes.
+And navigate to `http://localhost:3000/cell/ontology`
 
 ### Typescript
 

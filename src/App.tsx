@@ -43,9 +43,9 @@ class App extends React.Component<IProps, IState> {
 
   async componentDidMount() {
     const _o: AllOntologies = await load(
-      "http://localhost:8080/all_ontology.json"
+      "/all_ontology.json"
     );
-    const _lattice = await load("http://localhost:8080/lattice.json");
+    const _lattice = await load("/lattice.json");
 
     /* make a map of the ontology values for easy getting and setting */
     let cl_ontology = new Map(Object.entries(_o.CL));
