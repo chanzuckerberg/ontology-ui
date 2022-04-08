@@ -15,7 +15,7 @@ class DiscoveryLog extends React.Component<IProps, IState> {
     };
   }
   async componentDidMount() {
-    const log = await load("http://localhost:8080/discoveryLog.json");
+    const log = await load("/discoveryLog.json");
     this.setState({ log: log.releases });
   }
   render() {

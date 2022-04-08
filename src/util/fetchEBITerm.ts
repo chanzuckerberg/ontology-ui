@@ -1,19 +1,18 @@
-// this needs to be proxied,
-const ebiBaseUrl = "/terms?id=";
+const EBIBaseUrl = "https://www.ebi.ac.uk/ols/api/terms?id=";
 
-export default async function fetchEBITerm(vertex: string) {
-  const _headers = new Headers();
-
-  _headers.append("Content-Type", "application/json");
-  _headers.append("Access-Control-Allow-Origin", "*");
-
-  const _request = new Request(ebiBaseUrl + vertex, {
-    method: "GET",
-    headers: _headers,
-    cache: "default",
+/**
+ * Lookup a term in EBS OLS by Term ID.
+ *
+ * @param termId - term ID
+ * @returns term definition
+ */
+export default async function fetchEBITerm(termId: string) {
+  const headers = {
+    Accept: "application/json",
+  };
+  const response = await fetch(EBIBaseUrl + termId, {
+    headers,
   });
-
-  const response = await fetch(_request);
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
