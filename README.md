@@ -8,6 +8,8 @@ React, with create-react-app
 
 ### Usage
 
+Important note: this repository assumes a public folder with ontology files. In the future, it is probable these will be checked in and versioned.
+
 From the root of the project:
 
 `$ npm install`
@@ -23,6 +25,8 @@ Terminal 2:
 
 ### Routing
 
+Start here: `/cell/ontology`
+
 `/:vertex`
 
 ### Proxying requests
@@ -32,3 +36,11 @@ Requests to the EBI API are proxied using https://www.npmjs.com/package/http-ser
 ### Typescript
 
 Types can be found in `src/d.ts`
+
+### Security
+
+Please note: If you believe you have found a security issue, please responsibly disclose by contacting us at security@chanzuckerberg.com
+
+### Contributing
+
+This project adheres to the Contributor Covenant code of conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to opensource@chanzuckerberg.com.
