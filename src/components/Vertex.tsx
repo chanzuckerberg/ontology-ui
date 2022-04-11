@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import fetchEBITerm from "../util/fetchEBITerm";
-import { IEBITerm, IEBITermAPIResponse, Ontology, OntologyTerm } from "../d";
+import { EBITerm, EBITermAPIResponse, Ontology, OntologyTerm } from "../d";
 
 interface IProps {
   ontologyName: string;
@@ -12,7 +12,7 @@ interface IProps {
 }
 
 interface IState {
-  term: null | IEBITerm;
+  term: null | EBITerm;
 }
 
 class Vertex extends React.Component<IProps, IState> {
@@ -35,14 +35,14 @@ class Vertex extends React.Component<IProps, IState> {
 
   doGetEBITerm = async () => {
     const { vertexID, ontologyName } = this.props;
-    let _ebiResponse: IEBITermAPIResponse;
+    let _ebiResponse: EBITermAPIResponse;
     try {
       // call the ebi api
       _ebiResponse = await fetchEBITerm(vertexID);
       // filter down the terms to the ontology we're in
       // this call returns every ontology the term appears in
-      const term: IEBITerm = _ebiResponse._embedded.terms.filter(
-        (term: IEBITerm) => {
+      const term: EBITerm = _ebiResponse._embedded.terms.filter(
+        (term: EBITerm) => {
           return term.ontology_name === ontologyName; /* ie., === cl */
         }
       )[0];

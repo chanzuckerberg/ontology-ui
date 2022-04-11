@@ -44,7 +44,7 @@ export interface DatasetGraph {
   ontologies: Record<OntologyName, Ontology>;
 }
 
-export interface IEBITerm {
+export interface EBITerm {
   annotation: {
     created_by: string[];
     creation_date: string[];
@@ -76,20 +76,20 @@ export interface IEBITerm {
   _links: any;
 }
 
-export interface IEBITermAPIResponse {
-  page: IEBITermPage;
-  _embedded: IEBITermEmbedded;
-  _links: IEBITermLinks;
+export interface EBITermAPIResponse {
+  page: EBITermPage;
+  _embedded: EBITermEmbedded;
+  _links: EBITermLinks;
 }
 
-interface IEBITermPage {
+interface EBITermPage {
   size: number;
   totalElements: number;
   totalPages: number;
   number: number;
 }
 
-interface IEBITermLinks {
+interface EBITermLinks {
   self: { href: string };
   first: { href: string };
   prev: { href: string };
@@ -97,6 +97,6 @@ interface IEBITermLinks {
   last: { href: string };
 }
 
-export interface IEBITermEmbedded {
-  terms: IEBITerm[];
+export interface EBITermEmbedded {
+  terms: EBITerm[];
 }
