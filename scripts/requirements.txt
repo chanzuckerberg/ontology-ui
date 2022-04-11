@@ -1,0 +1,4 @@
+tiledb
+pandas
+pyarrow
+requests

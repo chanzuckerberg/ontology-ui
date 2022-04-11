@@ -1,17 +1,11 @@
 import React, { createRef } from "react";
-import { forceSimulation, forceCollide } from "d3-force-3d";
 import ForceGraph3D from "3d-force-graph";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass.js";
-import SpriteText from "three-spritetext";
-import Three from "three";
 
-import { IOntology, IVertex } from "../d";
+import { Ontology } from "../d";
 import { createNodesLinksHulls } from "../util/createNodesLinksHulls";
-import Vertex from "./Vertex";
 
 interface IProps {
-  ontology: IOntology;
+  ontology: Ontology;
   ontologyName: string;
 }
 interface IState {
@@ -89,12 +83,6 @@ class ThreeOntology extends React.Component<IProps, IState> {
     Graph.backgroundColor("white");
 
     /**
-     * Store the scene and camera for other consumers
-     */
-    const scene = Graph.scene();
-    const camera = Graph.camera();
-
-    /**
      * Render text on nodes
      */
     Graph.nodeLabel((d: any) => {
@@ -113,8 +101,6 @@ class ThreeOntology extends React.Component<IProps, IState> {
     /**
      * Link direction particles
      */
-    // Graph.linkDirectionalParticles(2);
-
     Graph.onNodeClick((node: any) => {
       // Aim at node from outside it
       const distance = 40;
@@ -126,20 +112,6 @@ class ThreeOntology extends React.Component<IProps, IState> {
         3000 // ms transition duration
       );
     });
-
-    /**
-     * Postprocessing
-     */
-
-    // const bloomPass = new UnrealBloomPass();
-    // bloomPass.strength = 3;
-    // bloomPass.radius = 1;
-    // bloomPass.threshold = 0.1;
-    //   .addPass(bloomPass);
-
-    const bokehParams = { focus: 500, aperture: 0.01, maxblur: 0.01 }; // maxBlur .001 to turn back on
-    const bokehPass = new BokehPass(scene, camera, bokehParams);
-    // Graph.postProcessingComposer().addPass(bokehPass);
   };
 
   render() {

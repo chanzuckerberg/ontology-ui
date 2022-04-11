@@ -1,11 +1,10 @@
-import { NodeDatum } from "d3-dag/dist/sugiyama/utils";
 import { SimulationLinkDatum } from "d3-force";
 import { OntologyVertexDatum } from "../components/OntologyExplorer";
 
-import { IOntology, IVertex } from "../d";
+import { Ontology, OntologyTerm } from "../d";
 
 export const createNodesLinksHulls = (
-  ontology: IOntology,
+  ontology: Ontology,
   nodesToFilter: string[],
   outdegreeCutoff: number,
   doCreateSugiyamaDatastructure: boolean,
@@ -15,7 +14,7 @@ export const createNodesLinksHulls = (
   const links: { source: string; target: string }[] = [];
   const sugiyamaStratifyData: { id: string; parentIds: string[] }[] = [];
 
-  ontology.forEach((vertex: IVertex, vertexID: string) => {
+  ontology.forEach((vertex: OntologyTerm, vertexID: string) => {
     /**
      * If there's a subtree, and the vertex exists in it, push it.
      */
@@ -84,10 +83,10 @@ export const createNodesLinksHulls = (
      * if a and b both have links to e, the condition is met, and same for b and c both having links to e
      * so this may be enough
      */
-    const parentVertex: IVertex | undefined = ontology.get(l.source);
+    const parentVertex: OntologyTerm | undefined = ontology.get(l.source);
     if (parentVertex && parentVertex.descendants.length > outdegreeCutoff)
       parentVertex.descendants.forEach((descendantID: string) => {
-        const descendantVertex: IVertex | undefined =
+        const descendantVertex: OntologyTerm | undefined =
           ontology.get(descendantID);
 
         // check if these descendants have in their own descendants members of parentVertex.descendants

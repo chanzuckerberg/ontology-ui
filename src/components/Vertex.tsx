@@ -1,20 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import fetchEBITerm from "../util/fetchEBITerm";
-import {
-  IEBITerm,
-  IEBITermAPIResponse,
-  ILatticeOntology,
-  ILatticeTerm,
-  IOntology,
-  IVertex,
-} from "../d";
+import { IEBITerm, IEBITermAPIResponse, Ontology, OntologyTerm } from "../d";
 
 interface IProps {
   ontologyName: string;
-  ontology: IOntology;
-  lattice: ILatticeOntology;
-  vertex: IVertex | undefined;
+  ontology: Ontology;
+  lattice: Ontology;
+  vertex: OntologyTerm | undefined;
   vertexID: string;
 }
 
@@ -68,7 +61,7 @@ class Vertex extends React.Component<IProps, IState> {
       term && term.annotation.definition && term.annotation.definition[0];
 
     /* UBERON compartment linkage, if present */
-    const _lattice: ILatticeTerm | undefined = lattice.get(vertexID);
+    const _lattice: OntologyTerm | undefined = lattice.get(vertexID);
 
     let _filteredLattice: string[] | null = null;
 
@@ -90,12 +83,12 @@ class Vertex extends React.Component<IProps, IState> {
         <ol>
           {vertex &&
             vertex.ancestors.map((ancestor: string) => {
-              const _a: IVertex | undefined = ontology.get(ancestor);
+              const _a: OntologyTerm | undefined = ontology.get(ancestor);
               if (!_a || !_a.label) {
                 console.log(
                   "In vertex.tsx, while rendering ancestors, ontology.get failed to return a vertex, possible bad ID"
                 );
-                return;
+                return null;
               }
               return (
                 <li key={ancestor}>
@@ -114,7 +107,7 @@ class Vertex extends React.Component<IProps, IState> {
                 console.log(
                   "In vertex.tsx, while rendering descendents, ontology.get failed to return a vertex, possible bad ID"
                 );
-                return;
+                return null;
               }
               return (
                 <li key={descendant}>
@@ -128,16 +121,16 @@ class Vertex extends React.Component<IProps, IState> {
         <ol>
           {_filteredLattice &&
             _filteredLattice.map((uberonID: string) => {
-              const _u: ILatticeTerm | undefined = lattice.get(uberonID);
-              if (!_u || !_u.name) {
+              const _u: OntologyTerm | undefined = lattice.get(uberonID);
+              if (!_u || !_u.label) {
                 console.log(
                   "In vertex.tsx, while rendering lattice uberon compartments, lattice.get failed to return a vertex, possible bad ID"
                 );
-                return;
+                return null;
               }
               return (
-                <li key={_u.name}>
-                  <Link to={`/compartment/${uberonID}`}> {_u.name} </Link>
+                <li key={uberonID}>
+                  <Link to={`/compartment/${uberonID}`}> {_u.label} </Link>
                 </li>
               );
             })}
