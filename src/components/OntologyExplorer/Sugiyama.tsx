@@ -1,29 +1,14 @@
-import React, { createRef } from "react";
+import React from "react";
 
-import {
-  dagConnect,
-  sugiyama,
-  layeringSimplex,
-  layeringLongestPath,
-  layeringCoffmanGraham,
-  decrossOpt,
-  twolayerOpt,
-  decrossTwoLayer,
-  coordQuad,
-  coordGreedy,
-  coordCenter,
-  Dag,
-  dagStratify,
-} from "d3-dag/dist";
+import { sugiyama, Dag, dagStratify } from "d3-dag/dist";
 
-import { symbolTriangle, symbol, line, curveCatmullRom } from "d3-shape";
-import { interpolateRainbow } from "d3-scale-chromatic";
+import { line, curveCatmullRom } from "d3-shape";
 
-import { IOntology, IVertex } from "../../d";
+import { Ontology } from "../../d";
 
 interface IProps {
   sugiyamaStratifyData: any;
-  ontology: IOntology;
+  ontology: Ontology;
 }
 
 interface IState {
@@ -57,37 +42,11 @@ class Sugiyama extends React.Component<IProps, IState> {
 
   setup = () => {
     const { sugiyamaStratifyData } = this.props;
-    const { nodeRadius } = this.state;
-
-    /**
-     * d3-dag options
-     */
-    const layerings = {
-      "Simplex (slow)": layeringSimplex(),
-      "Longest Path (fast)": layeringLongestPath(),
-      "Coffman Graham (medium)": layeringCoffmanGraham(),
-    };
-
-    const decrossings = {
-      "Optimal (slow)": decrossOpt(),
-      "Two Layer Opt (medium)": decrossTwoLayer().order(twolayerOpt()),
-      "Two Layer (fast)": decrossTwoLayer(),
-    };
-
-    const coords = {
-      "Quad (slow)": coordQuad(),
-      "Greedy (medium)": coordGreedy(),
-      "Center (fast)": coordCenter(),
-    };
 
     /**
      * Initialize d3-dag layout operator
      */
     const _sugiyamaLayout = sugiyama();
-    // .layering(layerings["Simplex (slow)"])
-    // .decross(decrossings["Two Layer (fast)"])
-    // .coord(coords["Quad (slow)"])
-    // .nodeSize(() => [nodeRadius * 2 * 1.5, nodeRadius * 2 * 1.5]);
 
     /**
      * Initialize stratify data operator
@@ -110,10 +69,6 @@ class Sugiyama extends React.Component<IProps, IState> {
     /**
      * scale multiplier, sugiyama returns small numbers it seems, between 0 and 10
      */
-
-    const arrow = symbol()
-      .type(symbolTriangle)
-      .size((nodeRadius * nodeRadius) / 5.0);
 
     this.setState({
       dag,

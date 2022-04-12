@@ -1,22 +1,50 @@
 // This is the entire CL ontology converted to JavaScript map type
-export type IOntology = Map<string, IVertex>;
+// export type IOntology = Map<string, IVertex>;
 
-export type ILatticeOntology = Map<string, ILatticeTerm>;
+// export type ILatticeOntology = Map<string, ILatticeTerm>;
 
-export interface ILatticeTerm {
-  name: string;
-  ancestors: string[];
-  synonyms: string[];
-}
+// export interface ILatticeTerm {
+//   name: string;
+//   ancestors: string[];
+//   synonyms: string[];
+// }
 
-export interface IVertex {
-  label: string;
+// export interface IVertex {
+//   label: string;
+//   deprecated: boolean;
+//   ancestors: string[];
+//   descendants: string[];
+// }
+
+export type OntologyName = string; // eg "CL"
+export type OntologyId = string; // eg "CL:000000"
+export interface OntologyTerm {
+  id: OntologyId; // eg, CL:0000000
+  label: string; // eg, "heart cell"
   deprecated: boolean;
-  ancestors: string[];
-  descendants: string[];
+  ancestors: OntologyId[]; // ancestor terms -- within the same ontology
+  descendants: OntologyId[];
+  xref: OntologyId[]; // cross-ref & related terms - in this and other ontologies (includes ancestors).
+  synonyms: string[];
+
+  // Statistics & information from the dataset
+  n_cells: number; // number of cells labelled with this term
+}
+export type Ontology = Map<OntologyId, OntologyTerm>;
+
+/**
+ * The ontologies used in a dataset, annotated with summary information
+ * about the dataset.
+ */
+export interface DatasetGraph {
+  dataset: string;
+  created_on: string; // ISO8601 DateTime
+  master_ontology_uri: string; // source of master (full) ontology
+  lattice_uri: string; // source of xref lattice data
+  ontologies: Record<OntologyName, Ontology>;
 }
 
-export interface IEBITerm {
+export interface EBITerm {
   annotation: {
     created_by: string[];
     creation_date: string[];
@@ -48,20 +76,20 @@ export interface IEBITerm {
   _links: any;
 }
 
-export interface IEBITermAPIResponse {
-  page: IEBITermPage;
-  _embedded: IEBITermEmbedded;
-  _links: IEBITermLinks;
+export interface EBITermAPIResponse {
+  page: EBITermPage;
+  _embedded: EBITermEmbedded;
+  _links: EBITermLinks;
 }
 
-interface IEBITermPage {
+interface EBITermPage {
   size: number;
   totalElements: number;
   totalPages: number;
   number: number;
 }
 
-interface IEBITermLinks {
+interface EBITermLinks {
   self: { href: string };
   first: { href: string };
   prev: { href: string };
@@ -69,6 +97,6 @@ interface IEBITermLinks {
   last: { href: string };
 }
 
-export interface IEBITermEmbedded {
-  terms: IEBITerm[];
+export interface EBITermEmbedded {
+  terms: EBITerm[];
 }

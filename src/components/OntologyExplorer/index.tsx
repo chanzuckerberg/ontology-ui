@@ -9,7 +9,8 @@ import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
 
-import { ILatticeOntology, IOntology, IVertex } from "../../d";
+// import { ILatticeOntology, IOntology, IVertex } from "../../d";
+import { Ontology, OntologyTerm } from "../../d";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: string;
@@ -19,9 +20,9 @@ export interface OntologyVertexDatum extends SimulationNodeDatum {
 
 interface IProps {
   ontologyName: string;
-  ontology: IOntology;
-  lattice: ILatticeOntology;
-  uberon: IOntology;
+  ontology: Ontology;
+  lattice: Ontology;
+  uberon: Ontology;
 }
 
 interface IState {
@@ -156,20 +157,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         v.label.includes("fungal") ||
         v.label.includes("spore");
 
-      const bigTroublesomeMetadataCells = // unify the above with this list
-        id === "CL:0000988" || // hematopoietic cell
-        id === "CL:0000393" || // electrically active
-        id === "CL:0000219" || // motile cell
-        id === "CL:0002371" || // somatic cell
-        id === "CL:0000066" || // epithelial cell
-        id === "CL:0000000" || // cell
-        id === "CL:0000325" || // stuff accumulating cell
-        id === "CL:0000151" || // secratory cell
-        id === "CL:0000548" || // animal cell
-        id === "CL:0000234" || // phagocyte
-        id === "CL:0002319" || // neural cell
-        id === "CL:0000003"; // native cell
-
       if (
         v.descendants.length > maximumOutdegree || // more than n descendants ... sometimes we want to remove the nodes, sometimes we want to xyz the links
         v.descendants.length < minimumOutdegree || // remove nodes with less than n descendants ... sometimes we want to start at cell and show the big stuff only
@@ -204,7 +191,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
   initializeCanvasRenderer = (
     nodes: OntologyVertexDatum[],
     links: SimulationLinkDatum<any>[],
-    ontology: IOntology
+    ontology: Ontology
   ) => {
     const {
       forceCanvasWidth,
@@ -218,14 +205,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     } = this.state;
 
     const { lattice } = this.props;
-
-    const _latticeCL = new Map();
-
-    lattice?.forEach((value: any, key: any) => {
-      if (key.includes("CL")) {
-        _latticeCL.set(key, value);
-      }
-    });
 
     const redrawCanvas = drawForceDag(
       nodes, // todo, mutates
@@ -241,7 +220,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       this.incrementRenderCounter,
       this.onForceSimulationEnd,
       hullsEnabled,
-      _latticeCL,
+      lattice,
       compartment,
       highlightAncestors,
       showTabulaSapiensDataset
@@ -276,10 +255,10 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       showTabulaSapiensDataset,
     } = this.state;
 
-    const hoverVertex: IVertex | undefined =
+    const hoverVertex: OntologyTerm | undefined =
       hoverNode && ontology.get(hoverNode.id);
 
-    const pinnedVertex: IVertex | undefined =
+    const pinnedVertex: OntologyTerm | undefined =
       pinnedNode && ontology.get(pinnedNode.id);
 
     return (

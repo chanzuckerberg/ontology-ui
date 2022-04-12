@@ -12,7 +12,7 @@ import { select } from "d3-selection";
 import { interpolateSinebow } from "d3-scale-chromatic";
 
 import { OntologyVertexDatum } from "..";
-import { IOntology } from "../../../d";
+import { Ontology, OntologyTerm } from "../../../d";
 
 import { drawHulls } from "./hulls";
 
@@ -31,13 +31,13 @@ export const drawForceDag = (
   scaleFactor: number,
   translateCenter: number,
   dagCanvasRef: React.RefObject<HTMLCanvasElement>,
-  ontology: IOntology,
+  ontology: Ontology,
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
   setPinnedNode: (node: OntologyVertexDatum | undefined) => void,
   incrementRenderCounter: any,
   onForceSimulationEnd: any,
   hullsTurnedOn: boolean,
-  _latticeCL: any,
+  lattice: any,
   compartment: string | null,
   highlightAncestors: boolean,
   showTabulaSapiensDataset: boolean
@@ -245,10 +245,9 @@ export const drawForceDag = (
         /**
          * check compartment distribution in ontology
          */
-        if (_latticeCL && compartment) {
-          const celltype_is_in_compartment = _latticeCL
-            .get(node.id)
-            .ancestors.includes(compartment);
+        if (lattice && compartment) {
+          const term: OntologyTerm = lattice.get(node.id);
+          const celltype_is_in_compartment = term.xref.includes(compartment);
           if (celltype_is_in_compartment) {
             context.fillStyle = "orange";
           }

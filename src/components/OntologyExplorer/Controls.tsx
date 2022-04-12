@@ -1,23 +1,10 @@
 import React from "react";
-import emoji from "react-easy-emoji";
 
-import { majorCompartments } from "../../majorCompartments";
-
-import { IOntology, IVertex } from "../../d";
-
+import { Ontology, OntologyTerm } from "../../d";
 import {
   Button,
   Classes,
-  Code,
-  Divider,
   Drawer,
-  DrawerSize,
-  H5,
-  HTMLSelect,
-  OptionProps,
-  Label,
-  Position,
-  Switch,
   RadioGroup,
   Radio,
   InputGroup,
@@ -27,7 +14,6 @@ import {
 import { OntologyVertexDatum } from ".";
 
 import {
-  IItemRendererProps,
   ItemRenderer,
   ItemPredicate,
   Omnibar,
@@ -40,7 +26,7 @@ interface IProps {
   menubarHeight: number;
   isSubset: boolean;
   outdegreeCutoffNodes: number;
-  uberon: null | IOntology;
+  uberon: null | Ontology;
   handleDagSearchChange: any;
   subsetToNode: any;
   resetSubset: any;
@@ -83,7 +69,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     const { uberon } = this.props;
     const _uberonVerticesAsArray: ICompartmentOmnibarItem[] = [];
 
-    uberon?.forEach((v: IVertex, id) => {
+    uberon?.forEach((v: OntologyTerm, id) => {
       _uberonVerticesAsArray.push({ uberonID: id, label: v.label });
     });
 
@@ -107,8 +93,6 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       simulationRunning,
       menubarHeight,
       isSubset,
-      outdegreeCutoffNodes,
-      uberon,
       handleDagSearchChange,
       subsetToNode,
       resetSubset,
@@ -381,7 +365,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
   };
 
   escapeRegExpChars = (text: string) => {
-    return text.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+    return text.replace(/([.*+?^=!:${}()|[\]/\\])/g, "\\$1");
   };
 
   filterCompartment: ItemPredicate<ICompartmentOmnibarItem> = (

@@ -1,17 +1,16 @@
-import { polygonHull, polygonCentroid } from "d3-polygon";
+import { polygonHull } from "d3-polygon";
 
-import { IOntology } from "../../../d";
+import { Ontology } from "../../../d";
 
 import { interpolateSinebow } from "d3-scale-chromatic";
 import { color } from "d3-color";
 import { scaleLinear } from "d3-scale";
-import { arrayLengthCompare } from "@blueprintjs/core/lib/esm/common/utils";
 
 /**
  * Draw all hulls
  */
 export const drawHulls = (
-  ontology: IOntology,
+  ontology: Ontology,
   nodes: any,
   context: any,
   hullBorderColor: string,
@@ -21,9 +20,6 @@ export const drawHulls = (
   /**
    * GIVEN ALL PRIOR FILTERED NODES
    */
-  // filteredVerticesForHulls.forEach((vertex_id, i) => {
-  //   drawHull(vertex_id);
-  // });
   /**
    * CUSTOM SUBSET FOR TEST
    */
@@ -47,7 +43,7 @@ export const drawHulls = (
  */
 const drawHull = (
   vertex_id: string,
-  ontology: IOntology,
+  ontology: Ontology,
   nodes: any,
   context: any,
   hullBorderColor: string,
@@ -85,7 +81,6 @@ const drawHull = (
   });
 
   const hull = polygonHull(points);
-  const centroid = polygonCentroid(points);
 
   if (hull) {
     /**
@@ -106,19 +101,5 @@ const drawHull = (
     context.lineWidth = 0;
     context.strokeStyle = hullColor;
     context.stroke();
-
-    /**
-     * Text on centroid of hull
-     */
-    // context.fillStyle = hullLabelColor;
-    // context.font = "18px helvetica";
-    // context.fillText(
-    //   `${vertex.label}`, //${vertex_id}`
-    //   /**
-    //    * subtract some width to center text
-    //    */
-    //   centroid[0],
-    //   centroid[1]
-    // );
   }
 };
