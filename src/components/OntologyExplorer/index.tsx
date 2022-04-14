@@ -77,7 +77,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       isSubset: false,
       redrawCanvas: null,
       simulationRunning: false,
-      minimumOutdegree: 3, // for filter nodes
+      minimumOutdegree: 0, // for filter nodes
       maximumOutdegree: 12345,
       outdegreeCutoffXYZ: 50,
       filteredOutNodes: [],
@@ -164,6 +164,11 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         nonhuman
         // bigTroublesomeMetadataCells
       ) {
+        filteredOutNodes.push(id);
+      }
+
+      /* make this a control / toggle */
+      if (!v.n_cells && false) {
         filteredOutNodes.push(id);
       }
     });

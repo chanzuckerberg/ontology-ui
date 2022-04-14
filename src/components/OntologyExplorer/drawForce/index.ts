@@ -5,6 +5,7 @@ import {
   forceX,
   forceY,
   SimulationLinkDatum,
+  forceCollide,
 } from "d3-force";
 
 import { select } from "d3-selection";
@@ -102,7 +103,8 @@ export const drawForceDag = (
   /**
    * Sizes
    */
-  const nodeSize: number = 5;
+  let nodeSize: number = 5;
+
   /**
    * Colors
    */
@@ -132,6 +134,12 @@ export const drawForceDag = (
       forceLink(links).id((d: any) => d.id)
     )
     .force("charge", forceManyBody())
+    // .force(
+    //   "collision",
+    //   forceCollide().radius((d) => {
+    //     return d.radius;
+    //   })
+    // )
     // we are disjoint because we're disconnecting the dag to get territories
     // https://observablehq.com/@d3/disjoint-force-directed-graph
     .force("x", forceX((width * dpr) / 2))
@@ -370,7 +378,20 @@ export const drawForceDag = (
     if (d.descendantCount === 0 && d.ancestorCount === 0) {
       return;
     }
+    const vertex: any = ontology.get(d.id);
 
+    /* size nodes by inclusion in arbitrary set, in this test case, n_cells has a value */
+
+    const doSizeByInclusion = true;
+
+    /* n_cells for now for example, but make this state */
+    const isIncludedInSet = !!vertex.n_cells;
+
+    if (doSizeByInclusion && isIncludedInSet) {
+      nodeSize = 10;
+    } else if (doSizeByInclusion && !isIncludedInSet) {
+      nodeSize = 2.5;
+    }
     /**
      * Draw a circle
      */
