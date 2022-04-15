@@ -25,16 +25,7 @@ export const drawHulls = (
    */
   //  ["CL:0002086", "CL:0002031", "CL:1000504"]
   hullRoots.forEach((vertex_id: string, i, arr) => {
-    drawHull(
-      vertex_id,
-      ontology,
-      nodes,
-      context,
-      hullBorderColor,
-      hullLabelColor,
-      i,
-      arr
-    );
+    drawHull(vertex_id, ontology, nodes, context, hullBorderColor, hullLabelColor, i, arr);
   });
 };
 
@@ -52,7 +43,7 @@ const drawHull = (
   arr: string[]
 ) => {
   /**
-   * Retreive the vertex for its name and descendents
+   * Retreive the vertex for its name and descendants
    */
   const vertex: any = ontology.get(vertex_id);
 
@@ -67,7 +58,7 @@ const drawHull = (
   const hullColor = _sineBowColorObj + "";
 
   /**
-   * Filter the simulation's nodes that are descendents of the given vertex
+   * Filter the simulation's nodes that are descendants of the given vertex
    * Create the hull
    */
   const filteredNodes = nodes.filter((node: any) => {

@@ -1,22 +1,6 @@
 // This is the entire CL ontology converted to JavaScript map type
-// export type IOntology = Map<string, IVertex>;
 
-// export type ILatticeOntology = Map<string, ILatticeTerm>;
-
-// export interface ILatticeTerm {
-//   name: string;
-//   ancestors: string[];
-//   synonyms: string[];
-// }
-
-// export interface IVertex {
-//   label: string;
-//   deprecated: boolean;
-//   ancestors: string[];
-//   descendants: string[];
-// }
-
-export type OntologyName = string; // eg "CL"
+export type OntologyPrefix = string; // eg "CL"
 export type OntologyId = string; // eg "CL:000000"
 export interface OntologyTerm {
   id: OntologyId; // eg, CL:0000000
@@ -41,7 +25,7 @@ export interface DatasetGraph {
   created_on: string; // ISO8601 DateTime
   master_ontology_uri: string; // source of master (full) ontology
   lattice_uri: string; // source of xref lattice data
-  ontologies: Record<OntologyName, Ontology>;
+  ontologies: Record<OntologyPrefix, Ontology>;
 }
 
 export interface EBITerm {
