@@ -9,7 +9,6 @@ import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
 
-// import { ILatticeOntology, IOntology, IVertex } from "../../d";
 import { Ontology, OntologyTerm } from "../../d";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
@@ -19,7 +18,7 @@ export interface OntologyVertexDatum extends SimulationNodeDatum {
 }
 
 interface IProps {
-  ontologyName: string;
+  ontologyPrefix: string;
   ontology: Ontology;
   lattice: Ontology;
   uberon: Ontology;
@@ -102,12 +101,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
 
   createDag = (subtreeRootID?: string) => {
     const { ontology } = this.props;
-    const {
-      minimumOutdegree,
-      maximumOutdegree,
-      outdegreeCutoffXYZ,
-      doCreateSugiyamaDatastructure,
-    } = this.state;
+    const { minimumOutdegree, maximumOutdegree, outdegreeCutoffXYZ, doCreateSugiyamaDatastructure } = this.state;
 
     /**
      * Choose which nodes to show, given a root, recursively grab get all descendants
@@ -188,11 +182,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
     }
   };
 
-  initializeCanvasRenderer = (
-    nodes: OntologyVertexDatum[],
-    links: SimulationLinkDatum<any>[],
-    ontology: Ontology
-  ) => {
+  initializeCanvasRenderer = (nodes: OntologyVertexDatum[], links: SimulationLinkDatum<any>[], ontology: Ontology) => {
     const {
       forceCanvasWidth,
       forceCanvasHeight,
@@ -230,7 +220,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
   };
 
   render() {
-    const { ontology, ontologyName, lattice, uberon } = this.props;
+    const { ontology, ontologyPrefix, lattice, uberon } = this.props;
     const {
       nodes,
       links,
@@ -255,11 +245,9 @@ class OntologyExplorer extends React.Component<IProps, IState> {
       showTabulaSapiensDataset,
     } = this.state;
 
-    const hoverVertex: OntologyTerm | undefined =
-      hoverNode && ontology.get(hoverNode.id);
+    const hoverVertex: OntologyTerm | undefined = hoverNode && ontology.get(hoverNode.id);
 
-    const pinnedVertex: OntologyTerm | undefined =
-      pinnedNode && ontology.get(pinnedNode.id);
+    const pinnedVertex: OntologyTerm | undefined = pinnedNode && ontology.get(pinnedNode.id);
 
     return (
       <div id="ontologyExplorerContainer">
@@ -296,16 +284,13 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               margin: 0,
             }}
           >
-            <div
-              id="innerDivToPreventPaddingSizeIncrease"
-              style={{ padding: 10 }}
-            >
+            <div id="innerDivToPreventPaddingSizeIncrease" style={{ padding: 10 }}>
               {/**
                * Render cards
                */}
               {!pinnedNode && hoverNode && (
                 <Vertex
-                  ontologyName={ontologyName}
+                  ontologyPrefix={ontologyPrefix}
                   ontology={ontology}
                   vertex={hoverVertex}
                   vertexID={hoverNode && hoverNode.id}
@@ -314,7 +299,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
               )}
               {pinnedNode && (
                 <Vertex
-                  ontologyName={ontologyName}
+                  ontologyPrefix={ontologyPrefix}
                   ontology={ontology}
                   vertex={pinnedVertex}
                   vertexID={pinnedNode && pinnedNode.id}
@@ -346,21 +331,17 @@ class OntologyExplorer extends React.Component<IProps, IState> {
           {/**
            * Render sugiyama
            */}
-          {sugiyamaStratifyData &&
-            sugiyamaStratifyData.length < sugiyamaRenderThreshold && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: menubarHeight,
-                  left: cardWidth + forceCanvasWidth,
-                }}
-              >
-                <Sugiyama
-                  sugiyamaStratifyData={sugiyamaStratifyData}
-                  ontology={ontology}
-                />
-              </div>
-            )}
+          {sugiyamaStratifyData && sugiyamaStratifyData.length < sugiyamaRenderThreshold && (
+            <div
+              style={{
+                position: "absolute",
+                top: menubarHeight,
+                left: cardWidth + forceCanvasWidth,
+              }}
+            >
+              <Sugiyama sugiyamaStratifyData={sugiyamaStratifyData} ontology={ontology} />
+            </div>
+          )}
         </div>
       </div>
     );

@@ -4,7 +4,7 @@ import fetchEBITerm from "../util/fetchEBITerm";
 import { EBITerm, EBITermAPIResponse, Ontology, OntologyTerm } from "../d";
 
 interface IProps {
-  ontologyName: string;
+  ontologyPrefix: string;
   ontology: Ontology;
   lattice: Ontology;
   vertex: OntologyTerm | undefined;
@@ -34,18 +34,16 @@ class Vertex extends React.Component<IProps, IState> {
   }
 
   doGetEBITerm = async () => {
-    const { vertexID, ontologyName } = this.props;
+    const { vertexID, ontologyPrefix } = this.props;
     let _ebiResponse: EBITermAPIResponse;
     try {
       // call the ebi api
       _ebiResponse = await fetchEBITerm(vertexID);
       // filter down the terms to the ontology we're in
       // this call returns every ontology the term appears in
-      const term: EBITerm = _ebiResponse._embedded.terms.filter(
-        (term: EBITerm) => {
-          return term.ontology_name === ontologyName; /* ie., === cl */
-        }
-      )[0];
+      const term: EBITerm = _ebiResponse._embedded.terms.filter((term: EBITerm) => {
+        return term.ontology_prefix === ontologyPrefix; /* ie., === cl */
+      })[0];
       this.setState({ term });
     } catch {
       console.log("ebi request failed");
@@ -57,8 +55,7 @@ class Vertex extends React.Component<IProps, IState> {
     const { term } = this.state;
 
     /* A mechanoreceptor cell located in the inner ear that is sensitive to auditory stimuli. The ... */
-    const definition =
-      term && term.annotation.definition && term.annotation.definition[0];
+    const definition = term && term.annotation.definition && term.annotation.definition[0];
 
     /* UBERON compartment linkage, if present */
     const _lattice: OntologyTerm | undefined = lattice.get(vertexID);
@@ -66,9 +63,7 @@ class Vertex extends React.Component<IProps, IState> {
     let _filteredLattice: string[] | null = null;
 
     if (_lattice) {
-      _filteredLattice = _lattice.ancestors.filter((d: string) =>
-        d.includes("UBERON")
-      );
+      _filteredLattice = _lattice.xref.filter((d: string) => d.includes("UBERON"));
     }
 
     return (
@@ -92,26 +87,26 @@ class Vertex extends React.Component<IProps, IState> {
               }
               return (
                 <li key={ancestor}>
-                  <Link to={ancestor}>{_a.label}</Link>
+                  <Link to={"../" + ancestor}>{_a.label}</Link>
                 </li>
               );
             })}
         </ol>
 
-        <h3> Descendents </h3>
+        <h3> Descendants </h3>
         <ol>
           {vertex &&
             vertex.descendants.map((descendant: string, i: number) => {
               const _d = ontology.get(descendant);
               if (!_d || !_d.label) {
                 console.log(
-                  "In vertex.tsx, while rendering descendents, ontology.get failed to return a vertex, possible bad ID"
+                  "In vertex.tsx, while rendering descendants, ontology.get failed to return a vertex, possible bad ID"
                 );
                 return null;
               }
               return (
                 <li key={descendant}>
-                  <Link to={descendant}> {_d.label} </Link>
+                  <Link to={"../" + descendant}> {_d.label} </Link>
                 </li>
               );
             })}

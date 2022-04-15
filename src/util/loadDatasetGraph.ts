@@ -1,5 +1,5 @@
 import load from "./load";
-import { DatasetGraph, Ontology, OntologyName } from "../d";
+import { DatasetGraph, Ontology, OntologyPrefix } from "../d";
 
 /**
  * Load and initialize the dataset graph from the given URI.
@@ -7,9 +7,7 @@ import { DatasetGraph, Ontology, OntologyName } from "../d";
  * @param url - the location of the raw graph
  * @returns [graph: DatasetGraph, lattice: Ontology]
  */
-export default async function loadDatasetGraph(
-  url: string
-): Promise<[DatasetGraph, Ontology]> {
+export default async function loadDatasetGraph(url: string): Promise<[DatasetGraph, Ontology]> {
   const rawGraph = await load("/dataset_graph.json");
   const datasetGraph: DatasetGraph = createDatasetGraph(rawGraph);
   const lattice: Ontology = createLattice(datasetGraph);
@@ -44,7 +42,7 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
   const datasetGraph: DatasetGraph = {
     ...rawGraph,
     ontologies: Object.fromEntries(
-      Object.keys(rawGraph.ontologies).map((key: OntologyName) => [
+      Object.keys(rawGraph.ontologies).map((key: OntologyPrefix) => [
         key,
         new Map(Object.entries(rawGraph.ontologies[key])),
       ])
