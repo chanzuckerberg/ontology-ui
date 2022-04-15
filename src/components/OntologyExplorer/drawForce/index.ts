@@ -19,6 +19,7 @@ import { drawHulls } from "./hulls";
 
 import { tabulaSapiensCelltypes } from "../../../tabulaSapiensCelltypes";
 import React from "react";
+import { scaleLinear, scaleLog } from "d3-scale";
 
 /**
  * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas
@@ -105,6 +106,18 @@ export const drawForceDag = (
    */
   let nodeSize: number = 5;
 
+  /* scales */
+
+  const cellCountWhale: number = 1000000;
+  const cellCountShrimp: number = 1;
+
+  const minNodeRadius = 5;
+  const maxNodeRadius = 25;
+
+  const nCellsScale = scaleLinear()
+    .domain([cellCountShrimp, cellCountWhale])
+    .range([minNodeRadius, maxNodeRadius]);
+
   /**
    * Colors
    */
@@ -134,10 +147,11 @@ export const drawForceDag = (
       forceLink(links).id((d: any) => d.id)
     )
     .force("charge", forceManyBody())
+    // collision breaks the hovering math below at simulation.find(zeroX * dpr, zeroY * dpr);
     // .force(
     //   "collision",
-    //   forceCollide().radius((d) => {
-    //     return d.radius;
+    //   forceCollide().radius((d: any) => {
+    //     return d.n_cells ? nCellsScale(d.n_cells) : nodeSize; // d.n_counts;
     //   })
     // )
     // we are disjoint because we're disconnecting the dag to get territories
@@ -388,7 +402,7 @@ export const drawForceDag = (
     const isIncludedInSet = !!vertex.n_cells;
 
     if (doSizeByInclusion && isIncludedInSet) {
-      nodeSize = 10;
+      nodeSize = nCellsScale(vertex.n_cells);
     } else if (doSizeByInclusion && !isIncludedInSet) {
       nodeSize = 2.5;
     }

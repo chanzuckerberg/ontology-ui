@@ -16,6 +16,7 @@ export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: string;
   ancestorCount: number;
   descendantCount: number;
+  n_cells?: number;
 }
 
 interface IProps {
@@ -155,6 +156,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         v.label.includes("Mus musculus") || // mouse
         v.label.includes("conidium") || //fungus
         v.label.includes("fungal") ||
+        v.label.includes("Fungi") ||
         v.label.includes("spore");
 
       if (
@@ -167,8 +169,10 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         filteredOutNodes.push(id);
       }
 
+      const doFilterNodesWithoutNCounts = true;
+
       /* make this a control / toggle */
-      if (!v.n_cells && false) {
+      if (!v.n_cells && doFilterNodesWithoutNCounts) {
         filteredOutNodes.push(id);
       }
     });
