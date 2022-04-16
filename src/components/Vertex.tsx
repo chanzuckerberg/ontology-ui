@@ -69,6 +69,8 @@ class Vertex extends React.Component<IProps, IState> {
     return (
       <div>
         <h1>{vertex && vertex.label}</h1>
+        <h5>Count: {vertex && vertex.n_cells ? vertex.n_cells : "0"}</h5>
+
         <p>{!term && "Loading..."}</p>
         <p>{term && definition}</p>
         <pre>{vertexID}</pre>

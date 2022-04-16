@@ -1,11 +1,4 @@
-import {
-  forceSimulation,
-  forceLink,
-  forceManyBody,
-  forceX,
-  forceY,
-  SimulationLinkDatum,
-} from "d3-force";
+import { forceSimulation, forceLink, forceManyBody, forceX, forceY, SimulationLinkDatum, forceCollide } from "d3-force";
 
 import { select } from "d3-selection";
 
@@ -18,6 +11,7 @@ import { drawHulls } from "./hulls";
 
 import { tabulaSapiensCelltypes } from "../../../tabulaSapiensCelltypes";
 import React from "react";
+import { scaleLinear, scaleLog } from "d3-scale";
 
 /**
  * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas
@@ -102,7 +96,19 @@ export const drawForceDag = (
   /**
    * Sizes
    */
-  const nodeSize: number = 5;
+  let nodeSize: number = 5;
+  let deemphasizeNodeSize: number = 2.5;
+
+  /* scales */
+
+  const cellCountWhale: number = 1000000;
+  const cellCountShrimp: number = 1;
+
+  const minNodeRadius = 5;
+  const maxNodeRadius = 25;
+
+  const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
+
   /**
    * Colors
    */
@@ -132,6 +138,13 @@ export const drawForceDag = (
       forceLink(links).id((d: any) => d.id)
     )
     .force("charge", forceManyBody())
+    // collision breaks the hovering math below at simulation.find(zeroX * dpr, zeroY * dpr);
+    .force(
+      "collision",
+      forceCollide().radius((d: any) => {
+        return d.n_cells ? nCellsScale(d.n_cells) : deemphasizeNodeSize; // d.n_counts;
+      })
+    )
     // we are disjoint because we're disconnecting the dag to get territories
     // https://observablehq.com/@d3/disjoint-force-directed-graph
     .force("x", forceX((width * dpr) / 2))
@@ -198,9 +211,7 @@ export const drawForceDag = (
           const vertex: any = ontology.get(node.id);
 
           if (vertex && vertex.label) {
-            const _hit = vertex.label
-              .toLowerCase()
-              .includes(searchString.toLowerCase());
+            const _hit = vertex.label.toLowerCase().includes(searchString.toLowerCase());
             if (_hit) {
               context.fillStyle = nodeColorInSearch;
             } else {
@@ -235,10 +246,7 @@ export const drawForceDag = (
          * check dataset distribution in ontology
          */
 
-        if (
-          showTabulaSapiensDataset &&
-          tabulaSapiensCelltypes.includes(node.id)
-        ) {
+        if (showTabulaSapiensDataset && tabulaSapiensCelltypes.includes(node.id)) {
           context.fillStyle = datasetDistributionColor;
         }
 
@@ -280,11 +288,7 @@ export const drawForceDag = (
                 return;
               }
 
-              context.fillText(
-                `${vertex.label.substring(0, 10)}`,
-                node.x,
-                node.y
-              );
+              context.fillText(`${vertex.label.substring(0, 10)}`, node.x, node.y);
             }
           }
         }
@@ -294,14 +298,7 @@ export const drawForceDag = (
         /**
          * Draw hulls
          */
-        drawHulls(
-          ontology,
-          nodes,
-          context,
-          hullBorderColor,
-          hullLabelColor,
-          hullRoots
-        );
+        drawHulls(ontology, nodes, context, hullBorderColor, hullLabelColor, hullRoots);
 
         /**
          * Draw text on hull nodes
@@ -309,21 +306,13 @@ export const drawForceDag = (
         for (const node of nodes) {
           if (hullRoots.includes(node.id)) {
             const vertex: any = ontology.get(node.id);
-            if (
-              vertex &&
-              vertex.label &&
-              typeof vertex.label === "string" &&
-              node.x &&
-              node.y
-            ) {
+            if (vertex && vertex.label && typeof vertex.label === "string" && node.x && node.y) {
               context.fillStyle = tooltipColor;
               context.font = "18px monospace";
               const _maxLength = 15;
               const _length = vertex.label.length;
               context.fillText(
-                `${vertex.label.substring(0, _maxLength)}${
-                  _length > _maxLength ? "..." : ""
-                }`,
+                `${vertex.label.substring(0, _maxLength)}${_length > _maxLength ? "..." : ""}`,
                 node.x + 7,
                 node.y + 3
               );
@@ -370,7 +359,20 @@ export const drawForceDag = (
     if (d.descendantCount === 0 && d.ancestorCount === 0) {
       return;
     }
+    const vertex: any = ontology.get(d.id);
 
+    /* size nodes by inclusion in arbitrary set, in this test case, n_cells has a value */
+
+    const doSizeByInclusion = true;
+
+    /* n_cells for now for example, but make this state */
+    const isIncludedInSet = !!vertex.n_cells;
+
+    if (doSizeByInclusion && isIncludedInSet) {
+      nodeSize = nCellsScale(vertex.n_cells);
+    } else if (doSizeByInclusion && !isIncludedInSet) {
+      nodeSize = deemphasizeNodeSize;
+    }
     /**
      * Draw a circle
      */
@@ -379,9 +381,7 @@ export const drawForceDag = (
       context.moveTo(d.x + nodeSize, d.y);
       context.arc(d.x, d.y, nodeSize, 0, 2 * Math.PI);
     } else {
-      console.log(
-        "Tried to draw a node, but d.x was not a number, see Dag.tsx drawForce() drawNode"
-      );
+      console.log("Tried to draw a node, but d.x was not a number, see Dag.tsx drawForce() drawNode");
     }
   };
 

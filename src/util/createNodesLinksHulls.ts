@@ -23,6 +23,7 @@ export const createNodesLinksHulls = (
         id: vertexID,
         descendantCount: vertex.descendants.length,
         ancestorCount: vertex.ancestors.length,
+        n_cells: vertex.n_cells ? vertex.n_cells : 0,
       });
       vertex.descendants.forEach((descendant: string) => {
         links.push({
