@@ -163,7 +163,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
         filteredOutNodes.push(id);
       }
 
-      const doFilterNodesWithoutNCounts = true;
+      const doFilterNodesWithoutNCounts = false;
 
       /* make this a control / toggle */
       if (!v.n_cells && doFilterNodesWithoutNCounts) {
