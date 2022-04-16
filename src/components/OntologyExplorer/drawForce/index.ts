@@ -97,6 +97,7 @@ export const drawForceDag = (
    * Sizes
    */
   let nodeSize: number = 5;
+  let deemphasizeNodeSize: number = 2.5;
 
   /* scales */
 
@@ -141,7 +142,7 @@ export const drawForceDag = (
     .force(
       "collision",
       forceCollide().radius((d: any) => {
-        return d.n_cells ? nCellsScale(d.n_cells) : nodeSize; // d.n_counts;
+        return d.n_cells ? nCellsScale(d.n_cells) : deemphasizeNodeSize; // d.n_counts;
       })
     )
     // we are disjoint because we're disconnecting the dag to get territories
@@ -370,7 +371,7 @@ export const drawForceDag = (
     if (doSizeByInclusion && isIncludedInSet) {
       nodeSize = nCellsScale(vertex.n_cells);
     } else if (doSizeByInclusion && !isIncludedInSet) {
-      nodeSize = 2.5;
+      nodeSize = deemphasizeNodeSize;
     }
     /**
      * Draw a circle
