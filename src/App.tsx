@@ -1,159 +1,114 @@
-import React from "react";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet";
 
-import Vertex from "./components/Vertex";
-import Dag from "./components/OntologyExplorer";
+import VertexView from "./routes/VertexView";
+import DagView from "./routes/DagExplorerView";
 import ThreeOntology from "./components/ThreeOntology";
 import DiscoveryLog from "./components/DiscoveryLog";
 import loadDatasetGraph from "./util/loadDatasetGraph";
 import { DatasetGraph, Ontology } from "./d";
 
-interface IProps {}
-
-interface IState {
+interface AppState {
   graph?: DatasetGraph;
   lattice?: Ontology;
 }
 
-class App extends React.Component<IProps, IState> {
-  constructor(props: IProps) {
-    super(props);
-    this.state = {
-      graph: undefined,
-      lattice: undefined,
+function App() {
+  const [state, setState] = useState<AppState>({});
+  const { graph, lattice } = state;
+
+  useEffect(() => {
+    const initState = async () => {
+      const [graph, lattice] = await loadDatasetGraph("/dataset_graph.json");
+      setState({ graph, lattice });
     };
-  }
+    initState();
+  }, [setState]);
 
-  async componentDidMount() {
-    const [graph, lattice] = await loadDatasetGraph("/dataset_graph.json");
-    this.setState({ graph, lattice });
-  }
+  return (
+    <Router>
+      <div
+        id="container"
+        style={{
+          fontFamily: "Helvetica, Arial, sans-serif",
+          lineHeight: 1.5,
+          color: "#555",
+        }}
+      >
+        <LoadingIndicator loading={!graph} />
+        <Helmet>
+          <meta charSet="utf-8" />
+          <title>Cell Ontology</title>
+        </Helmet>
 
-  render() {
-    const { graph, lattice } = this.state;
+        {graph && lattice && (
+          <Routes>
+            <Route path="/">
+              <Route index element={<Navigate to="cell/ontology" replace />} />
+
+              <Route path="cell">
+                <Route index element={<Navigate to="ontology" replace />} />
+                <Route path="ontology" element={<DagView ontologyPrefix="CL" lattice={lattice} graph={graph} />} />
+                <Route path="three" element={<ThreeOntology ontologyPrefix="CL" ontology={graph.ontologies.CL} />} />
+                <Route
+                  path=":vertexID"
+                  element={<VertexView ontologyPrefix="CL" ontology={graph.ontologies.CL} lattice={lattice} />}
+                />
+              </Route>
+
+              <Route path="disease">
+                <Route index element={<Navigate to="dag" replace />} />
+                <Route path="dag" element={<DagView ontologyPrefix="MONDO" lattice={lattice} graph={graph} />} />
+                <Route
+                  path=":vertexID"
+                  element={<VertexView ontologyPrefix="MONDO" ontology={graph.ontologies.MONDO} lattice={lattice} />}
+                />
+              </Route>
+
+              <Route path="compartment">
+                <Route index element={<Navigate to="ontology" replace />} />
+
+                <Route path="ontology" element={<DagView ontologyPrefix="UBERON" lattice={lattice} graph={graph} />} />
+                <Route
+                  path=":vertexID"
+                  element={<VertexView ontologyPrefix="UBERON" ontology={graph.ontologies.UBERON} lattice={lattice} />}
+                />
+              </Route>
+              <Route path="/discovery-log" element={<DiscoveryLog />} />
+            </Route>
+            <Route path="*" element={<NoMatch />} />
+          </Routes>
+        )}
+      </div>
+    </Router>
+  );
+}
+
+interface LoadingIndicatorProps {
+  loading?: boolean; // optional, defaults to True
+}
+
+function LoadingIndicator({ loading = true }: LoadingIndicatorProps) {
+  if (loading) {
     return (
-      <Router>
-        <div
-          id="container"
-          style={{
-            fontFamily: "Helvetica, Arial, sans-serif",
-            lineHeight: 1.5,
-            color: "#555",
-          }}
-        >
-          {!graph && "Loading..."}
-          <Helmet>
-            <meta charSet="utf-8" />
-            <title>Cell Ontology</title>
-          </Helmet>
-
-          {graph && lattice && (
-            <Switch>
-              <Route
-                path="/cell/ontology"
-                render={({ match }) => {
-                  return (
-                    <Dag
-                      ontologyName="cl"
-                      ontology={graph.ontologies.CL}
-                      lattice={lattice}
-                      uberon={graph.ontologies.UBERON}
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="/cell/three"
-                render={({ match }) => {
-                  return (
-                    <ThreeOntology
-                      ontologyName="cl"
-                      ontology={graph.ontologies.CL}
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="/cell/:vertex"
-                render={({ match }) => {
-                  return (
-                    <Vertex
-                      ontologyName="cl"
-                      ontology={graph.ontologies.CL}
-                      vertex={graph.ontologies.CL.get(match.params.vertex)}
-                      vertexID={match.params.vertex}
-                      lattice={lattice}
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="/disease/dag"
-                render={({ match }) => {
-                  return (
-                    <Dag
-                      ontologyName="mondo"
-                      ontology={graph.ontologies.MONDO}
-                      lattice={lattice}
-                      uberon={graph.ontologies.UBERON}
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="/disease/:vertex"
-                render={({ match }) => {
-                  return (
-                    <Vertex
-                      ontologyName="mondo"
-                      ontology={graph.ontologies.MONDO}
-                      vertex={graph.ontologies.MONDO.get(match.params.vertex)}
-                      vertexID={match.params.vertex}
-                      lattice={lattice}
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="/compartment/ontology"
-                render={({ match }) => {
-                  return (
-                    <Dag
-                      ontologyName="uberon"
-                      ontology={graph.ontologies.UBERON}
-                      lattice={lattice}
-                      uberon={graph.ontologies.UBERON}
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="/compartment/:vertex"
-                render={({ match }) => {
-                  return (
-                    <Vertex
-                      ontologyName="uberon"
-                      ontology={graph.ontologies.UBERON}
-                      vertex={graph.ontologies.UBERON.get(match.params.vertex)}
-                      vertexID={match.params.vertex}
-                      lattice={lattice}
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="/discovery-log"
-                render={() => {
-                  return <DiscoveryLog />;
-                }}
-              />
-            </Switch>
-          )}
-        </div>
-      </Router>
+      <>
+        <div>Loading...</div>
+      </>
     );
   }
+  return null;
+}
+
+function NoMatch() {
+  const location = useLocation();
+  console.log("Oops, unexpected route, redirecting:", location);
+  return (
+    <main style={{ padding: "1rem" }}>
+      <Navigate to="/" />
+      <LoadingIndicator />
+    </main>
+  );
 }
 
 export default App;

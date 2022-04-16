@@ -2,3 +2,7 @@ tiledb
 pandas
 pyarrow
 requests
+psutil
+black
+flake8
+numba

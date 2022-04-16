@@ -25,10 +25,10 @@ export const createNodesLinksHulls = (
         ancestorCount: vertex.ancestors.length,
         n_cells: vertex.n_cells ? vertex.n_cells : 0,
       });
-      vertex.descendants.forEach((descendent: string) => {
+      vertex.descendants.forEach((descendant: string) => {
         links.push({
           source: vertexID,
-          target: descendent,
+          target: descendant,
         });
       });
 
@@ -53,14 +53,12 @@ export const createNodesLinksHulls = (
   /**
    * filter, there is a smarter way to do this,
    * but filtering links includes filtering out
-   * descendents
+   * descendants
    */
 
-  const _nodes: OntologyVertexDatum[] = nodes.filter(
-    (node: OntologyVertexDatum) => {
-      return !nodesToFilter.includes(node.id);
-    }
-  );
+  const _nodes: OntologyVertexDatum[] = nodes.filter((node: OntologyVertexDatum) => {
+    return !nodesToFilter.includes(node.id);
+  });
 
   /**
    * remove specified links to filtered nodes...
@@ -87,16 +85,12 @@ export const createNodesLinksHulls = (
     const parentVertex: OntologyTerm | undefined = ontology.get(l.source);
     if (parentVertex && parentVertex.descendants.length > outdegreeCutoff)
       parentVertex.descendants.forEach((descendantID: string) => {
-        const descendantVertex: OntologyTerm | undefined =
-          ontology.get(descendantID);
+        const descendantVertex: OntologyTerm | undefined = ontology.get(descendantID);
 
         // check if these descendants have in their own descendants members of parentVertex.descendants
         // if the descendants of the descendant include the target
         // that is, if y includes z, remove it
-        if (
-          descendantVertex &&
-          descendantVertex.descendants.includes(l.target)
-        ) {
+        if (descendantVertex && descendantVertex.descendants.includes(l.target)) {
           keep = false;
         }
       });

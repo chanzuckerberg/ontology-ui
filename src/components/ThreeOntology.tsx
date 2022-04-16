@@ -6,7 +6,7 @@ import { createNodesLinksHulls } from "../util/createNodesLinksHulls";
 
 interface IProps {
   ontology: Ontology;
-  ontologyName: string;
+  ontologyPrefix: string;
 }
 interface IState {
   nodes: any;
