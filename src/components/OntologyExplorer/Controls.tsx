@@ -231,7 +231,7 @@ class OntologyExplorer extends React.Component<IProps, IState> {
                 label="Show distribution of Tabula Sapiens cell types"
                 onChange={handleShowTabulaSapiensChange}
               />
-              <h2> Cell type filtering & subsetting </h2>
+              <h2> Cell type filtering &amp; subsetting </h2>
               <p>
                 You can subset to a contiguous sugraph by clicking any node and
                 clicking subset. Click any cell type

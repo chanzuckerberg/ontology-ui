@@ -11,7 +11,7 @@ import { drawHulls } from "./hulls";
 
 import { tabulaSapiensCelltypes } from "../../../tabulaSapiensCelltypes";
 import React from "react";
-import { scaleLinear, scaleLog } from "d3-scale";
+import { scaleLinear } from "d3-scale";
 
 /**
  * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas

@@ -1,9 +1,9 @@
 // This is the entire CL ontology converted to JavaScript map type
 
 export type OntologyPrefix = string; // eg "CL"
-export type OntologyId = string; // eg "CL:000000"
+export type OntologyId = string; // OBO ID, eg "CL:000000"
 export interface OntologyTerm {
-  id: OntologyId; // eg, CL:0000000
+  id: OntologyId; // OBO ID, eg, CL:0000000
   label: string; // eg, "heart cell"
   deprecated: boolean;
   ancestors: OntologyId[]; // ancestor terms -- within the same ontology
@@ -28,7 +28,7 @@ export interface DatasetGraph {
   ontologies: Record<OntologyPrefix, Ontology>;
 }
 
-export interface EBITerm {
+export interface EBIOlsTerm {
   annotation: {
     created_by: string[];
     creation_date: string[];
@@ -60,20 +60,20 @@ export interface EBITerm {
   _links: any;
 }
 
-export interface EBITermAPIResponse {
-  page: EBITermPage;
-  _embedded: EBITermEmbedded;
-  _links: EBITermLinks;
+export interface EBIOlsTermAPIResponse {
+  page: EBIOlsTermPage;
+  _embedded: EBIOlsTermEmbedded;
+  _links: EBIOlsTermLinks;
 }
 
-interface EBITermPage {
+interface EBIOlsTermPage {
   size: number;
   totalElements: number;
   totalPages: number;
   number: number;
 }
 
-interface EBITermLinks {
+interface EBIOlsTermLinks {
   self: { href: string };
   first: { href: string };
   prev: { href: string };
@@ -81,6 +81,6 @@ interface EBITermLinks {
   last: { href: string };
 }
 
-export interface EBITermEmbedded {
-  terms: EBITerm[];
+export interface EBIOlsTermEmbedded {
+  terms: EBIOlsTerm[];
 }
