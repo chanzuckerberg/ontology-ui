@@ -4,7 +4,7 @@ import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 
 import { createNodesLinksHulls } from "../../util/createNodesLinksHulls";
 
-import { drawForceDag } from "./drawForce";
+import { drawForceDag, DrawForceDagHighlightProps } from "./drawForce";
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
@@ -46,9 +46,6 @@ interface ForceCanvasProps {
   forceCanvasHeight: number;
   scaleFactor: number;
   translateCenter: number;
-  hullsEnabled: boolean;
-  highlightAncestors: boolean;
-  showTabulaSapiensDataset: boolean; // WTF?
 }
 
 // Other DAG exploration state
@@ -56,10 +53,7 @@ interface OntologyExplorerState {
   dagCreateProps: CreateDagProps;
   hoverNode: OntologyVertexDatum | undefined /* from d3 force node hover */;
   pinnedNode: OntologyVertexDatum | undefined /* from d3 force node click */;
-  compartment: string | null;
-  dagSearchText: string;
   subtreeRootID: string | null;
-  redrawCanvas: any /* function to force render canvas */;
   simulationRunning: boolean;
   sugiyamaRenderThreshold: number;
   cardWidth: number;
@@ -72,9 +66,13 @@ const defaultForceCanvasProps: ForceCanvasProps = {
   forceCanvasHeight: 850,
   scaleFactor: 0.165,
   translateCenter: -350,
+};
+
+const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
   highlightAncestors: false,
   showTabulaSapiensDataset: false,
+  compartment: undefined,
 };
 
 const defaultState: OntologyExplorerState = {
@@ -86,10 +84,7 @@ const defaultState: OntologyExplorerState = {
   },
   hoverNode: undefined,
   pinnedNode: undefined,
-  compartment: null,
-  dagSearchText: "",
   subtreeRootID: null,
-  redrawCanvas: null,
   simulationRunning: false,
   sugiyamaRenderThreshold: 49,
   cardWidth: 350,
@@ -100,22 +95,23 @@ const defaultState: OntologyExplorerState = {
 export default function OntologyExplorer({ ontology, lattice, uberon }: OntologyExplorerProps): JSX.Element {
   const [state, setState] = useState<OntologyExplorerState>(defaultState);
   const [dagState, setDagState] = useState<DagState | null>(null);
-  const [forceCanvasProps, setForceCanvasProps] = useState<ForceCanvasProps>(defaultForceCanvasProps);
+  const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
+    useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
+  const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
+
+  const forceCanvasProps = defaultForceCanvasProps;
   const dagCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const {
     subtreeRootID,
     dagCreateProps,
-    compartment,
     pinnedNode,
     hoverNode,
     simulationRunning,
-    dagSearchText,
     cardWidth,
     cardHeight,
     menubarHeight,
     sugiyamaRenderThreshold,
-    redrawCanvas,
   } = state;
 
   useEffect(() => {
@@ -138,13 +134,14 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
     */
     if (dagState) {
       const { nodes, links } = dagState;
-      const redrawCanvas = drawForceDag(
-        nodes, // todo, mutates
-        links, // todo, mutates
-        forceCanvasProps.forceCanvasWidth,
-        forceCanvasProps.forceCanvasHeight,
-        forceCanvasProps.scaleFactor,
-        forceCanvasProps.translateCenter,
+      const { forceCanvasWidth, forceCanvasHeight, scaleFactor, translateCenter } = forceCanvasProps;
+      const _redrawCanvas = drawForceDag(
+        nodes,
+        links,
+        forceCanvasWidth,
+        forceCanvasHeight,
+        scaleFactor,
+        translateCenter,
         dagCanvasRef,
         ontology,
         (node?: OntologyVertexDatum) => {
@@ -153,49 +150,51 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
         (node?: OntologyVertexDatum) => {
           setState((s) => ({ ...s, pinnedNode: node }));
         },
-        () => {},
         () => {
           setState((s) => ({ ...s, simulationRunning: false }));
         },
-        forceCanvasProps.hullsEnabled,
         lattice,
-        compartment,
-        forceCanvasProps.highlightAncestors,
-        forceCanvasProps.showTabulaSapiensDataset
+        defaultForceHightlightProps
       );
-      setState((s) => ({
-        ...s,
-        redrawCanvas,
-        simulationRunning: true,
-      }));
+      setRedrawCanvas(() => _redrawCanvas);
+      setState((s) => ({ ...s, simulationRunning: true }));
     }
-  }, [ontology, lattice, dagState, dagCanvasRef, forceCanvasProps, compartment]);
+  }, [ontology, lattice, dagState, dagCanvasRef, forceCanvasProps]);
+
+  useEffect(() => {
+    /*
+    Redraw the DAG whenever highlight state changes.
+    */
+    if (redrawCanvas && !simulationRunning) {
+      redrawCanvas(forceCanvasHighlightProps);
+    }
+  }, [redrawCanvas, forceCanvasHighlightProps, simulationRunning]);
 
   const hoverVertex: OntologyTerm | undefined = hoverNode && ontology.get(hoverNode.id);
   const pinnedVertex: OntologyTerm | undefined = pinnedNode && ontology.get(pinnedNode.id);
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
-  const { forceCanvasWidth, forceCanvasHeight, hullsEnabled, highlightAncestors, showTabulaSapiensDataset } =
-    forceCanvasProps;
+  const { forceCanvasWidth, forceCanvasHeight } = forceCanvasProps;
   const isSubset = !!subtreeRootID;
+  const { searchString, hullsEnabled, highlightAncestors, showTabulaSapiensDataset } = forceCanvasHighlightProps;
 
   /*
    * Callbacks
    */
   const handleHighlightAncestorChange = () =>
-    setForceCanvasProps((s) => ({
+    setForceCanvasHighlightProps((s) => ({
       ...s,
       highlightAncestors: !s.highlightAncestors,
     }));
 
   const handleHullChange = () =>
-    setForceCanvasProps((s) => ({
+    setForceCanvasHighlightProps((s) => ({
       ...s,
       hullsEnabled: !s.hullsEnabled,
     }));
 
   const handleShowTabulaSapiensChange = () =>
-    setForceCanvasProps((s) => ({
+    setForceCanvasHighlightProps((s) => ({
       ...s,
       showTabulaSapiensDataset: !s.showTabulaSapiensDataset,
     }));
@@ -203,11 +202,8 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
   /**
    * @param e is a react synthetic event type, todo
    */
-  const handleDagSearchChange = (e: any) => {
-    setState((s) => ({ ...s, dagSearchText: e.target.value }));
-    // TODO: this should not be synchronous
-    redrawCanvas?.(e.target.value);
-  };
+  const handleSearchStringChange = (e: any) =>
+    setForceCanvasHighlightProps((s) => ({ ...s, searchString: e.target.value }));
 
   const subsetToNode = () => {
     if (!pinnedNode?.id) {
@@ -230,28 +226,28 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
     }));
 
   const setCompartment = (compartment: { uberonID: string; label: string }) =>
-    setState((s) => ({ ...s, compartment: compartment.uberonID }));
+    setForceCanvasHighlightProps((s) => ({ ...s, compartment: compartment.uberonID }));
 
   return (
     <div id="ontologyExplorerContainer">
       <Controls
         pinnedNode={pinnedNode}
-        dagSearchText={dagSearchText}
+        dagSearchText={searchString ?? ""}
         simulationRunning={simulationRunning}
         menubarHeight={menubarHeight}
         isSubset={isSubset}
         outdegreeCutoffNodes={minimumOutdegree}
         uberon={uberon}
-        handleDagSearchChange={handleDagSearchChange}
+        handleDagSearchChange={handleSearchStringChange}
         subsetToNode={subsetToNode}
         handleMinOutdegreeChange={handleMinOutdegreeChange}
         resetSubset={resetSubset}
         setCompartment={setCompartment}
-        hullsEnabled={hullsEnabled}
+        hullsEnabled={!!hullsEnabled}
         handleHullChange={handleHullChange}
-        highlightAncestors={highlightAncestors}
+        highlightAncestors={!!highlightAncestors}
         handleHighlightAncestorChange={handleHighlightAncestorChange}
-        showTabulaSapiensDataset={showTabulaSapiensDataset}
+        showTabulaSapiensDataset={!!showTabulaSapiensDataset}
         handleShowTabulaSapiensChange={handleShowTabulaSapiensChange}
         minimumOutdegree={minimumOutdegree + ""}
         maximumOutdegree={maximumOutdegree + ""}
