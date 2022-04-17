@@ -51,10 +51,7 @@ interface ForceCanvasProps {
 // Other DAG exploration state
 interface OntologyExplorerState {
   dagCreateProps: CreateDagProps;
-  hoverNode: OntologyVertexDatum | undefined /* from d3 force node hover */;
-  pinnedNode: OntologyVertexDatum | undefined /* from d3 force node click */;
   subtreeRootID: string | null;
-  simulationRunning: boolean;
   sugiyamaRenderThreshold: number;
   cardWidth: number;
   cardHeight: number;
@@ -82,10 +79,7 @@ const defaultState: OntologyExplorerState = {
     outdegreeCutoffXYZ: 50,
     doCreateSugiyamaDatastructure: true,
   },
-  hoverNode: undefined,
-  pinnedNode: undefined,
   subtreeRootID: null,
-  simulationRunning: false,
   sugiyamaRenderThreshold: 49,
   cardWidth: 350,
   cardHeight: 850, // 850 default, 2000 full
@@ -94,6 +88,9 @@ const defaultState: OntologyExplorerState = {
 
 export default function OntologyExplorer({ ontology, lattice, uberon }: OntologyExplorerProps): JSX.Element {
   const [state, setState] = useState<OntologyExplorerState>(defaultState);
+  const [hoverNode, setHoverNode] = useState<OntologyVertexDatum>();
+  const [pinnedNode, setPinnedNode] = useState<OntologyVertexDatum>();
+  const [simulationRunning, setSimulationRunning] = useState<boolean>(false);
   const [dagState, setDagState] = useState<DagState | null>(null);
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
@@ -102,17 +99,7 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
   const forceCanvasProps = defaultForceCanvasProps;
   const dagCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  const {
-    subtreeRootID,
-    dagCreateProps,
-    pinnedNode,
-    hoverNode,
-    simulationRunning,
-    cardWidth,
-    cardHeight,
-    menubarHeight,
-    sugiyamaRenderThreshold,
-  } = state;
+  const { subtreeRootID, dagCreateProps, cardWidth, cardHeight, menubarHeight, sugiyamaRenderThreshold } = state;
 
   useEffect(() => {
     /*
@@ -144,20 +131,14 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
         translateCenter,
         dagCanvasRef,
         ontology,
-        (node?: OntologyVertexDatum) => {
-          setState((s) => ({ ...s, hoverNode: node }));
-        },
-        (node?: OntologyVertexDatum) => {
-          setState((s) => ({ ...s, pinnedNode: node }));
-        },
-        () => {
-          setState((s) => ({ ...s, simulationRunning: false }));
-        },
+        (node?: OntologyVertexDatum) => setHoverNode(node),
+        (node?: OntologyVertexDatum) => setPinnedNode(node),
+        () => setSimulationRunning(false),
         lattice,
         defaultForceHightlightProps
       );
       setRedrawCanvas(() => _redrawCanvas);
-      setState((s) => ({ ...s, simulationRunning: true }));
+      setSimulationRunning(() => true);
     }
   }, [ontology, lattice, dagState, dagCanvasRef, forceCanvasProps]);
 
