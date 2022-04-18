@@ -4,8 +4,6 @@ import { Helmet } from "react-helmet";
 
 import VertexView from "./routes/VertexView";
 import DagView from "./routes/DagExplorerView";
-import ThreeOntology from "./components/ThreeOntology";
-import DiscoveryLog from "./components/DiscoveryLog";
 import loadDatasetGraph from "./util/loadDatasetGraph";
 import { DatasetGraph, Ontology } from "./d";
 
@@ -50,7 +48,6 @@ function App() {
               <Route path="cell">
                 <Route index element={<Navigate to="ontology" replace />} />
                 <Route path="ontology" element={<DagView ontologyPrefix="CL" lattice={lattice} graph={graph} />} />
-                <Route path="three" element={<ThreeOntology ontologyPrefix="CL" ontology={graph.ontologies.CL} />} />
                 <Route path=":vertexID" element={<VertexView ontology={graph.ontologies.CL} lattice={lattice} />} />
               </Route>
 
@@ -66,7 +63,6 @@ function App() {
                 <Route path="ontology" element={<DagView ontologyPrefix="UBERON" lattice={lattice} graph={graph} />} />
                 <Route path=":vertexID" element={<VertexView ontology={graph.ontologies.UBERON} lattice={lattice} />} />
               </Route>
-              <Route path="/discovery-log" element={<DiscoveryLog />} />
             </Route>
             <Route path="*" element={<NoMatch />} />
           </Routes>
