@@ -11,11 +11,49 @@ import { drawHulls } from "./hulls";
 
 import { tabulaSapiensCelltypes } from "../../../tabulaSapiensCelltypes";
 import React from "react";
-import { scaleLinear, scaleLog } from "d3-scale";
+import { scaleLinear } from "d3-scale";
 
 /**
+ * Credit & reference:
+ *
  * via fil's observable https://observablehq.com/@d3/force-directed-graph-canvas
  * and https://bl.ocks.org/mbostock/6f14f7b7f267a85f7cdc
+ *
+ */
+
+/**
+ * These properties set dynamic highlight state, and may be passed into any
+ * re-render to turn on/off highlighting. Changes are persistent between
+ * calls, allowing the rendering to be treated as a controlled component.
+ *
+ * Default highlighting may also be passed ot drawForceDag(), and will set
+ * the initial highlighting state.
+ */
+export interface DrawForceDagHighlightProps {
+  searchString?: string;
+  compartment?: string;
+  hullsEnabled?: boolean;
+  showTabulaSapiensDataset?: boolean;
+  highlightAncestors?: boolean;
+}
+
+/**
+ * Create a DAG render function and simulation.
+ *
+ * @param nodes
+ * @param links
+ * @param width
+ * @param height
+ * @param scaleFactor
+ * @param translateCenter
+ * @param dagCanvasRef
+ * @param ontology
+ * @param setHoverNode
+ * @param setPinnedNode
+ * @param onForceSimulationEnd
+ * @param lattice
+ * @param defaultHighlightProps
+ * @returns the rendering function.
  */
 export const drawForceDag = (
   nodes: OntologyVertexDatum[],
@@ -28,24 +66,17 @@ export const drawForceDag = (
   ontology: Ontology,
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
   setPinnedNode: (node: OntologyVertexDatum | undefined) => void,
-  incrementRenderCounter: any,
   onForceSimulationEnd: any,
-  hullsTurnedOn: boolean,
   lattice: any,
-  compartment: string | null,
-  highlightAncestors: boolean,
-  showTabulaSapiensDataset: boolean
+  defaultHighlightProps: DrawForceDagHighlightProps = {}
 ) => {
-  /**
-   * Let parent component know we rendered
-   */
-  incrementRenderCounter();
   if (!dagCanvasRef || !dagCanvasRef.current) return null;
+
   /**
    * DOM element
    */
   const canvas = select(dagCanvasRef.current);
-  const context = dagCanvasRef.current!.getContext("2d"); //.context2d(width, height);
+  const context = dagCanvasRef.current!.getContext("2d");
   const boundingRect = dagCanvasRef.current.getBoundingClientRect();
   const dpr = window.devicePixelRatio;
 
@@ -58,6 +89,13 @@ export const drawForceDag = (
    * Click state
    */
   let clickNode: OntologyVertexDatum | undefined;
+
+  /**
+   * Dynamic highlighting & rendering props
+   */
+  const highlightProps: DrawForceDagHighlightProps = {
+    ...defaultHighlightProps,
+  };
 
   /**
    * Hull root vertices
@@ -151,197 +189,171 @@ export const drawForceDag = (
     .force("y", forceY((height * dpr) / 2));
 
   /**
-   * Tree layout, if xyz nodes excluded ... may be able to get rid of this entirely, or may be useful in some limited small-ish circumstances
+   * Animation frame.
    */
-  // .force(
-  //   "link",
-  //   forceLink(links)
-  //     .id((d: any) => d.id)
-  //     .distance(0)
-  //     .strength(1)
-  // )
-  // .force("charge", forceManyBody().strength(-50))
-  // .force("x", forceX((width * dpr) / 2)) //(width * dpr) / 2))
-  // .force("y", forceY((height * dpr) / 2)); //(height * dpr) / 2));
+  const ticked = (updatedHighlightProps: DrawForceDagHighlightProps = {}) => {
+    if (!context) return;
 
-  /**
-   * Animation frame
-   */
-  const ticked = (searchString?: string) => {
-    if (context) {
-      /**
-       * Clear
-       */
-      context.save();
+    Object.assign(highlightProps, updatedHighlightProps);
+    const { searchString, highlightAncestors, compartment, hullsEnabled, showTabulaSapiensDataset } = highlightProps;
 
-      context.clearRect(0, 0, width * dpr, height * dpr);
+    /**
+     * Clear
+     */
+    context.save();
+    context.clearRect(0, 0, width * dpr, height * dpr);
 
-      /**
-       * Scale up or down depending on number of nodes
-       */
+    /**
+     * Draw links
+     */
+    context.lineWidth = 1;
+    context.beginPath();
+    links.forEach(drawLink);
+    context.strokeStyle = linkColor;
+    context.stroke();
 
-      // context.scale(2, 2);
-      // context.translate(-width / 2, -height / 2);
-
-      /**
-       * Draw links
-       */
-      context.lineWidth = 1;
+    /**
+     * Draw nodes
+     */
+    for (const node of nodes) {
       context.beginPath();
-      links.forEach(drawLink);
-      context.strokeStyle = linkColor;
+      drawNode(node);
+
+      /**
+       * Default color of node
+       * last true statement after takes precedence
+       */
+      context.fillStyle = nodeColor;
+      /**
+       * fade the node back if it's not in the search string
+       */
+      if (searchString) {
+        const vertex: any = ontology.get(node.id);
+
+        if (vertex && vertex.label) {
+          const _hit = vertex.label.toLowerCase().includes(searchString.toLowerCase());
+          if (_hit) {
+            context.fillStyle = nodeColorInSearch;
+          } else {
+            context.fillStyle = nodeColorNotInSearch;
+          }
+        }
+      }
+      /**
+       * hover & click color
+       */
+      if (clickNode && clickNode.id === node.id) {
+        context.fillStyle = clickedNodeColor;
+      }
+
+      if (hoverNode) {
+        const hoverVertex: any = ontology.get(hoverNode.id);
+        // todo perf don't do this lookup here
+
+        if (hoverNode.id === node.id) {
+          // context.fillStyle = hoverNodeColor;
+          context.strokeStyle = hoverStrokeColor;
+        }
+        if (hoverVertex.descendants.includes(node.id)) {
+          context.fillStyle = hoverNodeDescendantColor;
+        }
+        if (hoverVertex.ancestors.includes(node.id) && highlightAncestors) {
+          context.fillStyle = hoverNodeAncestorColor;
+        }
+      }
+
+      /**
+       * check dataset distribution in ontology
+       */
+
+      if (showTabulaSapiensDataset && tabulaSapiensCelltypes.includes(node.id)) {
+        context.fillStyle = datasetDistributionColor;
+      }
+
+      /**
+       * check compartment distribution in ontology
+       */
+      if (lattice && compartment) {
+        const term: OntologyTerm = lattice.get(node.id);
+        const celltype_is_in_compartment = term.xref.includes(compartment);
+        if (celltype_is_in_compartment) {
+          context.fillStyle = "orange";
+        }
+      }
+
+      context.fill();
       context.stroke();
 
       /**
-       * Draw nodes
+       * end, reset cases
+       */
+      context.strokeStyle = nodeStrokeColor; // reset, in case it was hover
+    }
+
+    /**
+     * Draw text on nodes, for alpha, this writes tabula sapiens nodes out
+     */
+    if (showTabulaSapiensDataset) {
+      for (const node of nodes) {
+        if (tabulaSapiensCelltypes.includes(node.id)) {
+          const vertex: any = ontology.get(node.id);
+          if (vertex && vertex.label && typeof vertex.label === "string") {
+            context.fillStyle = tooltipColor;
+            context.font = "18px serif";
+
+            if (typeof node.x !== "number" || typeof node.y !== "number") {
+              console.log(
+                "in drawForceDag/ticked: while attempting to context.fillText, node.x or node.y was not a number"
+              );
+              return;
+            }
+
+            context.fillText(`${vertex.label.substring(0, 10)}`, node.x, node.y);
+          }
+        }
+      }
+    }
+
+    if (hullsEnabled) {
+      /**
+       * Draw hulls
+       */
+      drawHulls(ontology, nodes, context, hullBorderColor, hullLabelColor, hullRoots);
+
+      /**
+       * Draw text on hull nodes
        */
       for (const node of nodes) {
-        context.beginPath();
-        drawNode(node);
-
-        /**
-         * Default color of node
-         * last true statement after takes precedence
-         */
-        context.fillStyle = nodeColor;
-        /**
-         * fade the node back if it's not in the search string
-         */
-        if (searchString) {
+        if (hullRoots.includes(node.id)) {
           const vertex: any = ontology.get(node.id);
-
-          if (vertex && vertex.label) {
-            const _hit = vertex.label.toLowerCase().includes(searchString.toLowerCase());
-            if (_hit) {
-              context.fillStyle = nodeColorInSearch;
-            } else {
-              context.fillStyle = nodeColorNotInSearch;
-            }
-          }
-        }
-        /**
-         * hover & click color
-         */
-        if (clickNode && clickNode.id === node.id) {
-          context.fillStyle = clickedNodeColor;
-        }
-
-        if (hoverNode) {
-          const hoverVertex: any = ontology.get(hoverNode.id);
-          // todo perf don't do this lookup here
-
-          if (hoverNode.id === node.id) {
-            // context.fillStyle = hoverNodeColor;
-            context.strokeStyle = hoverStrokeColor;
-          }
-          if (hoverVertex.descendants.includes(node.id)) {
-            context.fillStyle = hoverNodeDescendantColor;
-          }
-          if (hoverVertex.ancestors.includes(node.id) && highlightAncestors) {
-            context.fillStyle = hoverNodeAncestorColor;
-          }
-        }
-
-        /**
-         * check dataset distribution in ontology
-         */
-
-        if (showTabulaSapiensDataset && tabulaSapiensCelltypes.includes(node.id)) {
-          context.fillStyle = datasetDistributionColor;
-        }
-
-        /**
-         * check compartment distribution in ontology
-         */
-        if (lattice && compartment) {
-          const term: OntologyTerm = lattice.get(node.id);
-          const celltype_is_in_compartment = term.xref.includes(compartment);
-          if (celltype_is_in_compartment) {
-            context.fillStyle = "orange";
-          }
-        }
-
-        context.fill();
-        context.stroke();
-
-        /**
-         * end, reset cases
-         */
-        context.strokeStyle = nodeStrokeColor; // reset, in case it was hover
-      }
-
-      /**
-       * Draw text on nodes, for alpha, this writes tabula sapiens nodes out
-       */
-      if (showTabulaSapiensDataset) {
-        for (const node of nodes) {
-          if (tabulaSapiensCelltypes.includes(node.id)) {
-            const vertex: any = ontology.get(node.id);
-            if (vertex && vertex.label && typeof vertex.label === "string") {
-              context.fillStyle = tooltipColor;
-              context.font = "18px serif";
-
-              if (typeof node.x !== "number" || typeof node.y !== "number") {
-                console.log(
-                  "in drawForceDag/ticked: while attempting to context.fillText, node.x or node.y was not a number"
-                );
-                return;
-              }
-
-              context.fillText(`${vertex.label.substring(0, 10)}`, node.x, node.y);
-            }
+          if (vertex && vertex.label && typeof vertex.label === "string" && node.x && node.y) {
+            context.fillStyle = tooltipColor;
+            context.font = "18px monospace";
+            const _maxLength = 15;
+            const _length = vertex.label.length;
+            context.fillText(
+              `${vertex.label.substring(0, _maxLength)}${_length > _maxLength ? "..." : ""}`,
+              node.x + 7,
+              node.y + 3
+            );
           }
         }
       }
-
-      if (hullsTurnedOn) {
-        /**
-         * Draw hulls
-         */
-        drawHulls(ontology, nodes, context, hullBorderColor, hullLabelColor, hullRoots);
-
-        /**
-         * Draw text on hull nodes
-         */
-        for (const node of nodes) {
-          if (hullRoots.includes(node.id)) {
-            const vertex: any = ontology.get(node.id);
-            if (vertex && vertex.label && typeof vertex.label === "string" && node.x && node.y) {
-              context.fillStyle = tooltipColor;
-              context.font = "18px monospace";
-              const _maxLength = 15;
-              const _length = vertex.label.length;
-              context.fillText(
-                `${vertex.label.substring(0, _maxLength)}${_length > _maxLength ? "..." : ""}`,
-                node.x + 7,
-                node.y + 3
-              );
-            }
-          }
-        }
-      }
-
-      /**
-       * Draw text tooltip on hover, debug feature, disabled as cell card does this
-       */
-      if (hoverNode) {
-        const vertex: any = ontology.get(hoverNode.id);
-        if (vertex && vertex.label && typeof vertex.label === "string") {
-          context.fillStyle = tooltipColor;
-          context.font = "24px serif";
-          context.fillText(
-            "",
-            //`${vertex.label}${hoverNode.id}`,
-            // hoverNode.x,
-            // hoverNode.y
-            10,
-            70
-          );
-        }
-      }
-
-      context.restore();
     }
+
+    /**
+     * Draw text tooltip on hover, debug feature, disabled as cell card does this
+     */
+    if (hoverNode) {
+      const vertex: any = ontology.get(hoverNode.id);
+      if (vertex && vertex.label && typeof vertex.label === "string") {
+        context.fillStyle = tooltipColor;
+        context.font = "24px serif";
+        context.fillText("", 10, 70);
+      }
+    }
+
+    context.restore();
   };
 
   const drawLink = (d: SimulationLinkDatum<any>) => {

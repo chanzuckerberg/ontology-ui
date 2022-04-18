@@ -51,29 +51,20 @@ function App() {
                 <Route index element={<Navigate to="ontology" replace />} />
                 <Route path="ontology" element={<DagView ontologyPrefix="CL" lattice={lattice} graph={graph} />} />
                 <Route path="three" element={<ThreeOntology ontologyPrefix="CL" ontology={graph.ontologies.CL} />} />
-                <Route
-                  path=":vertexID"
-                  element={<VertexView ontologyPrefix="CL" ontology={graph.ontologies.CL} lattice={lattice} />}
-                />
+                <Route path=":vertexID" element={<VertexView ontology={graph.ontologies.CL} lattice={lattice} />} />
               </Route>
 
               <Route path="disease">
                 <Route index element={<Navigate to="dag" replace />} />
                 <Route path="dag" element={<DagView ontologyPrefix="MONDO" lattice={lattice} graph={graph} />} />
-                <Route
-                  path=":vertexID"
-                  element={<VertexView ontologyPrefix="MONDO" ontology={graph.ontologies.MONDO} lattice={lattice} />}
-                />
+                <Route path=":vertexID" element={<VertexView ontology={graph.ontologies.MONDO} lattice={lattice} />} />
               </Route>
 
               <Route path="compartment">
                 <Route index element={<Navigate to="ontology" replace />} />
 
                 <Route path="ontology" element={<DagView ontologyPrefix="UBERON" lattice={lattice} graph={graph} />} />
-                <Route
-                  path=":vertexID"
-                  element={<VertexView ontologyPrefix="UBERON" ontology={graph.ontologies.UBERON} lattice={lattice} />}
-                />
+                <Route path=":vertexID" element={<VertexView ontology={graph.ontologies.UBERON} lattice={lattice} />} />
               </Route>
               <Route path="/discovery-log" element={<DiscoveryLog />} />
             </Route>

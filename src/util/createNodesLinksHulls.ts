@@ -10,6 +10,7 @@ export const createNodesLinksHulls = (
   doCreateSugiyamaDatastructure: boolean,
   subtree?: string[]
 ) => {
+  console.time("createNodesLinksHulls");
   const nodes: OntologyVertexDatum[] = [];
   const links: { source: string; target: string }[] = [];
   const sugiyamaStratifyData: { id: string; parentIds: string[] }[] = [];
@@ -50,6 +51,8 @@ export const createNodesLinksHulls = (
     }
   });
 
+  console.timeLog("createNodesLinksHulls");
+
   /**
    * filter, there is a smarter way to do this,
    * but filtering links includes filtering out
@@ -59,6 +62,8 @@ export const createNodesLinksHulls = (
   const _nodes: OntologyVertexDatum[] = nodes.filter((node: OntologyVertexDatum) => {
     return !nodesToFilter.includes(node.id);
   });
+
+  console.timeLog("createNodesLinksHulls");
 
   /**
    * remove specified links to filtered nodes...
@@ -98,9 +103,13 @@ export const createNodesLinksHulls = (
     return keep;
   });
 
+  console.timeLog("createNodesLinksHulls");
+
   const _sugiyamaStratifyData = sugiyamaStratifyData.filter((n: any) => {
     return !nodesToFilter.includes(n.id);
   });
+
+  console.timeEnd("createNodesLinksHulls");
 
   return {
     nodes: _nodes,
