@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button, Classes, Drawer, RadioGroup, Radio, InputGroup, Checkbox, MenuItem } from "@blueprintjs/core";
 import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select";
 
-import { Ontology, OntologyTerm } from "../../d";
+import { OntologyTerm } from "../../d";
 import { NamedOntology } from "./types";
 
 interface XrefOmnibarItem {
