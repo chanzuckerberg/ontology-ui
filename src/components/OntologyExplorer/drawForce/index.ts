@@ -4,7 +4,7 @@ import { select } from "d3-selection";
 
 import { interpolateSinebow } from "d3-scale-chromatic";
 
-import { OntologyVertexDatum } from "..";
+import { OntologyVertexDatum } from "../types";
 import { Ontology, OntologyTerm } from "../../../d";
 
 import { drawHulls } from "./hulls";
@@ -30,8 +30,9 @@ import { scaleLinear } from "d3-scale";
  * the initial highlighting state.
  */
 export interface DrawForceDagHighlightProps {
+  pinnedNodeID?: string;
   searchString?: string;
-  compartment?: string;
+  xrefTermID?: string;
   hullsEnabled?: boolean;
   showTabulaSapiensDataset?: boolean;
   highlightAncestors?: boolean;
@@ -88,7 +89,7 @@ export const drawForceDag = (
   /**
    * Click state
    */
-  let clickNode: OntologyVertexDatum | undefined;
+  // let clickNode: OntologyVertexDatum | undefined;
 
   /**
    * Dynamic highlighting & rendering props
@@ -195,7 +196,8 @@ export const drawForceDag = (
     if (!context) return;
 
     Object.assign(highlightProps, updatedHighlightProps);
-    const { searchString, highlightAncestors, compartment, hullsEnabled, showTabulaSapiensDataset } = highlightProps;
+    const { pinnedNodeID, searchString, highlightAncestors, xrefTermID, hullsEnabled, showTabulaSapiensDataset } =
+      highlightProps;
 
     /**
      * Clear
@@ -242,16 +244,11 @@ export const drawForceDag = (
       /**
        * hover & click color
        */
-      if (clickNode && clickNode.id === node.id) {
-        context.fillStyle = clickedNodeColor;
-      }
-
       if (hoverNode) {
         const hoverVertex: any = ontology.get(hoverNode.id);
         // todo perf don't do this lookup here
 
         if (hoverNode.id === node.id) {
-          // context.fillStyle = hoverNodeColor;
           context.strokeStyle = hoverStrokeColor;
         }
         if (hoverVertex.descendants.includes(node.id)) {
@@ -260,6 +257,10 @@ export const drawForceDag = (
         if (hoverVertex.ancestors.includes(node.id) && highlightAncestors) {
           context.fillStyle = hoverNodeAncestorColor;
         }
+      }
+
+      if (node.id === pinnedNodeID) {
+        context.fillStyle = clickedNodeColor;
       }
 
       /**
@@ -271,12 +272,12 @@ export const drawForceDag = (
       }
 
       /**
-       * check compartment distribution in ontology
+       * check xref ontology
        */
-      if (lattice && compartment) {
+      if (lattice && xrefTermID) {
         const term: OntologyTerm = lattice.get(node.id);
-        const celltype_is_in_compartment = term.xref.includes(compartment);
-        if (celltype_is_in_compartment) {
+        const celltype_xref_match = term.xref.includes(xrefTermID);
+        if (celltype_xref_match) {
           context.fillStyle = "orange";
         }
       }
@@ -417,7 +418,7 @@ export const drawForceDag = (
     const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
     const zeroY = event.clientY - boundingRect.top;
 
-    clickNode = simulation.find(zeroX * dpr, zeroY * dpr);
+    const clickNode = simulation.find(zeroX * dpr, zeroY * dpr);
     setPinnedNode(clickNode);
     ticked();
   });

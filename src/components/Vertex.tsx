@@ -7,11 +7,13 @@ export interface VertexProps {
   ontology: Ontology;
   lattice: Ontology;
   vertex: OntologyTerm;
+  query?: string;
 }
 
-export default function Vertex({ ontology, lattice, vertex }: VertexProps) {
+export default function Vertex({ ontology, lattice, vertex, query }: VertexProps) {
   const [olsTerm, setOlsTerm] = useState<EBIOlsTerm | null>();
   const vertexID = vertex.id;
+  query = query ? "?" + query : "";
 
   useEffect(() => {
     olsLookupTermByOboId(vertexID)
@@ -58,7 +60,7 @@ export default function Vertex({ ontology, lattice, vertex }: VertexProps) {
             }
             return (
               <li key={ancestor}>
-                <Link to={"../" + ancestor}>{_a.label}</Link>
+                <Link to={"../" + ancestor + query}>{_a.label}</Link>
               </li>
             );
           })}
@@ -77,7 +79,7 @@ export default function Vertex({ ontology, lattice, vertex }: VertexProps) {
             }
             return (
               <li key={descendant}>
-                <Link to={"../" + descendant}> {_d.label} </Link>
+                <Link to={"../" + descendant + query}> {_d.label} </Link>
               </li>
             );
           })}

@@ -1,5 +1,5 @@
 import { SimulationLinkDatum } from "d3-force";
-import { OntologyVertexDatum } from "../components/OntologyExplorer";
+import { OntologyVertexDatum } from "../components/OntologyExplorer/types";
 
 import { Ontology, OntologyTerm } from "../d";
 

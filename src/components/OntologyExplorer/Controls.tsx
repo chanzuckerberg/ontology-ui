@@ -1,30 +1,30 @@
 import { useState, useEffect } from "react";
-
-import { Ontology, OntologyTerm } from "../../d";
 import { Button, Classes, Drawer, RadioGroup, Radio, InputGroup, Checkbox, MenuItem } from "@blueprintjs/core";
-import { OntologyVertexDatum } from ".";
-
 import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select";
 
-interface ICompartmentOmnibarItem {
-  uberonID: string;
+import { Ontology, OntologyTerm } from "../../d";
+import { NamedOntology } from "./types";
+
+interface XrefOmnibarItem {
+  xrefID: string;
   label: string;
 }
 
-const CompartmentOmnibar = Omnibar.ofType<ICompartmentOmnibarItem>();
+const XrefOmnibar = Omnibar.ofType<XrefOmnibarItem>();
 
-interface OntrologyExplorderControlDrawerProps {
+interface OntrologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
   dagSearchText: string;
   simulationRunning: boolean;
   menubarHeight: number;
   isSubset: boolean;
   outdegreeCutoffNodes: number;
-  uberon: null | Ontology;
+  xref: NamedOntology;
   handleDagSearchChange: any;
+  deselectPinnedNode: any;
   subsetToNode: any;
   resetSubset: any;
-  setCompartment: any;
+  setXrefSearch: any;
   handleHullChange: any;
   hullsEnabled: boolean;
   highlightAncestors: boolean;
@@ -36,22 +36,23 @@ interface OntrologyExplorderControlDrawerProps {
   handleMinOutdegreeChange: any;
 }
 
-export default function OntrologyExplorderControlDrawer(props: OntrologyExplorderControlDrawerProps): JSX.Element {
+export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerControlDrawerProps): JSX.Element {
   const [settingsIsOpen, setSettingsIsOpen] = useState<boolean>(false);
-  const [compartmentSearchIsOpen, setCompartmentSearchIsOpenState] = useState<boolean>(false);
-  const [uberonVerticesAsArray, setUberonVerticesAsArray] = useState<ICompartmentOmnibarItem[]>([]);
+  const [xrefSearchIsOpen, setXrefSearchIsOpenState] = useState<boolean>(false);
+  const [xrefVerticesAsArray, setXrefVerticesAsArray] = useState<XrefOmnibarItem[]>([]);
 
   const {
-    uberon,
+    xref,
     pinnedVertex,
     dagSearchText,
     simulationRunning,
     menubarHeight,
     isSubset,
     handleDagSearchChange,
+    deselectPinnedNode,
     subsetToNode,
     resetSubset,
-    setCompartment,
+    setXrefSearch,
     hullsEnabled,
     handleHullChange,
     highlightAncestors,
@@ -64,20 +65,20 @@ export default function OntrologyExplorderControlDrawer(props: OntrologyExplorde
   } = props;
 
   useEffect(() => {
-    const _uberonVerticesAsArray: ICompartmentOmnibarItem[] = [];
-    uberon?.forEach((v: OntologyTerm, id) => {
-      _uberonVerticesAsArray.push({ uberonID: id, label: v.label });
+    const _xrefVerticesAsArray: XrefOmnibarItem[] = [];
+    xref.ontology?.forEach((v: OntologyTerm, id) => {
+      _xrefVerticesAsArray.push({ xrefID: id, label: v.label });
     });
-    function onlyUnique(value: ICompartmentOmnibarItem, index: number, self: ICompartmentOmnibarItem[]) {
+    function onlyUnique(value: XrefOmnibarItem, index: number, self: XrefOmnibarItem[]) {
       return self.indexOf(value) === index;
     }
-    setUberonVerticesAsArray(_uberonVerticesAsArray.filter(onlyUnique));
-  }, [uberon]);
+    setXrefVerticesAsArray(_xrefVerticesAsArray.filter(onlyUnique));
+  }, [xref]);
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
   const handleSettingsClose = () => setSettingsIsOpen(false);
-  const handleCompartmentSearchOpen = () => setCompartmentSearchIsOpenState(true);
-  const handleCompartmentSearchClose = () => setCompartmentSearchIsOpenState(false);
+  const handleXrefSearchOpen = () => setXrefSearchIsOpenState(true);
+  const handleXrefSearchClose = () => setXrefSearchIsOpenState(false);
 
   return (
     <div
@@ -120,6 +121,9 @@ export default function OntrologyExplorderControlDrawer(props: OntrologyExplorde
         />
       </div>
 
+      <Button onClick={deselectPinnedNode} style={{marginRight: 20}} disabled={!pinnedVertex}>
+        Deselect
+      </Button>
       {pinnedVertex && !isSubset && (
         <Button icon="pie-chart" onClick={subsetToNode} style={{ marginRight: 20 }}>
           subset to {pinnedVertex.id}
@@ -160,7 +164,7 @@ export default function OntrologyExplorderControlDrawer(props: OntrologyExplorde
             <p>Show specific data on top of the graph to accomplish certain tasks</p>
             {/* <h4>Hulls</h4> */}
             <Checkbox checked={hullsEnabled} label="Show cell type hulls (h)" onChange={handleHullChange} />
-            <Checkbox checked={false} label="Show compartment hulls (u)" onChange={() => {}} disabled />
+            <Checkbox checked={false} label="Show cross-reference hulls (u)" onChange={() => {}} disabled />
             <Checkbox
               checked={showTabulaSapiensDataset}
               label="Show distribution of Tabula Sapiens cell types"
@@ -228,16 +232,16 @@ export default function OntrologyExplorderControlDrawer(props: OntrologyExplorde
         </div>
         <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
       </Drawer>
-      <Button style={{ marginRight: 20 }} onClick={handleCompartmentSearchOpen}>
-        Compartment (c)
+      <Button style={{ marginRight: 20 }} onClick={handleXrefSearchOpen}>
+        Search {xref.name} (c)
       </Button>
-      <CompartmentOmnibar
-        isOpen={compartmentSearchIsOpen}
-        onClose={handleCompartmentSearchClose}
-        onItemSelect={setCompartment}
-        items={uberonVerticesAsArray}
-        itemRenderer={renderCompartmentOption}
-        itemPredicate={filterCompartment}
+      <XrefOmnibar
+        isOpen={xrefSearchIsOpen}
+        onClose={handleXrefSearchClose}
+        onItemSelect={setXrefSearch}
+        items={xrefVerticesAsArray}
+        itemRenderer={renderXrefOption}
+        itemPredicate={filterXref}
         noResults={<MenuItem disabled={true} text="No results." />}
         resetOnSelect={true}
       />
@@ -246,8 +250,8 @@ export default function OntrologyExplorderControlDrawer(props: OntrologyExplorde
   );
 }
 
-const renderCompartmentOption: ItemRenderer<ICompartmentOmnibarItem> = (
-  compartment,
+const renderXrefOption: ItemRenderer<XrefOmnibarItem> = (
+  xrefTerm,
   { handleClick, modifiers, query }
 ) => {
   if (!modifiers.matchesPredicate) {
@@ -255,17 +259,17 @@ const renderCompartmentOption: ItemRenderer<ICompartmentOmnibarItem> = (
   }
 
   return (
-    <MenuItem label={compartment.uberonID} key={compartment.uberonID} onClick={handleClick} text={compartment.label} />
+    <MenuItem label={xrefTerm.xrefID} key={xrefTerm.xrefID} onClick={handleClick} text={xrefTerm.label} />
   );
 };
 
-const filterCompartment: ItemPredicate<ICompartmentOmnibarItem> = (query, compartment, _index, exactMatch) => {
-  const normalizedTitle = compartment.label.toLowerCase();
+const filterXref: ItemPredicate<XrefOmnibarItem> = (query, xref, _index, exactMatch) => {
+  const normalizedTitle = xref.label.toLowerCase();
   const normalizedQuery = query.toLowerCase();
 
   if (exactMatch) {
     return normalizedTitle === normalizedQuery;
   } else {
-    return `${compartment.label}`.indexOf(normalizedQuery) >= 0;
+    return `${xref.label}`.indexOf(normalizedQuery) >= 0;
   }
 };
