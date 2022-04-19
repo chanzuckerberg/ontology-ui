@@ -61,12 +61,12 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
 
   const { dagCreateProps, cardWidth, cardHeight, menubarHeight, sugiyamaRenderThreshold } = state;
 
-  //
-  // State passed in the browser history:
-  //    vertexID (path element): the currently selected/pinned vertex
-  //    subtreeRootID (query param): subset graph on the currently selected vertex
-  //    seachString (query param): the free text search within current ontology
-  //
+  /*
+   * State passed in the browser history:
+   *    vertexID (path element): the currently selected/pinned vertex
+   *    subtreeRootID (query param): subset graph on the currently selected vertex
+   *    seachString (query param): the free text search within current ontology
+   */
   const { vertexID: pinnedVertexID } = useParams();
   const searchParamsRef = useSearchParamsRef();
   const subtreeRootID = searchParamsRef.current[0].get("subtreeRootID");
@@ -75,7 +75,7 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
 
   const forceCanvasProps = defaultForceCanvasProps;
   const dagCanvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   /*
    * memoized callback to navigate.
    */
@@ -196,9 +196,8 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
       },
     }));
 
-  const setXrefSearch = (term: { xrefID: string; label: string }) => {
+  const setXrefSearch = (term: { xrefID: string; label: string }) =>
     setForceCanvasHighlightProps((s) => ({ ...s, xrefTermID: term.xrefID }));
-  }
 
   const deselectPinnedVertex = () => {
     if (pinnedVertexID) {

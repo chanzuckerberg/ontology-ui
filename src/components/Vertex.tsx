@@ -33,6 +33,9 @@ export default function Vertex({ ontology, lattice, vertex, query }: VertexProps
    * TODO: currently, we restrict cross-refs to UBERON, but this should eventually
    * be a component parameter allowing any other ontology to specified for cross-
    * referencing.
+   *
+   * See OntologyExplorer - it has been generalized to represent this as a
+   * "cross reference ontology" rather than hard-wired to UBERON.
    */
   const _lattice = lattice.get(vertexID);
   const _filteredLattice = _lattice?.xref.filter?.((d: string) => d.includes("UBERON"));
