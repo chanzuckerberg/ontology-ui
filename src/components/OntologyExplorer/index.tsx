@@ -1,62 +1,23 @@
-import { useState, useEffect, useRef } from "react";
-
-import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import { createNodesLinksHulls } from "../../util/createNodesLinksHulls";
-
 import { drawForceDag, DrawForceDagHighlightProps } from "./drawForce";
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
-
 import { Ontology, OntologyTerm } from "../../d";
+import {
+  ForceCanvasProps,
+  OntologyExplorerState,
+  OntologyExplorerProps,
+  OntologyVertexDatum,
+  DagState,
+  CreateDagProps,
+} from "./types";
+import lruMemoize from "../../util/lruMemo";
 
-export interface OntologyVertexDatum extends SimulationNodeDatum {
-  id: string;
-  ancestorCount: number;
-  descendantCount: number;
-  n_cells?: number;
-}
-
-export interface OntologyExplorerProps {
-  ontology: Ontology;
-  lattice: Ontology;
-  uberon: Ontology;
-}
-
-// state related to creating the DAG
-interface CreateDagProps {
-  minimumOutdegree: number /* max descendants */;
-  maximumOutdegree: number;
-  outdegreeCutoffXYZ: number /* max descendants */;
-  doCreateSugiyamaDatastructure: boolean;
-}
-
-// state related to the current DAG
-interface DagState {
-  nodes: OntologyVertexDatum[];
-  links: SimulationLinkDatum<any>[];
-  sugiyamaStratifyData: any;
-  filteredOutNodes: string[];
-}
-
-// state related to the creation of the force-graph
-interface ForceCanvasProps {
-  forceCanvasWidth: number;
-  forceCanvasHeight: number;
-  scaleFactor: number;
-  translateCenter: number;
-}
-
-// Other DAG exploration state
-interface OntologyExplorerState {
-  dagCreateProps: CreateDagProps;
-  subtreeRootID: string | null;
-  sugiyamaRenderThreshold: number;
-  cardWidth: number;
-  cardHeight: number;
-  menubarHeight: number;
-}
+import { useNavigateRef } from "../useNavigateRef";
 
 const defaultForceCanvasProps: ForceCanvasProps = {
   forceCanvasWidth: 850,
@@ -69,7 +30,8 @@ const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
   highlightAncestors: false,
   showTabulaSapiensDataset: false,
-  compartment: undefined,
+  xrefTermID: undefined,
+  searchString: undefined,
 };
 
 const defaultState: OntologyExplorerState = {
@@ -79,35 +41,60 @@ const defaultState: OntologyExplorerState = {
     outdegreeCutoffXYZ: 50,
     doCreateSugiyamaDatastructure: true,
   },
-  subtreeRootID: null,
   sugiyamaRenderThreshold: 49,
   cardWidth: 350,
   cardHeight: 850, // 850 default, 2000 full
   menubarHeight: 50,
 };
 
-export default function OntologyExplorer({ ontology, lattice, uberon }: OntologyExplorerProps): JSX.Element {
+export default function OntologyExplorer({ ontology, lattice, xref }: OntologyExplorerProps): JSX.Element {
+  /*
+   * Component internal state
+   */
   const [state, setState] = useState<OntologyExplorerState>(defaultState);
   const [hoverNode, setHoverNode] = useState<OntologyVertexDatum>();
-  const [pinnedNode, setPinnedNode] = useState<OntologyVertexDatum>();
   const [simulationRunning, setSimulationRunning] = useState<boolean>(false);
   const [dagState, setDagState] = useState<DagState | null>(null);
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
 
+  const { dagCreateProps, cardWidth, cardHeight, menubarHeight, sugiyamaRenderThreshold } = state;
+
+  /*
+   * State passed in the browser history:
+   *    vertexID (path element): the currently selected/pinned vertex
+   *    subtreeRootID (query param): subset graph on the currently selected vertex
+   *    seachString (query param): the free text search within current ontology
+   */
+  const { vertexID: pinnedVertexID } = useParams();
+  const searchParamsRef = useSearchParamsRef();
+  const subtreeRootID = searchParamsRef.current[0].get("subtreeRootID");
+  const searchString = searchParamsRef.current[0].get("searchString");
+  const query = searchParamsRef.current[0].toString();
+
   const forceCanvasProps = defaultForceCanvasProps;
   const dagCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  const { subtreeRootID, dagCreateProps, cardWidth, cardHeight, menubarHeight, sugiyamaRenderThreshold } = state;
+  /*
+   * memoized callback to navigate.
+   */
+  const navigate = useNavigateRef();
+  const go = useCallback(
+    (path: string = "") => {
+      const [searchParams] = searchParamsRef.current;
+      const query = searchParams.toString();
+      navigate(path + (query ? "?" + query : ""));
+    },
+    [navigate, searchParamsRef]
+  );
 
   useEffect(() => {
     /*
     Rebuild the DAG rendering elements whenever one of the following change:
       - the ontology
-      - the root note
+      - the root node
       - parameters that affect the choice of nodes or their connectivity, eg, minimumOutdegree
-
     Side effect: sets the DAG state.
     */
     setDagState(createDag(ontology, subtreeRootID, dagCreateProps));
@@ -115,7 +102,7 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
 
   useEffect(() => {
     /*
-    Rebuild the renderer and simulation whenever inputs to the sim change.
+    Rebuild the renderer and simulation-driven layout whenever inputs to the sim change.
 
     Side effect: sets the render & simulation state.
     */
@@ -132,7 +119,7 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
         dagCanvasRef,
         ontology,
         (node?: OntologyVertexDatum) => setHoverNode(node),
-        (node?: OntologyVertexDatum) => setPinnedNode(node),
+        (node?: OntologyVertexDatum) => go(`../${node?.id ?? ""}`),
         () => setSimulationRunning(false),
         lattice,
         defaultForceHightlightProps
@@ -140,61 +127,64 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, lattice, dagState, dagCanvasRef, forceCanvasProps]);
+  }, [ontology, lattice, dagState, dagCanvasRef, forceCanvasProps, go]);
 
   useEffect(() => {
     /*
     Redraw the DAG whenever highlight state changes.
     */
-    if (redrawCanvas && !simulationRunning) {
-      redrawCanvas(forceCanvasHighlightProps);
+    if (redrawCanvas) {
+      const highlights = {
+        ...forceCanvasHighlightProps,
+        pinnedNodeID: pinnedVertexID ?? "",
+        searchString: searchString ?? undefined,
+      };
+      redrawCanvas(highlights);
     }
-  }, [redrawCanvas, forceCanvasHighlightProps, simulationRunning]);
+  }, [redrawCanvas, forceCanvasHighlightProps, pinnedVertexID, searchString]);
 
   const hoverVertex: OntologyTerm | undefined = hoverNode && ontology.get(hoverNode.id);
-  const pinnedVertex: OntologyTerm | undefined = pinnedNode && ontology.get(pinnedNode.id);
+  const pinnedVertex: OntologyTerm | undefined =
+    pinnedVertexID !== undefined ? ontology.get(pinnedVertexID) : undefined;
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { forceCanvasWidth, forceCanvasHeight } = forceCanvasProps;
   const isSubset = !!subtreeRootID;
-  const { searchString, hullsEnabled, highlightAncestors, showTabulaSapiensDataset } = forceCanvasHighlightProps;
+  const { hullsEnabled, highlightAncestors, showTabulaSapiensDataset } = forceCanvasHighlightProps;
 
   /*
-   * Callbacks
+   * Controls callbacks
    */
-  const handleHighlightAncestorChange = () =>
+  const onHighlightToggle = (highlightKey: keyof DrawForceDagHighlightProps) => () =>
     setForceCanvasHighlightProps((s) => ({
       ...s,
-      highlightAncestors: !s.highlightAncestors,
+      [highlightKey]: !s[highlightKey],
     }));
 
-  const handleHullChange = () =>
-    setForceCanvasHighlightProps((s) => ({
-      ...s,
-      hullsEnabled: !s.hullsEnabled,
-    }));
-
-  const handleShowTabulaSapiensChange = () =>
-    setForceCanvasHighlightProps((s) => ({
-      ...s,
-      showTabulaSapiensDataset: !s.showTabulaSapiensDataset,
-    }));
-
-  /**
-   * @param e is a react synthetic event type, todo
-   */
-  const handleSearchStringChange = (e: any) =>
-    setForceCanvasHighlightProps((s) => ({ ...s, searchString: e.target.value }));
+  const handleSearchStringChange = (e: any) => {
+    // TODO: param typing
+    const [searchParams, setSearchParams] = searchParamsRef.current;
+    const val = e.target.value;
+    if (val) searchParams.set("searchString", val);
+    else searchParams.delete("searchString");
+    setSearchParams(searchParams);
+  };
 
   const subsetToNode = () => {
-    if (!pinnedNode?.id) {
+    if (!pinnedVertexID) {
       console.log("in subsetToNode, there was no pinned node");
       return null;
     }
-    setState((s) => ({ ...s, subtreeRootID: pinnedNode.id }));
+    const [searchParams, setSearchParams] = searchParamsRef.current;
+    searchParams.set("subtreeRootID", pinnedVertexID);
+    setSearchParams(searchParams);
   };
 
-  const resetSubset = () => setState((s) => ({ ...s, pinnedNode: undefined, subtreeRootID: null }));
+  const resetSubset = () => {
+    const [searchParams, setSearchParams] = searchParamsRef.current;
+    searchParams.delete("subtreeRootID");
+    setSearchParams(searchParams);
+  };
 
   const handleMinOutdegreeChange = (e: any) =>
     // TODO: param typing
@@ -206,30 +196,37 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
       },
     }));
 
-  const setCompartment = (compartment: { uberonID: string; label: string }) =>
-    setForceCanvasHighlightProps((s) => ({ ...s, compartment: compartment.uberonID }));
+  const setXrefSearch = (term: { xrefID: string; label: string }) =>
+    setForceCanvasHighlightProps((s) => ({ ...s, xrefTermID: term.xrefID }));
+
+  const deselectPinnedVertex = () => {
+    if (pinnedVertexID) {
+      go("../");
+    }
+  };
 
   return (
     <div id="ontologyExplorerContainer">
       <Controls
-        pinnedNode={pinnedNode}
+        pinnedVertex={pinnedVertex}
         dagSearchText={searchString ?? ""}
         simulationRunning={simulationRunning}
         menubarHeight={menubarHeight}
         isSubset={isSubset}
         outdegreeCutoffNodes={minimumOutdegree}
-        uberon={uberon}
+        xref={xref}
         handleDagSearchChange={handleSearchStringChange}
+        deselectPinnedNode={deselectPinnedVertex}
         subsetToNode={subsetToNode}
         handleMinOutdegreeChange={handleMinOutdegreeChange}
         resetSubset={resetSubset}
-        setCompartment={setCompartment}
+        setXrefSearch={setXrefSearch}
         hullsEnabled={!!hullsEnabled}
-        handleHullChange={handleHullChange}
+        handleHullChange={onHighlightToggle("hullsEnabled")}
         highlightAncestors={!!highlightAncestors}
-        handleHighlightAncestorChange={handleHighlightAncestorChange}
+        handleHighlightAncestorChange={onHighlightToggle("highlightAncestors")}
         showTabulaSapiensDataset={!!showTabulaSapiensDataset}
-        handleShowTabulaSapiensChange={handleShowTabulaSapiensChange}
+        handleShowTabulaSapiensChange={onHighlightToggle("showTabulaSapiensDataset")}
         minimumOutdegree={minimumOutdegree + ""}
         maximumOutdegree={maximumOutdegree + ""}
       />
@@ -247,17 +244,10 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
             {/**
              * Render cards
              */}
-            {!pinnedNode && hoverNode && (
-              <Vertex ontology={ontology} vertex={hoverVertex} vertexID={hoverNode && hoverNode.id} lattice={lattice} />
+            {!pinnedVertex && hoverVertex && (
+              <Vertex ontology={ontology} vertex={hoverVertex} lattice={lattice} query={query} />
             )}
-            {pinnedNode && (
-              <Vertex
-                ontology={ontology}
-                vertex={pinnedVertex}
-                vertexID={pinnedNode && pinnedNode.id}
-                lattice={lattice}
-              />
-            )}
+            {pinnedVertex && <Vertex ontology={ontology} vertex={pinnedVertex} lattice={lattice} query={query} />}
           </div>
         </div>
         {/**
@@ -295,7 +285,17 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
   );
 }
 
-function createDag(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) {
+/**
+ * Memoize createDag
+ */
+const createDag = lruMemoize(_createDag, _createDagHash, -1);
+
+function _createDagHash(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) {
+  const ontologyPrefix = ontology.keys().next().value;
+  return "" + ontologyPrefix + subtreeRootID + JSON.stringify(options);
+}
+
+function _createDag(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) {
   const { minimumOutdegree, maximumOutdegree, outdegreeCutoffXYZ, doCreateSugiyamaDatastructure } = options;
 
   /**
@@ -385,4 +385,18 @@ function createDag(ontology: Ontology, subtreeRootID: string | null, options: Cr
     doCreateSugiyamaDatastructure
   );
   return { nodes, links, filteredOutNodes, sugiyamaStratifyData };
+}
+
+/**
+ * Hook to create a reference to the current search param state.
+ * This allows search params to be referenced in an effect, without
+ * causing the effect to be re-run each time we render.
+ *
+ * @returns Ref to the search param state
+ */
+function useSearchParamsRef() {
+  const sp = useSearchParams();
+  const searchParamsRef = useRef(sp);
+  searchParamsRef.current = sp;
+  return searchParamsRef;
 }

@@ -6,12 +6,14 @@ import { EBIOlsTerm, Ontology, OntologyTerm } from "../d";
 export interface VertexProps {
   ontology: Ontology;
   lattice: Ontology;
-  vertex: OntologyTerm | undefined;
-  vertexID: string;
+  vertex: OntologyTerm;
+  query?: string;
 }
 
-export default function Vertex({ ontology, lattice, vertex, vertexID }: VertexProps) {
+export default function Vertex({ ontology, lattice, vertex, query }: VertexProps) {
   const [olsTerm, setOlsTerm] = useState<EBIOlsTerm | null>();
+  const vertexID = vertex.id;
+  query = query ? "?" + query : "";
 
   useEffect(() => {
     olsLookupTermByOboId(vertexID)
@@ -31,6 +33,9 @@ export default function Vertex({ ontology, lattice, vertex, vertexID }: VertexPr
    * TODO: currently, we restrict cross-refs to UBERON, but this should eventually
    * be a component parameter allowing any other ontology to specified for cross-
    * referencing.
+   *
+   * See OntologyExplorer - it has been generalized to represent this as a
+   * "cross reference ontology" rather than hard-wired to UBERON.
    */
   const _lattice = lattice.get(vertexID);
   const _filteredLattice = _lattice?.xref.filter?.((d: string) => d.includes("UBERON"));
@@ -58,7 +63,7 @@ export default function Vertex({ ontology, lattice, vertex, vertexID }: VertexPr
             }
             return (
               <li key={ancestor}>
-                <Link to={"../" + ancestor}>{_a.label}</Link>
+                <Link to={"../" + ancestor + query}>{_a.label}</Link>
               </li>
             );
           })}
@@ -77,7 +82,7 @@ export default function Vertex({ ontology, lattice, vertex, vertexID }: VertexPr
             }
             return (
               <li key={descendant}>
-                <Link to={"../" + descendant}> {_d.label} </Link>
+                <Link to={"../" + descendant + query}> {_d.label} </Link>
               </li>
             );
           })}
