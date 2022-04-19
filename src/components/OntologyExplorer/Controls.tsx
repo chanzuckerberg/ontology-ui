@@ -14,7 +14,7 @@ interface ICompartmentOmnibarItem {
 const CompartmentOmnibar = Omnibar.ofType<ICompartmentOmnibarItem>();
 
 interface OntrologyExplorderControlDrawerProps {
-  pinnedNode: OntologyVertexDatum | undefined;
+  pinnedVertex: OntologyTerm | undefined;
   dagSearchText: string;
   simulationRunning: boolean;
   menubarHeight: number;
@@ -43,7 +43,7 @@ export default function OntrologyExplorderControlDrawer(props: OntrologyExplorde
 
   const {
     uberon,
-    pinnedNode,
+    pinnedVertex,
     dagSearchText,
     simulationRunning,
     menubarHeight,
@@ -120,12 +120,12 @@ export default function OntrologyExplorderControlDrawer(props: OntrologyExplorde
         />
       </div>
 
-      {pinnedNode && !isSubset && (
+      {pinnedVertex && !isSubset && (
         <Button icon="pie-chart" onClick={subsetToNode} style={{ marginRight: 20 }}>
-          subset to {pinnedNode.id}
+          subset to {pinnedVertex.id}
         </Button>
       )}
-      {pinnedNode && isSubset && (
+      {pinnedVertex && isSubset && (
         <Button icon="full-circle" onClick={resetSubset} style={{ marginRight: 20 }}>
           reset to whole
         </Button>

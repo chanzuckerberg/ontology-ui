@@ -14,5 +14,5 @@ export default function VertexView({ ontology, lattice }: VertexViewProps) {
 
   if (!vertexID || !vertex) return null;
 
-  return <Vertex ontology={ontology} vertex={vertex} vertexID={vertexID} lattice={lattice} />;
+  return <Vertex ontology={ontology} vertex={vertex} lattice={lattice} />;
 }

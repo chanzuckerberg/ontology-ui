@@ -6,12 +6,12 @@ import { EBIOlsTerm, Ontology, OntologyTerm } from "../d";
 export interface VertexProps {
   ontology: Ontology;
   lattice: Ontology;
-  vertex: OntologyTerm | undefined;
-  vertexID: string;
+  vertex: OntologyTerm;
 }
 
-export default function Vertex({ ontology, lattice, vertex, vertexID }: VertexProps) {
+export default function Vertex({ ontology, lattice, vertex }: VertexProps) {
   const [olsTerm, setOlsTerm] = useState<EBIOlsTerm | null>();
+  const vertexID = vertex.id;
 
   useEffect(() => {
     olsLookupTermByOboId(vertexID)

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 
@@ -10,6 +11,8 @@ import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
 
 import { Ontology, OntologyTerm } from "../../d";
+
+import { useEffectDebugger } from "../../util/useEffectDebugger";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: string;
@@ -89,12 +92,17 @@ const defaultState: OntologyExplorerState = {
 export default function OntologyExplorer({ ontology, lattice, uberon }: OntologyExplorerProps): JSX.Element {
   const [state, setState] = useState<OntologyExplorerState>(defaultState);
   const [hoverNode, setHoverNode] = useState<OntologyVertexDatum>();
-  const [pinnedNode, setPinnedNode] = useState<OntologyVertexDatum>();
+  // const [pinnedNode, setPinnedNode] = useState<OntologyVertexDatum>();
   const [simulationRunning, setSimulationRunning] = useState<boolean>(false);
   const [dagState, setDagState] = useState<DagState | null>(null);
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
+
+  const { vertexID: pinnedVertexID } = useParams();
+  const navigate = useNavigate();
+  // const pinnedNode = dagState?.nodes.find((n) => n.id === selectedVertexID);
+  console.log(pinnedVertexID);
 
   const forceCanvasProps = defaultForceCanvasProps;
   const dagCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -120,6 +128,7 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
     Side effect: sets the render & simulation state.
     */
     if (dagState) {
+      console.log("creating drawForceDag");
       const { nodes, links } = dagState;
       const { forceCanvasWidth, forceCanvasHeight, scaleFactor, translateCenter } = forceCanvasProps;
       const _redrawCanvas = drawForceDag(
@@ -132,7 +141,8 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
         dagCanvasRef,
         ontology,
         (node?: OntologyVertexDatum) => setHoverNode(node),
-        (node?: OntologyVertexDatum) => setPinnedNode(node),
+        // (node?: OntologyVertexDatum) => setPinnedNode(node),
+        (node?: OntologyVertexDatum) => navigate(`../${node?.id ?? ""}`),
         () => setSimulationRunning(false),
         lattice,
         defaultForceHightlightProps
@@ -152,7 +162,9 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
   }, [redrawCanvas, forceCanvasHighlightProps, simulationRunning]);
 
   const hoverVertex: OntologyTerm | undefined = hoverNode && ontology.get(hoverNode.id);
-  const pinnedVertex: OntologyTerm | undefined = pinnedNode && ontology.get(pinnedNode.id);
+  // const pinnedVertex: OntologyTerm | undefined = pinnedNode && ontology.get(pinnedNode.id);
+  const pinnedVertex: OntologyTerm | undefined =
+    pinnedVertexID !== undefined ? ontology.get(pinnedVertexID) : undefined;
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { forceCanvasWidth, forceCanvasHeight } = forceCanvasProps;
@@ -187,13 +199,14 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
     setForceCanvasHighlightProps((s) => ({ ...s, searchString: e.target.value }));
 
   const subsetToNode = () => {
-    if (!pinnedNode?.id) {
+    if (!pinnedVertexID) {
       console.log("in subsetToNode, there was no pinned node");
       return null;
     }
-    setState((s) => ({ ...s, subtreeRootID: pinnedNode.id }));
+    setState((s) => ({ ...s, subtreeRootID: pinnedVertexID }));
   };
 
+  // XXX fix me - navigate to
   const resetSubset = () => setState((s) => ({ ...s, pinnedNode: undefined, subtreeRootID: null }));
 
   const handleMinOutdegreeChange = (e: any) =>
@@ -212,7 +225,7 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
   return (
     <div id="ontologyExplorerContainer">
       <Controls
-        pinnedNode={pinnedNode}
+        pinnedVertex={pinnedVertex}
         dagSearchText={searchString ?? ""}
         simulationRunning={simulationRunning}
         menubarHeight={menubarHeight}
@@ -247,17 +260,8 @@ export default function OntologyExplorer({ ontology, lattice, uberon }: Ontology
             {/**
              * Render cards
              */}
-            {!pinnedNode && hoverNode && (
-              <Vertex ontology={ontology} vertex={hoverVertex} vertexID={hoverNode && hoverNode.id} lattice={lattice} />
-            )}
-            {pinnedNode && (
-              <Vertex
-                ontology={ontology}
-                vertex={pinnedVertex}
-                vertexID={pinnedNode && pinnedNode.id}
-                lattice={lattice}
-              />
-            )}
+            {!pinnedVertex && hoverVertex && <Vertex ontology={ontology} vertex={hoverVertex} lattice={lattice} />}
+            {pinnedVertex && <Vertex ontology={ontology} vertex={pinnedVertex} lattice={lattice} />}
           </div>
         </div>
         {/**
