@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
+import { useWindowHeight } from "@react-hook/window-size";
+
 import { createNodesLinksHulls } from "../../util/createNodesLinksHulls";
 import { drawForceDag, DrawForceDagHighlightProps } from "./drawForce";
 import Vertex from "../Vertex";
@@ -57,6 +59,8 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
+
+  const windowHeight = useWindowHeight();
 
   const { dagCreateProps, cardWidth, cardHeight, menubarHeight, sugiyamaRenderThreshold } = state;
 
@@ -232,7 +236,7 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
           id="card"
           style={{
             width: cardWidth,
-            height: cardHeight,
+            height: windowHeight - menubarHeight - 16,
             overflow: "scroll",
             margin: 0,
           }}
