@@ -9,7 +9,6 @@ import { Ontology, OntologyTerm } from "../../../d";
 
 import { drawHulls } from "./hulls";
 
-import { tabulaSapiensCelltypes } from "../../../tabulaSapiensCelltypes";
 import React from "react";
 import { scaleLinear } from "d3-scale";
 
@@ -34,7 +33,6 @@ export interface DrawForceDagHighlightProps {
   searchString?: string;
   xrefTermID?: string;
   hullsEnabled?: boolean;
-  showTabulaSapiensDataset?: boolean;
   highlightAncestors?: boolean;
 }
 
@@ -196,8 +194,7 @@ export const drawForceDag = (
     if (!context) return;
 
     Object.assign(highlightProps, updatedHighlightProps);
-    const { pinnedNodeID, searchString, highlightAncestors, xrefTermID, hullsEnabled, showTabulaSapiensDataset } =
-      highlightProps;
+    const { pinnedNodeID, searchString, highlightAncestors, xrefTermID, hullsEnabled } = highlightProps;
 
     /**
      * Clear
@@ -264,14 +261,6 @@ export const drawForceDag = (
       }
 
       /**
-       * check dataset distribution in ontology
-       */
-
-      if (showTabulaSapiensDataset && tabulaSapiensCelltypes.includes(node.id)) {
-        context.fillStyle = datasetDistributionColor;
-      }
-
-      /**
        * check xref ontology
        */
       if (lattice && xrefTermID) {
@@ -289,30 +278,6 @@ export const drawForceDag = (
        * end, reset cases
        */
       context.strokeStyle = nodeStrokeColor; // reset, in case it was hover
-    }
-
-    /**
-     * Draw text on nodes, for alpha, this writes tabula sapiens nodes out
-     */
-    if (showTabulaSapiensDataset) {
-      for (const node of nodes) {
-        if (tabulaSapiensCelltypes.includes(node.id)) {
-          const vertex: any = ontology.get(node.id);
-          if (vertex && vertex.label && typeof vertex.label === "string") {
-            context.fillStyle = tooltipColor;
-            context.font = "18px serif";
-
-            if (typeof node.x !== "number" || typeof node.y !== "number") {
-              console.log(
-                "in drawForceDag/ticked: while attempting to context.fillText, node.x or node.y was not a number"
-              );
-              return;
-            }
-
-            context.fillText(`${vertex.label.substring(0, 10)}`, node.x, node.y);
-          }
-        }
-      }
     }
 
     if (hullsEnabled) {
