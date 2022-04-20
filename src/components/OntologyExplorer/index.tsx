@@ -29,7 +29,6 @@ const defaultForceCanvasProps: ForceCanvasProps = {
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
   highlightAncestors: false,
-  showTabulaSapiensDataset: false,
   xrefTermID: undefined,
   searchString: undefined,
 };
@@ -38,7 +37,7 @@ const defaultState: OntologyExplorerState = {
   dagCreateProps: {
     minimumOutdegree: 3, // for filter nodes
     maximumOutdegree: 12345,
-    outdegreeCutoffXYZ: 50,
+    outdegreeCutoffXYZ: 0,
     doCreateSugiyamaDatastructure: true,
   },
   sugiyamaRenderThreshold: 49,
@@ -150,7 +149,7 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { forceCanvasWidth, forceCanvasHeight } = forceCanvasProps;
   const isSubset = !!subtreeRootID;
-  const { hullsEnabled, highlightAncestors, showTabulaSapiensDataset } = forceCanvasHighlightProps;
+  const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
 
   /*
    * Controls callbacks
@@ -225,8 +224,6 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
         handleHullChange={onHighlightToggle("hullsEnabled")}
         highlightAncestors={!!highlightAncestors}
         handleHighlightAncestorChange={onHighlightToggle("highlightAncestors")}
-        showTabulaSapiensDataset={!!showTabulaSapiensDataset}
-        handleShowTabulaSapiensChange={onHighlightToggle("showTabulaSapiensDataset")}
         minimumOutdegree={minimumOutdegree + ""}
         maximumOutdegree={maximumOutdegree + ""}
       />

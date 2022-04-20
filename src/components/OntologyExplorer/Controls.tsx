@@ -29,8 +29,7 @@ interface OntrologyExplorerControlDrawerProps {
   hullsEnabled: boolean;
   highlightAncestors: boolean;
   handleHighlightAncestorChange: any;
-  showTabulaSapiensDataset: boolean;
-  handleShowTabulaSapiensChange: any;
+
   minimumOutdegree: string;
   maximumOutdegree: string;
   handleMinOutdegreeChange: any;
@@ -57,8 +56,6 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     handleHullChange,
     highlightAncestors,
     handleHighlightAncestorChange,
-    showTabulaSapiensDataset,
-    handleShowTabulaSapiensChange,
     minimumOutdegree,
     maximumOutdegree,
     handleMinOutdegreeChange,
@@ -121,7 +118,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
         />
       </div>
 
-      <Button onClick={deselectPinnedNode} style={{marginRight: 20}} disabled={!pinnedVertex}>
+      <Button onClick={deselectPinnedNode} style={{ marginRight: 20 }} disabled={!pinnedVertex}>
         Deselect
       </Button>
       {pinnedVertex && !isSubset && (
@@ -165,11 +162,6 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
             {/* <h4>Hulls</h4> */}
             <Checkbox checked={hullsEnabled} label="Show cell type hulls (h)" onChange={handleHullChange} />
             <Checkbox checked={false} label="Show cross-reference hulls (u)" onChange={() => {}} disabled />
-            <Checkbox
-              checked={showTabulaSapiensDataset}
-              label="Show distribution of Tabula Sapiens cell types"
-              onChange={handleShowTabulaSapiensChange}
-            />
             <h2> Cell type filtering &amp; subsetting </h2>
             <p>You can subset to a contiguous sugraph by clicking any node and clicking subset. Click any cell type</p>
             <h4>Organism</h4>
@@ -250,17 +242,12 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
   );
 }
 
-const renderXrefOption: ItemRenderer<XrefOmnibarItem> = (
-  xrefTerm,
-  { handleClick, modifiers, query }
-) => {
+const renderXrefOption: ItemRenderer<XrefOmnibarItem> = (xrefTerm, { handleClick, modifiers, query }) => {
   if (!modifiers.matchesPredicate) {
     return null;
   }
 
-  return (
-    <MenuItem label={xrefTerm.xrefID} key={xrefTerm.xrefID} onClick={handleClick} text={xrefTerm.label} />
-  );
+  return <MenuItem label={xrefTerm.xrefID} key={xrefTerm.xrefID} onClick={handleClick} text={xrefTerm.label} />;
 };
 
 const filterXref: ItemPredicate<XrefOmnibarItem> = (query, xref, _index, exactMatch) => {
