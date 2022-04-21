@@ -55,5 +55,4 @@ export interface OntologyExplorerState {
   sugiyamaRenderThreshold: number;
   cardWidth: number;
   cardHeight: number;
-  menubarHeight: number;
 }

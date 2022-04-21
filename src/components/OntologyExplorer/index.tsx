@@ -37,15 +37,14 @@ const defaultForceHightlightProps: DrawForceDagHighlightProps = {
 
 const defaultState: OntologyExplorerState = {
   dagCreateProps: {
-    minimumOutdegree: 3, // for filter nodes
+    minimumOutdegree: 3,
     maximumOutdegree: 12345,
     outdegreeCutoffXYZ: 0,
     doCreateSugiyamaDatastructure: true,
   },
   sugiyamaRenderThreshold: 49,
   cardWidth: 350,
-  cardHeight: 850, // 850 default, 2000 full
-  menubarHeight: 50,
+  cardHeight: 850,
 };
 
 export default function OntologyExplorer({ ontology, lattice, xref }: OntologyExplorerProps): JSX.Element {
@@ -61,8 +60,9 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
 
   const windowHeight = useWindowHeight();
+  const menubarHeight = 50;
 
-  const { dagCreateProps, cardWidth, cardHeight, menubarHeight, sugiyamaRenderThreshold } = state;
+  const { dagCreateProps, cardWidth, sugiyamaRenderThreshold } = state;
 
   /*
    * State passed in the browser history:
