@@ -292,12 +292,12 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
  */
 const createDag = lruMemoize(_createDag, _createDagHash, -1);
 
-function _createDagHash(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) {
+function _createDagHash(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) : string {
   const ontologyPrefix = ontology.keys().next().value;
   return "" + ontologyPrefix + subtreeRootID + JSON.stringify(options);
 }
 
-function _createDag(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) {
+function _createDag(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) : DagState {
   const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure } = options;
 
   if (subtreeRootID) {
