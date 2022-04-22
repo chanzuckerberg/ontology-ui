@@ -6,13 +6,17 @@ export interface OntologyTerm {
   id: OntologyId; // OBO ID, eg, CL:0000000
   label: string; // eg, "heart cell"
   deprecated: boolean;
-  ancestors: OntologyId[]; // ancestor terms -- within the same ontology
-  descendants: OntologyId[];
-  xref: OntologyId[]; // cross-ref & related terms - in this and other ontologies (includes ancestors).
+  parents: OntologyId[]; // immediate parents, within the same ontology
+  children: OntologyId[];
+  ancestors: Set<OntologyId>; // all ancestors, eg, parents, grandparents, ...
+  descendants: Set<OntologyId>; // all descendants, eg, children, grandchildren, ...
+  part_of: OntologyId[]; // part_of relations/link
+  xref: OntologyId[]; // cross-ref & related terms - in this and other ontologies
   synonyms: string[];
 
   // Statistics & information from the dataset
   n_cells: number; // number of cells labelled with this term
+  in_use: boolean; // term is in use in dataset (either directly, or in a sub-class)
 }
 export type Ontology = Map<OntologyId, OntologyTerm>;
 

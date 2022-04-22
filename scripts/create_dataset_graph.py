@@ -2,18 +2,22 @@ import sys
 import os
 import gzip
 import json
+import shutil
+import tempfile
 import requests
 from argparse import ArgumentParser, ArgumentTypeError
 import argparse
 import datetime
 from collections import deque
 from functools import reduce
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import tiledb
 import numpy as np
 import pandas as pd
 import psutil
+import yaml
+import owlready2
 
 """
 Given reference ontologies (CL, UBERON, etc) and a baseline dataset,
@@ -51,11 +55,10 @@ compliant with the 2.0.0 schema.
 """
 
 # Default locators
-ALL_ONTOLOGIES_URL_DEFAULT = (
+OWL_INFO_URI = (
     "https://raw.githubusercontent.com/chanzuckerberg/single-cell-curation/main"
-    "/cellxgene_schema_cli/cellxgene_schema/ontology_files/all_ontology.json.gz"
+    "/cellxgene_schema_cli/cellxgene_schema/ontology_files/owl_info.yml"
 )
-LATTICE_ONTOLOGY_URL_DEFAULT = "https://latticed-build.s3.us-west-2.amazonaws.com/ontology/ontology-2022-02-04.json"
 
 # Columns that contain terms in the CXG
 CXG_TERM_COLUMNS = [
@@ -79,9 +82,14 @@ def main():
     cxg_mode = args.uri.endswith(".cxg") or args.uri.endswith(".cxg/")
     tiledb_ctx = create_tiledb_ctx(args)
 
+    # Load the current cellxgene schema OWL configuration, which points
+    # at all of the master ontology files.
+    owl_info = fetch_yaml(args.owl_info)
+
     # Load initial data
     with ThreadPoolExecutor() as tp:
-        load_ontology = tp.submit(make_master_ontology, args)
+
+        load_ontology = tp.submit(load_ontologies, owl_info)
         load_obs = tp.submit(load_obs_dataframe, args)
         load_var = tp.submit(load_var_dataframe, args)
 
@@ -107,8 +115,7 @@ def main():
     result = {
         "dataset": args.uri,
         "created_on": datetime.datetime.now().astimezone().isoformat(),
-        "master_ontology_uri": args.all_ontologies_uri,
-        "lattice_uri": args.lattice_uri,
+        "owl_info": {name: info["urls"][info["latest"]] for name, info in owl_info.items()},
         "ontologies": in_use_ontologies,
     }
     json.dump(result, args.output)
@@ -144,7 +151,7 @@ def annotate_ontology(in_use_ontologies, obs_df, var_df):
 def get_terms_in_use(master_ontology, obs_df):
     # Seed with terms used by the dataset.
     terms_in_use = set()
-    for col in obs_df:
+    for col in CXG_TERM_COLUMNS:
         terms_in_use.update(obs_df[col].unique())
 
     # Silently remove known unknowns
@@ -176,12 +183,12 @@ def get_terms_in_use(master_ontology, obs_df):
     for ont_name in ["CL", "HANCESTRO", "HsapDv", "MmusDv"]:
         terms_in_use.update(term_id for term_id in master_ontology[ont_name].keys())
 
-    # generate list of all referenced terms, including xrefs, ancestors, etc.
+    # generate list of all referenced terms, including links, parents, etc.
     to_be_processed = deque(terms_in_use)
     while len(to_be_processed) > 0:
         term = to_be_processed.popleft()
         ontology_name = term.split(":")[0]
-        for link in ["ancestors", "xref"]:
+        for link in ["parents", "part_of"]:
             linked_terms = master_ontology[ontology_name][term][link]
             unprocessed = set(linked_terms) - terms_in_use
             to_be_processed.extend(unprocessed)
@@ -209,37 +216,137 @@ def get_term_counts(obs_df: pd.DataFrame) -> dict:
     return term_counts
 
 
-def make_master_ontology(args):
-    all_ontologies = fetchJson(args.all_ontologies_uri)
-    lattice = fetchJson(args.lattice_uri)
-    all_terms = set(term_id for ont in all_ontologies.values() for term_id in ont.keys())
-
-    # Consolidated ontologies with xref from lattice
-    for _, ont in all_ontologies.items():
-        for id, node in ont.items():
-            if id in lattice:
-                # Prune xrefs already in the ancestor list.
-                xref = set(lattice[id].get("ancestors", [])) - set(node["ancestors"])
-                # Prune terms not in our ontologies (this can happen if Lattice was built
-                # on a more recent version of the ontology).
-                xref &= all_terms
-                node["xref"] = list(xref)
-                # de-dup, as Lattice occasionally has duplicate terms
-                node["synonyms"] = list(set(lattice[id].get("synonyms", [])))
-            else:
-                node["xref"] = []
-                node["synonyms"] = []
-
-    return all_ontologies
+def fetch_json(url: str) -> dict:
+    return json.loads(fetch(url))
 
 
-def fetchJson(url: str) -> dict:
+def fetch_yaml(url: str):
+    return yaml.safe_load(fetch(url))
+
+
+def fetch(url):
     response = requests.get(url)
     if not response.ok:
         return None
     if response.headers["Content-Type"] == "application/octet-stream" or url.endswith(".gz"):
-        return json.loads(gzip.decompress(response.content))
-    return response.json()
+        content = gzip.decompress(response.content)
+    else:
+        content = response.content
+    return content
+
+
+def download(url):
+    """
+    Downloads to a temp file. If ends with .gz, decompresses.  File name returned.
+    Caller must delete file when no longer needed.
+    """
+    print(f"Downloading {url}")
+    is_gzipped = url.endswith(".gz")
+    suffix = ".gz" if is_gzipped else None
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with tempfile.NamedTemporaryFile(suffix=suffix, mode="wb", delete=False) as f:
+            for chunk in r.iter_content(chunk_size=512 * 1024):
+                f.write(chunk)
+            tmp_file_name = f.name
+
+    if is_gzipped:
+        gz_tmp_file_name = tmp_file_name
+        with gzip.open(gz_tmp_file_name, "rb") as f_in:
+            with tempfile.NamedTemporaryFile(mode="wb", delete=False) as f_out:
+                shutil.copyfileobj(f_in, f_out, 512 * 1024)
+                tmp_file_name = f_out.name
+        os.unlink(gz_tmp_file_name)
+
+    return tmp_file_name
+
+
+def get_links(is_a, prop, whitelist):
+    links = []
+    for sc in is_a:
+        if not isinstance(sc, owlready2.Restriction):
+            continue
+        if not sc.property == prop:
+            continue
+
+        if isinstance(sc.value, owlready2.ThingClass):
+            term_id = sc.value.name.replace("_", ":")
+            if term_id.split(":", maxsplit=1)[0] in whitelist:
+                links.append(term_id)
+        elif isinstance(sc.value, owlready2.Not):
+            links.extend(get_links(sc.value.Class, prop, whitelist))
+        elif isinstance(sc.value, owlready2.LogicalClassConstruct):
+            links.extend(get_links(sc.value.Classes, prop, whitelist))
+        else:
+            raise Exception(f"Unknown relation {sc.value}")
+
+    return links
+
+
+def build_ontology(owl_info, onto_prefix, onto):
+    onto_iri = onto.base_iri
+    if onto_iri.endswith("#"):
+        onto_iri = onto_iri[0:-1]
+    print(f"Building {onto_prefix}")
+
+    PART_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/BFO_0000050"]
+    DERIVES_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0001000"]
+    DEVELOPS_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002202"]
+
+    # TODO - taxa filtering
+    IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002162"]
+
+    # by default, whitelist a link to any ontology we are incorporating. Update
+    # this list with manual overrides as helpful.
+    # LINK_WHITELIST = {"CL": ["CL", "UBERON"]}
+    LINK_WHITELIST = {onto_name: list(owl_info.keys()) for onto_name in owl_info.keys()}
+
+    ontology = {}
+    iri_onto_prefix = f"{onto_prefix}_"
+    whitelist = LINK_WHITELIST.get(onto_prefix, [onto_prefix])
+    for onto_class in onto.classes():
+        name = onto_class.name
+
+        # Skip terms that are not direct children from this ontology
+        if not name.startswith(iri_onto_prefix):
+            continue
+
+        term_id = name.replace("_", ":", 1)
+        term = {}
+        term["label"] = onto_class.label[0] if len(onto_class.label) > 0 else ""
+        term["deprecated"] = True if onto_class.deprecated and onto_class.deprecated.first() else False
+        term["parents"] = [p.name.replace("_", ":") for p in onto_class.__bases__ if p.name.startswith(iri_onto_prefix)]
+        term["synonyms"] = getattr(onto_class, "hasExactSynonym", [])
+        term["part_of"] = get_links(onto_class.is_a, PART_OF, whitelist)
+        term["derives_from"] = get_links(onto_class.is_a, DERIVES_FROM, whitelist)
+        term["develops_from"] = get_links(onto_class.is_a, DEVELOPS_FROM, whitelist)
+
+        # dedup
+        for k in ["parents", "synonyms", "part_of", "derives_from", "develops_from"]:
+            term[k] = list(set(term[k]))
+
+        ontology[term_id] = term
+
+    return ontology
+
+
+def load_ontologies(owl_info):
+    ontologies = {}
+    with ThreadPoolExecutor() as tp:
+        download_futures = {
+            tp.submit(download, info["urls"][info["latest"]]): prefix for prefix, info in owl_info.items()
+        }
+
+        for future in as_completed(download_futures):
+            # unfortunately, can't parallelize owlready2 interactions
+            onto_prefix = download_futures[future]
+            fname = future.result()
+            print(f"Loading {onto_prefix}")
+            onto = owlready2.get_ontology(fname).load()
+            os.unlink(fname)
+            ontologies[onto_prefix] = build_ontology(owl_info, onto_prefix, onto)
+
+    return ontologies
 
 
 def load_obs_dataframe(args):
@@ -247,10 +354,11 @@ def load_obs_dataframe(args):
     with tiledb.open(f"{args.uri}/obs", ctx=tiledb_ctx) as obs:
         # split col into dims and attrs as required by tiledb query API
         dim_names = set(d.name for d in obs.schema.domain)
-        obs_df = obs.query(
-            dims=[c for c in CXG_TERM_COLUMNS if c in dim_names],
-            attrs=[c for c in CXG_TERM_COLUMNS if c not in dim_names],
-        ).df[:]
+        dims = [c for c in CXG_TERM_COLUMNS if c in dim_names]
+        attrs = [c for c in CXG_TERM_COLUMNS if c not in dim_names]
+        if not cxg_mode:
+            attrs.append("obs_idx")
+        obs_df = obs.query(dims=dims, attrs=attrs).df[:]
 
     # sort by obs_idx if not in cxg_mode
     if not cxg_mode:
@@ -267,7 +375,7 @@ def load_obs_dataframe(args):
     This code removes the extra suffix annotation from _all_ term columns.
     """
     pat = r"(?P<term>^.+:\S+)(?:\s\(.*\))?$"
-    for col in obs_df:
+    for col in CXG_TERM_COLUMNS:
         obs_df[col] = obs_df[col].str.replace(pat, lambda m: m.group("term"), regex=True)
 
     return obs_df
@@ -285,11 +393,11 @@ def load_var_dataframe(args):
 
 def create_tiledb_ctx(args: ArgumentParser) -> tiledb.Ctx:
     requested_tile_cache_size = int(args.tile_cache_fraction * psutil.virtual_memory().total) >> 20 << 20
-    tile_cache_size = max(10 * 1024**2, requested_tile_cache_size)
+    tile_cache_size = max(10 * 1024 ** 2, requested_tile_cache_size)
     ctx = tiledb.Ctx(
         {
             "vfs.s3.region": os.environ.get("AWS_DEFAULT_REGION", "us-west-2"),
-            "py.init_buffer_bytes": 128 * 1024**2,  # per-column buffer size
+            "py.init_buffer_bytes": 128 * 1024 ** 2,  # per-column buffer size
             "sm.tile_cache_size": tile_cache_size,
         }
     )
@@ -324,18 +432,7 @@ def float_range(mini, maxi):
 def create_args_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("uri", type=str, help="Dataset URI")
-    parser.add_argument(
-        "--all-ontologies-uri",
-        type=str,
-        help="all_ontologies URI - location of all_ontologies file for cellxgene schema",
-        default=ALL_ONTOLOGIES_URL_DEFAULT,
-    )
-    parser.add_argument(
-        "--lattice-uri",
-        type=str,
-        help="lattice URI - location of Lattice term cross-reference",
-        default=LATTICE_ONTOLOGY_URL_DEFAULT,
-    )
+    parser.add_argument("--owl-info", type=str, help="cellxenge schema owl_info.yml URI", default=OWL_INFO_URI)
     parser.add_argument("-o", "--output", type=argparse.FileType("w"), default=sys.stdout)
     parser.add_argument(
         "--tile-cache-fraction",

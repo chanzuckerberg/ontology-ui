@@ -62,7 +62,7 @@ const drawHull = (
    * Create the hull
    */
   const filteredNodes = nodes.filter((node: any) => {
-    return vertex.descendants.includes(node.id) || node.id === vertex_id; // include self
+    return vertex.children.includes(node.id) || node.id === vertex_id; // include self
   });
 
   let points: any = [];

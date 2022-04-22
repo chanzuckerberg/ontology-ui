@@ -85,11 +85,6 @@ export const drawForceDag = (
   let hoverNode: OntologyVertexDatum | undefined;
 
   /**
-   * Click state
-   */
-  // let clickNode: OntologyVertexDatum | undefined;
-
-  /**
    * Dynamic highlighting & rendering props
    */
   const highlightProps: DrawForceDagHighlightProps = {
@@ -248,10 +243,10 @@ export const drawForceDag = (
         if (hoverNode.id === node.id) {
           context.strokeStyle = hoverStrokeColor;
         }
-        if (hoverVertex.descendants.includes(node.id)) {
+        if (hoverVertex.descendants.has(node.id)) {
           context.fillStyle = hoverNodeDescendantColor;
         }
-        if (hoverVertex.ancestors.includes(node.id) && highlightAncestors) {
+        if (highlightAncestors && hoverVertex.ancestors.has(node.id)) {
           context.fillStyle = hoverNodeAncestorColor;
         }
       }
@@ -334,20 +329,21 @@ export const drawForceDag = (
     /**
      * identify orphan nodes, eject
      */
-    if (d.descendantCount === 0 && d.ancestorCount === 0) {
+    if (!d.hasDescendants && !d.hasAncestors) {
       return;
     }
-    const vertex: any = ontology.get(d.id);
+    const vertex = ontology.get(d.id);
 
     /* size nodes by inclusion in arbitrary set, in this test case, n_cells has a value */
 
     const doSizeByInclusion = true;
+    const n_cells = vertex!.n_cells;
 
     /* n_cells for now for example, but make this state */
-    const isIncludedInSet = !!vertex.n_cells;
+    const isIncludedInSet = n_cells;
 
     if (doSizeByInclusion && isIncludedInSet) {
-      nodeSize = nCellsScale(vertex.n_cells);
+      nodeSize = nCellsScale(n_cells);
     } else if (doSizeByInclusion && !isIncludedInSet) {
       nodeSize = deemphasizeNodeSize;
     }

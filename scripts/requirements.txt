@@ -6,3 +6,5 @@ psutil
 black
 flake8
 numba
+owlready2
+pyyaml
