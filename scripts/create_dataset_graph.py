@@ -59,11 +59,6 @@ OWL_INFO_URI = (
     "https://raw.githubusercontent.com/chanzuckerberg/single-cell-curation/main"
     "/cellxgene_schema_cli/cellxgene_schema/ontology_files/owl_info.yml"
 )
-ALL_ONTOLOGIES_URL_DEFAULT = (
-    "https://raw.githubusercontent.com/chanzuckerberg/single-cell-curation/main"
-    "/cellxgene_schema_cli/cellxgene_schema/ontology_files/all_ontology.json.gz"
-)
-LATTICE_ONTOLOGY_URL_DEFAULT = "https://latticed-build.s3.us-west-2.amazonaws.com/ontology/ontology-2022-02-04.json"
 
 # Columns that contain terms in the CXG
 CXG_TERM_COLUMNS = [
@@ -120,8 +115,7 @@ def main():
     result = {
         "dataset": args.uri,
         "created_on": datetime.datetime.now().astimezone().isoformat(),
-        "master_ontology_uri": args.all_ontologies_uri,
-        "lattice_uri": args.lattice_uri,
+        "owl_info": {name: info["urls"][info["latest"]] for name, info in owl_info.items()},
         "ontologies": in_use_ontologies,
     }
     json.dump(result, args.output)
@@ -289,7 +283,7 @@ def get_links(is_a, prop, whitelist):
     return links
 
 
-def build_ontology(onto_prefix, onto):
+def build_ontology(owl_info, onto_prefix, onto):
     onto_iri = onto.base_iri
     if onto_iri.endswith("#"):
         onto_iri = onto_iri[0:-1]
@@ -298,9 +292,14 @@ def build_ontology(onto_prefix, onto):
     PART_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/BFO_0000050"]
     DERIVES_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0001000"]
     DEVELOPS_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002202"]
+
+    # TODO - taxa filtering
     IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002162"]
 
-    LINK_WHITELIST = {"CL": ["CL", "UBERON"]}
+    # by default, whitelist a link to any ontology we are incorporating. Update
+    # this list with manual overrides as helpful.
+    # LINK_WHITELIST = {"CL": ["CL", "UBERON"]}
+    LINK_WHITELIST = {onto_name: list(owl_info.keys()) for onto_name in owl_info.keys()}
 
     ontology = {}
     iri_onto_prefix = f"{onto_prefix}_"
@@ -319,6 +318,13 @@ def build_ontology(onto_prefix, onto):
         term["parents"] = [p.name.replace("_", ":") for p in onto_class.__bases__ if p.name.startswith(iri_onto_prefix)]
         term["synonyms"] = getattr(onto_class, "hasExactSynonym", [])
         term["part_of"] = get_links(onto_class.is_a, PART_OF, whitelist)
+        term["derives_from"] = get_links(onto_class.is_a, DERIVES_FROM, whitelist)
+        term["develops_from"] = get_links(onto_class.is_a, DEVELOPS_FROM, whitelist)
+
+        # dedup
+        for k in ["parents", "synonyms", "part_of", "derives_from", "develops_from"]:
+            term[k] = list(set(term[k]))
+
         ontology[term_id] = term
 
     return ontology
@@ -338,7 +344,7 @@ def load_ontologies(owl_info):
             print(f"Loading {onto_prefix}")
             onto = owlready2.get_ontology(fname).load()
             os.unlink(fname)
-            ontologies[onto_prefix] = build_ontology(onto_prefix, onto)
+            ontologies[onto_prefix] = build_ontology(owl_info, onto_prefix, onto)
 
     return ontologies
 
@@ -427,18 +433,6 @@ def create_args_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("uri", type=str, help="Dataset URI")
     parser.add_argument("--owl-info", type=str, help="cellxenge schema owl_info.yml URI", default=OWL_INFO_URI)
-    parser.add_argument(
-        "--all-ontologies-uri",
-        type=str,
-        help="all_ontologies URI - location of all_ontologies file for cellxgene schema",
-        default=ALL_ONTOLOGIES_URL_DEFAULT,
-    )
-    parser.add_argument(
-        "--lattice-uri",
-        type=str,
-        help="lattice URI - location of Lattice term cross-reference",
-        default=LATTICE_ONTOLOGY_URL_DEFAULT,
-    )
     parser.add_argument("-o", "--output", type=argparse.FileType("w"), default=sys.stdout)
     parser.add_argument(
         "--tile-cache-fraction",
