@@ -49,15 +49,15 @@ export default function Vertex({ ontology, lattice, vertex, query }: VertexProps
       <p>{olsTerm && definition}</p>
       <pre>{vertexID}</pre>
 
-      <h3> Ancestors </h3>
+      <h3> Parents </h3>
 
       <ol>
         {vertex &&
-          vertex.ancestors.map((ancestor: string) => {
+          vertex.parents.map((ancestor: string) => {
             const _a: OntologyTerm | undefined = ontology.get(ancestor);
             if (!_a || !_a.label) {
               console.log(
-                "In vertex.tsx, while rendering ancestors, ontology.get failed to return a vertex, possible bad ID"
+                "In vertex.tsx, while rendering parents, ontology.get failed to return a vertex, possible bad ID"
               );
               return null;
             }
@@ -69,20 +69,20 @@ export default function Vertex({ ontology, lattice, vertex, query }: VertexProps
           })}
       </ol>
 
-      <h3> Descendants </h3>
+      <h3> Children </h3>
       <ol>
         {vertex &&
-          vertex.descendants.map((descendant: string, i: number) => {
-            const _d = ontology.get(descendant);
+          vertex.children.map((child: string, i: number) => {
+            const _d = ontology.get(child);
             if (!_d || !_d.label) {
               console.log(
-                "In vertex.tsx, while rendering descendants, ontology.get failed to return a vertex, possible bad ID"
+                "In vertex.tsx, while rendering children, ontology.get failed to return a vertex, possible bad ID"
               );
               return null;
             }
             return (
-              <li key={descendant}>
-                <Link to={"../" + descendant + query}> {_d.label} </Link>
+              <li key={child}>
+                <Link to={"../" + child + query}> {_d.label} </Link>
               </li>
             );
           })}
@@ -99,6 +99,8 @@ export default function Vertex({ ontology, lattice, vertex, query }: VertexProps
               );
               return null;
             }
+            // TODO: these links should stay inside the current DAG, and just change
+            // the highlighting state.
             return (
               <li key={uberonID}>
                 <Link to={`/compartment/${uberonID}`}> {_u.label} </Link>

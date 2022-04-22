@@ -86,27 +86,9 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
     >
       <g>
         {dag.links().map((link: any) => {
-          const { points, source, target } = link;
+          const { points /*, source, target*/ } = link;
           const pathString = createLine(points as any);
-          let xyz = false;
-
-          /**
-           * x --> y --> z, remove links from x to z
-           *
-           */
-          const parentVertex: any = ontology.get(source.data.id);
-          parentVertex.descendants.forEach((descendantID: string) => {
-            const descendantVertex: any = ontology.get(descendantID);
-
-            // check if these descendants have in their own descendants any of the members of parentVertex.descendants
-            // if the descendants of the descendant include the target
-            // that is, if y includes z, remove it
-            if (descendantVertex.descendants.includes(target.data.id)) {
-              xyz = true;
-            }
-          });
-
-          if (pathString !== null && !xyz) {
+          if (pathString !== null) {
             return <path key={pathString} d={pathString} strokeWidth="3" stroke="rgb(230,230,230)" fill="none" />;
           } else {
             return null;

@@ -8,8 +8,8 @@ import { Ontology } from "../../d";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: string;
-  ancestorCount: number;
-  descendantCount: number;
+  hasAncestors: boolean;
+  hasDescendants: boolean;
   n_cells?: number;
 }
 
@@ -37,7 +37,6 @@ export interface DagState {
   nodes: OntologyVertexDatum[];
   links: SimulationLinkDatum<any>[];
   sugiyamaStratifyData: any;
-  filteredOutNodes: string[];
 }
 
 // state related to the creation of the force-graph
@@ -51,7 +50,6 @@ export interface ForceCanvasProps {
 // Other DAG exploration state
 export interface OntologyExplorerState {
   dagCreateProps: CreateDagProps;
-  // subtreeRootID: string | null;
   sugiyamaRenderThreshold: number;
   cardWidth: number;
   cardHeight: number;

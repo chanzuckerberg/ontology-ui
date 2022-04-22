@@ -124,12 +124,12 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
       <Button onClick={deselectPinnedNode} style={{marginRight: 20}} disabled={!pinnedVertex}>
         Deselect
       </Button>
-      {pinnedVertex && !isSubset && (
+      {pinnedVertex && (
         <Button icon="pie-chart" onClick={subsetToNode} style={{ marginRight: 20 }}>
           subset to {pinnedVertex.id}
         </Button>
       )}
-      {pinnedVertex && isSubset && (
+      {isSubset && (
         <Button icon="full-circle" onClick={resetSubset} style={{ marginRight: 20 }}>
           reset to whole
         </Button>

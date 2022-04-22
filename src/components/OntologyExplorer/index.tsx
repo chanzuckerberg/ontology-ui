@@ -16,6 +16,7 @@ import {
   CreateDagProps,
 } from "./types";
 import lruMemoize from "../../util/lruMemo";
+import { ontologySubDAG, ontologyFilter, OntologyFilterAction } from "../../util/ontologyDag";
 
 import { useNavigateRef } from "../useNavigateRef";
 
@@ -296,95 +297,38 @@ function _createDagHash(ontology: Ontology, subtreeRootID: string | null, option
 }
 
 function _createDag(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) {
-  const { minimumOutdegree, maximumOutdegree, outdegreeCutoffXYZ, doCreateSugiyamaDatastructure } = options;
-
-  /**
-   * Choose which nodes to show, given a root, recursively grab get all descendants
-   */
-  const subtreeFromRootNode: string[] = [];
-
-  const traceSubtree = (vertexID: string) => {
-    const vertex: any = ontology.get(vertexID);
-    if (vertex && vertex.descendants && vertex.descendants.length) {
-      vertex.descendants.forEach((vertex: string) => {
-        subtreeFromRootNode.push(vertex);
-        traceSubtree(vertex);
-      });
-    }
-  };
+  const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure } = options;
 
   if (subtreeRootID) {
-    subtreeFromRootNode.push(subtreeRootID);
-    traceSubtree(subtreeRootID);
+    ontology = ontologySubDAG(ontology, subtreeRootID);
   }
 
-  /**
-   * de duplicate subtree after recursive iteration, because dag
-   */
-  function onlyUnique(vertexID: string, index: number, subtree: string[]) {
-    return subtree.indexOf(vertexID) === index;
-  }
+  ontology = ontologyFilter(ontology, (term: OntologyTerm) => {
+    const { label, in_use } = term;
 
-  const uniqueSubtreeFromRootNode = subtreeFromRootNode.filter(onlyUnique);
+    const n_cells = term?.n_cells ?? 0;
+    if (in_use || n_cells > 0) return OntologyFilterAction.Retain;
 
-  /**
-   * this could be broken out, as a feature, as:
-   * [x] toggle off leaf nodes, descendants === 0
-   * [50] choose outdegree limit
-   * in which case we would want this to be multiple
-   * arrays that we merge, maybe easier to force remount
-   * than keep track of render count at that point?
-   */
-  const filteredOutNodes: string[] = [];
-  /**
-   * choose which nodes not to show, from entire ontology
-   *
-   * TODO: XXX - cleanup needed
-   */
-  ontology.forEach((v: any, id) => {
-    const nonhuman =
-      v.label.includes("Mus musculus") || // mouse
-      v.label.includes("conidium") || //fungus
-      v.label.includes("fungal") ||
-      v.label.includes("Fungi") ||
-      v.label.includes("spore");
+    // TODO: this will eventually move to graph builder, and out of front-end
+    const nonhumanTerm =
+      label.includes("Mus musculus") || // mouse
+      label.includes("conidium") || //fungus
+      label.includes("sensu Nematoda and Protostomia") ||
+      label.includes("sensu Endopterygota") ||
+      label.includes("fungal") ||
+      label.includes("Fungi") ||
+      label.includes("spore");
+    const orphanTerm = !n_cells && term.descendants.size === 0 && term.ancestors.size === 0;
+    const nChildren = term.children.length;
 
-    if (
-      v.descendants.length > maximumOutdegree || // more than n descendants ... sometimes we want to remove the nodes, sometimes we want to xyz the links
-      v.descendants.length < minimumOutdegree || // remove nodes with less than n descendants ... sometimes we want to start at cell and show the big stuff only
-      // v.descendants.length === 0 || // zero descendants
-      nonhuman
-      // bigTroublesomeMetadataCells
-    ) {
-      filteredOutNodes.push(id);
+    if (nonhumanTerm || orphanTerm || nChildren < minimumOutdegree || nChildren > maximumOutdegree) {
+      return OntologyFilterAction.RemoveFamily;
     }
 
-    const doFilterNodesWithoutNCounts = false;
-
-    /* make this a control / toggle */
-    if (!v.n_cells && doFilterNodesWithoutNCounts) {
-      filteredOutNodes.push(id);
-    }
+    return OntologyFilterAction.Retain;
   });
 
-  if (subtreeRootID) {
-    const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
-      ontology,
-      filteredOutNodes, // get rid of stuff!
-      outdegreeCutoffXYZ,
-      doCreateSugiyamaDatastructure,
-      uniqueSubtreeFromRootNode // include only this stuff!
-    );
-    return { nodes, links, filteredOutNodes, sugiyamaStratifyData };
-  }
-
-  const { nodes, links, sugiyamaStratifyData } = createNodesLinksHulls(
-    ontology,
-    filteredOutNodes, // get rid of stuff!
-    outdegreeCutoffXYZ, // remove xyz
-    doCreateSugiyamaDatastructure
-  );
-  return { nodes, links, filteredOutNodes, sugiyamaStratifyData };
+  return createNodesLinksHulls(ontology, doCreateSugiyamaDatastructure);
 }
 
 /**
