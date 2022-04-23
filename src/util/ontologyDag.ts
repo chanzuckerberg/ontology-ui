@@ -77,15 +77,14 @@ function deleteId(ontology: Ontology, id: OntologyId): void {
 }
 
 /**
- * ontologySubDAG - create a new DAG which is the sub-DAG rooted at the
- * given term.
+ * ontologySubDAG - create a new DAG(s) which is the sub-DAG rooted at the
+ * given terms.
  */
-export function ontologySubDAG(ontology: Ontology, rootId: OntologyId): Ontology {
+export function ontologySubDAG(ontology: Ontology, rootIds: OntologyId[]): Ontology {
   const subDag = new Map<OntologyId, OntologyTerm>();
-  const root = ontology.get(rootId);
-  if (!root) return subDag;
-
-  const subDagIds = new Set([rootId, ...root.descendants]);
+  rootIds = rootIds.filter((id) => ontology.get(id) !== undefined);
+  if (rootIds.length === 0) return subDag;
+  const subDagIds = new Set(rootIds.flatMap((id) => [id, ...(ontology.get(id)?.descendants ?? [])]));
   for (const cid of subDagIds) {
     const term = ontology.get(cid);
     if (!term) continue;

@@ -68,12 +68,12 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
   /*
    * State passed in the browser history:
    *    vertexID (path element): the currently selected/pinned vertex
-   *    subtreeRootID (query param): subset graph on the currently selected vertex
+   *    rootIds (query param): subset graph on the currently selected vertex
    *    seachString (query param): the free text search within current ontology
    */
   const { vertexID: pinnedVertexID } = useParams();
   const searchParamsRef = useSearchParamsRef();
-  const subtreeRootID = searchParamsRef.current[0].get("subtreeRootID");
+  const rootIds = searchParamsRef.current[0].getAll("rootIds");
   const searchString = searchParamsRef.current[0].get("searchString");
   const query = searchParamsRef.current[0].toString();
 
@@ -101,8 +101,8 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
       - parameters that affect the choice of nodes or their connectivity, eg, minimumOutdegree
     Side effect: sets the DAG state.
     */
-    setDagState(createDag(ontology, subtreeRootID, dagCreateProps));
-  }, [subtreeRootID, ontology, dagCreateProps]);
+    setDagState(createDag(ontology, rootIds, dagCreateProps));
+  }, [rootIds, ontology, dagCreateProps]);
 
   useEffect(() => {
     /*
@@ -153,7 +153,7 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { forceCanvasWidth, forceCanvasHeight } = forceCanvasProps;
-  const isSubset = !!subtreeRootID;
+  const isSubset = rootIds.length > 0;
   const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
 
   /*
@@ -180,13 +180,17 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
       return null;
     }
     const [searchParams, setSearchParams] = searchParamsRef.current;
-    searchParams.set("subtreeRootID", pinnedVertexID);
+    // NOTE: rootIds query param can accept more than one root. This UI
+    // uses `.set()`, which clobbers any existing value, restricting to
+    // a single root in practice. Use `append()` if you want to _add_
+    // a new root rather than replace the existing root.
+    searchParams.set("rootIds", pinnedVertexID);
     setSearchParams(searchParams);
   };
 
   const resetSubset = () => {
     const [searchParams, setSearchParams] = searchParamsRef.current;
-    searchParams.delete("subtreeRootID");
+    searchParams.delete("rootIds");
     setSearchParams(searchParams);
   };
 
@@ -292,16 +296,16 @@ export default function OntologyExplorer({ ontology, lattice, xref }: OntologyEx
  */
 const createDag = lruMemoize(_createDag, _createDagHash, -1);
 
-function _createDagHash(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) : string {
+function _createDagHash(ontology: Ontology, rootIds: string[] | null, options: CreateDagProps): string {
   const ontologyPrefix = ontology.keys().next().value;
-  return "" + ontologyPrefix + subtreeRootID + JSON.stringify(options);
+  return "" + ontologyPrefix + rootIds?.join("&") + JSON.stringify(options);
 }
 
-function _createDag(ontology: Ontology, subtreeRootID: string | null, options: CreateDagProps) : DagState {
+function _createDag(ontology: Ontology, rootIds: string[] | null, options: CreateDagProps): DagState {
   const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure } = options;
 
-  if (subtreeRootID) {
-    ontology = ontologySubDAG(ontology, subtreeRootID);
+  if (rootIds && rootIds.length > 0) {
+    ontology = ontologySubDAG(ontology, rootIds);
   }
 
   ontology = ontologyFilter(ontology, (term: OntologyTerm) => {

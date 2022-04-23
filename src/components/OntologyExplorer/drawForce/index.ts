@@ -2,8 +2,6 @@ import { forceSimulation, forceLink, forceManyBody, forceX, forceY, SimulationLi
 
 import { select } from "d3-selection";
 
-import { interpolateSinebow } from "d3-scale-chromatic";
-
 import { OntologyVertexDatum } from "../types";
 import { Ontology, OntologyTerm } from "../../../d";
 
@@ -156,7 +154,6 @@ export const drawForceDag = (
   const tooltipColor = "rgb(30, 30, 30)";
   const hullBorderColor = "rgb(255,0,0,.05";
   const hullLabelColor = "rgba(0,0,0,1)";
-  const datasetDistributionColor = interpolateSinebow(0.9);
 
   /**
    * Set up d3 force simulation
