@@ -105,7 +105,6 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
       const [searchParams] = searchParamsRef.current;
       query = query || searchParams.toString();
       return path + (query ? "?" + query : "");
-      // navigate(path + (query ? "?" + query : ""));
     },
     [searchParamsRef]
   );
