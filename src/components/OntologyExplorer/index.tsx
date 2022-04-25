@@ -380,7 +380,6 @@ function _createDag(
 
   let ontology = graph.ontologies[ontoID];
   if (rootIdQuery) {
-    console.log(rootIdQuery);
     const ids = new Set<OntologyId>();
     for (const query of rootIdQuery) {
       const queryResult = ontologyQuery(graph.ontologies, ontoID, JSON.parse(query));
