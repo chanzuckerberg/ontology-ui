@@ -67,7 +67,7 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
 
       // consolidate searchable terms in one set.
       // XXX - TODO - needs updating once we finalize data model (eg, part_of, ...)
-      term.xref = [...term.part_of];
+      term.xref = [...term.part_of, ...term.derives_from, ...term.develops_from];
 
       if (term.n_cells === undefined) term.n_cells = 0;
     }
