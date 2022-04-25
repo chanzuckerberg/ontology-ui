@@ -17,7 +17,7 @@ $ npm ci
 $ npm run start
 ```
 
-And navigate to `http://localhost:3000/cell/ontology`
+And navigate to `http://localhost:3000/`
 
 ### Typescript
 
