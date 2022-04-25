@@ -1,19 +1,24 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+
 import { olsLookupTermByOboId } from "../util/fetchEBITerm";
-import { EBIOlsTerm, Ontology, OntologyTerm } from "../d";
+import { DatasetGraph, EBIOlsTerm, OntologyTerm, OntologyId } from "../d";
+import { ontologyLookupId } from "../util/ontologyDag";
 
 export interface VertexProps {
-  ontology: Ontology;
-  lattice: Ontology;
+  graph: DatasetGraph;
   vertex: OntologyTerm;
   query?: string;
+  makeTo: (to: OntologyId) => string;
 }
 
-export default function Vertex({ ontology, lattice, vertex, query }: VertexProps) {
-  const [olsTerm, setOlsTerm] = useState<EBIOlsTerm | null>();
+export default function Vertex({ graph, vertex, query, makeTo }: VertexProps) {
   const vertexID = vertex.id;
+  const ontoID = vertexID?.split(":", 1)[0];
+  const ontology = graph.ontologies[ontoID];
   query = query ? "?" + query : "";
+
+  const [olsTerm, setOlsTerm] = useState<EBIOlsTerm | null>();
 
   useEffect(() => {
     olsLookupTermByOboId(vertexID)
@@ -27,19 +32,6 @@ export default function Vertex({ ontology, lattice, vertex, query }: VertexProps
   /* A mechanoreceptor cell located in the inner ear that is sensitive to auditory stimuli. The ... */
   const definition = olsTerm && olsTerm.annotation.definition && olsTerm.annotation.definition[0];
 
-  /*
-   * Look up any cross-referenced terms
-   *
-   * TODO: currently, we restrict cross-refs to UBERON, but this should eventually
-   * be a component parameter allowing any other ontology to specified for cross-
-   * referencing.
-   *
-   * See OntologyExplorer - it has been generalized to represent this as a
-   * "cross reference ontology" rather than hard-wired to UBERON.
-   */
-  const _lattice = lattice.get(vertexID);
-  const _filteredLattice = _lattice?.xref.filter?.((d: string) => d.includes("UBERON"));
-
   return (
     <div>
       <h1>{vertex && vertex.label}</h1>
@@ -51,7 +43,7 @@ export default function Vertex({ ontology, lattice, vertex, query }: VertexProps
 
       <h3> Parents </h3>
 
-      <ol>
+      <ul>
         {vertex &&
           vertex.parents.map((ancestor: string) => {
             const _a: OntologyTerm | undefined = ontology.get(ancestor);
@@ -63,14 +55,14 @@ export default function Vertex({ ontology, lattice, vertex, query }: VertexProps
             }
             return (
               <li key={ancestor}>
-                <Link to={"../" + ancestor + query}>{_a.label}</Link>
+                <Link to={makeTo(ancestor)}>{_a.label}</Link>
               </li>
             );
           })}
-      </ol>
+      </ul>
 
       <h3> Children </h3>
-      <ol>
+      <ul>
         {vertex &&
           vertex.children.map((child: string, i: number) => {
             const _d = ontology.get(child);
@@ -82,32 +74,56 @@ export default function Vertex({ ontology, lattice, vertex, query }: VertexProps
             }
             return (
               <li key={child}>
-                <Link to={"../" + child + query}> {_d.label} </Link>
+                <Link to={makeTo(child)}>{_d.label}</Link>
               </li>
             );
           })}
-      </ol>
+      </ul>
 
-      <h3> Compartments </h3>
-      <ol>
-        {_filteredLattice &&
-          _filteredLattice.map((uberonID: string) => {
-            const _u: OntologyTerm | undefined = lattice.get(uberonID);
-            if (!_u || !_u.label) {
-              console.log(
-                "In vertex.tsx, while rendering lattice uberon compartments, lattice.get failed to return a vertex, possible bad ID"
-              );
-              return null;
-            }
-            // TODO: these links should stay inside the current DAG, and just change
-            // the highlighting state.
+      <h3> Part-of (compartment)</h3>
+      <ul>
+        {vertex &&
+          allUniqueAncestors(graph, vertex.part_of).map((id: string, i: number) => {
+            const term = ontologyLookupId(graph.ontologies, id)?.term;
             return (
-              <li key={uberonID}>
-                <Link to={`/compartment/${uberonID}`}> {_u.label} </Link>
+              <li key={id}>
+                <Link to={makeTo(id)}>{term!.label}</Link>
               </li>
             );
           })}
-      </ol>
+      </ul>
+
+      <h3> Derived-from</h3>
+      <ul>
+        {vertex &&
+          allUniqueAncestors(graph, vertex.derives_from).map((id: string, i: number) => {
+            const term = ontologyLookupId(graph.ontologies, id)?.term;
+            return (
+              <li key={id}>
+                <Link to={makeTo(id)}>{term!.label}</Link>
+              </li>
+            );
+          })}
+      </ul>
+
+      <h3> Develops-from</h3>
+      <ul>
+        {vertex &&
+          allUniqueAncestors(graph, vertex.develops_from).map((id: string, i: number) => {
+            const term = ontologyLookupId(graph.ontologies, id)?.term;
+            return (
+              <li key={id}>
+                <Link to={makeTo(id)}>{term!.label}</Link>
+              </li>
+            );
+          })}
+      </ul>
     </div>
   );
+}
+
+function allUniqueAncestors(graph: DatasetGraph, ids: OntologyId[]): OntologyId[] {
+  return [
+    ...new Set<OntologyId>(...ids.flatMap((id) => ontologyLookupId(graph.ontologies, id)?.term?.ancestors ?? [])),
+  ];
 }

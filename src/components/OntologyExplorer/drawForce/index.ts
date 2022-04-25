@@ -3,7 +3,7 @@ import { forceSimulation, forceLink, forceManyBody, forceX, forceY, SimulationLi
 import { select } from "d3-selection";
 
 import { OntologyVertexDatum } from "../types";
-import { Ontology, OntologyTerm } from "../../../d";
+import { Ontology } from "../../../d";
 
 import { drawHulls } from "./hulls";
 
@@ -26,12 +26,11 @@ import { scaleLinear } from "d3-scale";
  * Default highlighting may also be passed ot drawForceDag(), and will set
  * the initial highlighting state.
  */
+export type NodeHighlight = "pinned" | "primary" | "secondary";
 export interface DrawForceDagHighlightProps {
-  pinnedNodeID?: string;
-  searchString?: string;
-  xrefTermID?: string;
   hullsEnabled?: boolean;
   highlightAncestors?: boolean;
+  nodeHighlight?: Map<string, NodeHighlight>;
 }
 
 /**
@@ -48,7 +47,6 @@ export interface DrawForceDagHighlightProps {
  * @param setHoverNode
  * @param setPinnedNode
  * @param onForceSimulationEnd
- * @param lattice
  * @param defaultHighlightProps
  * @returns the rendering function.
  */
@@ -64,7 +62,6 @@ export const drawForceDag = (
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
   setPinnedNode: (node: OntologyVertexDatum | undefined) => void,
   onForceSimulationEnd: any,
-  lattice: any,
   defaultHighlightProps: DrawForceDagHighlightProps = {}
 ) => {
   if (!dagCanvasRef || !dagCanvasRef.current) return null;
@@ -142,18 +139,19 @@ export const drawForceDag = (
   /**
    * Colors
    */
-  const nodeColor = "rgba(170,170,170,1)";
   const nodeStrokeColor = "white";
   const hoverStrokeColor = "red";
   const hoverNodeDescendantColor = "pink";
   const hoverNodeAncestorColor = "red";
-  const clickedNodeColor = "black";
-  const nodeColorNotInSearch = "rgba(100,100,100,.2)";
-  const nodeColorInSearch = "steelblue";
   const linkColor = "rgba(170,170,170,.5)";
   const tooltipColor = "rgb(30, 30, 30)";
   const hullBorderColor = "rgb(255,0,0,.05";
   const hullLabelColor = "rgba(0,0,0,1)";
+
+  const nodeColorDefault = "rgba(170,170,170,1)";
+  const nodeColorPinned = "black";
+  const nodeColorPrimary = "steelblue";
+  const nodeColorSecondary = "orange";
 
   /**
    * Set up d3 force simulation
@@ -182,11 +180,10 @@ export const drawForceDag = (
   /**
    * Animation frame.
    */
-  const ticked = (updatedHighlightProps: DrawForceDagHighlightProps = {}) => {
+  const ticked = () => {
     if (!context) return;
 
-    Object.assign(highlightProps, updatedHighlightProps);
-    const { pinnedNodeID, searchString, highlightAncestors, xrefTermID, hullsEnabled } = highlightProps;
+    const { highlightAncestors, hullsEnabled, nodeHighlight } = highlightProps;
 
     /**
      * Clear
@@ -210,26 +207,21 @@ export const drawForceDag = (
       context.beginPath();
       drawNode(node);
 
-      /**
-       * Default color of node
-       * last true statement after takes precedence
-       */
-      context.fillStyle = nodeColor;
-      /**
-       * fade the node back if it's not in the search string
-       */
-      if (searchString) {
-        const vertex: any = ontology.get(node.id);
-
-        if (vertex && vertex.label) {
-          const _hit = vertex.label.toLowerCase().includes(searchString.toLowerCase());
-          if (_hit) {
-            context.fillStyle = nodeColorInSearch;
-          } else {
-            context.fillStyle = nodeColorNotInSearch;
-          }
-        }
+      // set default fill/stroke color.
+      const highlightStyle = nodeHighlight?.get(node.id);
+      if (highlightStyle === undefined) {
+        context.fillStyle = nodeColorDefault;
+      } else if (highlightStyle === "pinned") {
+        context.fillStyle = nodeColorPinned;
+      } else if (highlightStyle === "primary") {
+        context.fillStyle = nodeColorPrimary;
+      } else if (highlightStyle === "secondary") {
+        context.fillStyle = nodeColorSecondary;
+      } else {
+        context.fillStyle = nodeColorDefault;
       }
+      context.strokeStyle = nodeStrokeColor;
+
       /**
        * hover & click color
        */
@@ -248,28 +240,8 @@ export const drawForceDag = (
         }
       }
 
-      if (node.id === pinnedNodeID) {
-        context.fillStyle = clickedNodeColor;
-      }
-
-      /**
-       * check xref ontology
-       */
-      if (lattice && xrefTermID) {
-        const term: OntologyTerm = lattice.get(node.id);
-        const celltype_xref_match = term.xref.includes(xrefTermID);
-        if (celltype_xref_match) {
-          context.fillStyle = "orange";
-        }
-      }
-
       context.fill();
       context.stroke();
-
-      /**
-       * end, reset cases
-       */
-      context.strokeStyle = nodeStrokeColor; // reset, in case it was hover
     }
 
     if (hullsEnabled) {
@@ -329,12 +301,11 @@ export const drawForceDag = (
     if (!d.hasDescendants && !d.hasAncestors) {
       return;
     }
-    const vertex = ontology.get(d.id);
 
     /* size nodes by inclusion in arbitrary set, in this test case, n_cells has a value */
 
     const doSizeByInclusion = true;
-    const n_cells = vertex!.n_cells;
+    const n_cells = d.n_cells;
 
     /* n_cells for now for example, but make this state */
     const isIncludedInSet = n_cells;
@@ -344,16 +315,21 @@ export const drawForceDag = (
     } else if (doSizeByInclusion && !isIncludedInSet) {
       nodeSize = deemphasizeNodeSize;
     }
+
     /**
      * Draw a circle
      */
-
     if (context && d && typeof d.x === "number" && typeof d.y === "number") {
       context.moveTo(d.x + nodeSize, d.y);
       context.arc(d.x, d.y, nodeSize, 0, 2 * Math.PI);
     } else {
       console.log("Tried to draw a node, but d.x was not a number, see Dag.tsx drawForce() drawNode");
     }
+  };
+
+  const forceRerender = (updatedHighlightProps: DrawForceDagHighlightProps = {}) => {
+    Object.assign(highlightProps, updatedHighlightProps);
+    ticked();
   };
 
   /**
@@ -387,5 +363,5 @@ export const drawForceDag = (
    * the canvas visualization if we type into a search box,
    * where the user interaction is not coming from the
    */
-  return ticked;
+  return forceRerender;
 };
