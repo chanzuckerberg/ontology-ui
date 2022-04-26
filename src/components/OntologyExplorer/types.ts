@@ -4,7 +4,7 @@
 
 import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 
-import { Ontology } from "../../d";
+import { Ontology, DatasetGraph } from "../../d";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: string;
@@ -19,9 +19,8 @@ export interface NamedOntology {
 }
 
 export interface OntologyExplorerProps {
-  ontology: Ontology;
-  lattice: Ontology;
-  xref: NamedOntology;
+  graph: DatasetGraph;
+  omniXref: NamedOntology;
 }
 
 // state related to creating the DAG

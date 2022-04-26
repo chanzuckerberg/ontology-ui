@@ -292,8 +292,10 @@ def build_ontology(owl_info, onto_prefix, onto):
     PART_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/BFO_0000050"]
     DERIVES_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0001000"]
     DEVELOPS_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002202"]
-
-    # TODO - taxa filtering
+    IN_LATERAL_SIDE_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/BSPO_0000126"]
+    LOCATED_IN = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0001025"]
+    ONLY_IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002160"]
+    CONTRIBUTES_TO_MORPHOLOGY_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002433"]
     IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002162"]
 
     # by default, whitelist a link to any ontology we are incorporating. Update

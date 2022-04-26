@@ -1,18 +1,18 @@
 import { useParams } from "react-router-dom";
 
-import { Ontology } from "../d";
+import { DatasetGraph, OntologyId } from "../d";
 import Vertex from "../components/Vertex";
 
 export interface VertexViewProps {
-  ontology: Ontology;
-  lattice: Ontology;
+  graph: DatasetGraph;
 }
 
-export default function VertexView({ ontology, lattice }: VertexViewProps) {
+export default function VertexView({ graph }: VertexViewProps) {
   const { vertexID } = useParams();
-  const vertex = vertexID ? ontology.get(vertexID) : undefined;
+  const ontoID = vertexID?.split(":", 1)[0];
+  const ontology = ontoID ? graph?.ontologies[ontoID] : undefined;
+  const vertex = vertexID ? ontology?.get(vertexID) : undefined;
+  if (!vertex) return null;
 
-  if (!vertexID || !vertex) return null;
-
-  return <Vertex ontology={ontology} vertex={vertex} lattice={lattice} />;
+  return <Vertex graph={graph} vertex={vertex} makeTo={(id: OntologyId) => `../${id}`} />;
 }

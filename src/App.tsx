@@ -43,39 +43,15 @@ function App() {
         {graph && lattice && (
           <Routes>
             <Route path="/">
-              <Route index element={<Navigate to="cell/ontology" replace />} />
-
-              <Route path="cell">
-                <Route index element={<Navigate to="ontology" replace />} />
-                <Route path="ontology">
-                  <Route index element={<DagView ontologyPrefix="CL" lattice={lattice} graph={graph} />} />
-                  <Route path=":vertexID" element={<DagView ontologyPrefix="CL" lattice={lattice} graph={graph} />} />
+              <Route index element={<Navigate to="ontology/CL" replace />} />
+              <Route path="ontology">
+                <Route path=":ontoID">
+                  <Route index element={<DagView graph={graph} />} />
+                  <Route path=":vertexID" element={<DagView graph={graph} />} />
                 </Route>
-                <Route path=":vertexID" element={<VertexView ontology={graph.ontologies.CL} lattice={lattice} />} />
               </Route>
-
-              <Route path="disease">
-                <Route index element={<Navigate to="ontology" replace />} />
-                <Route path="ontology">
-                  <Route index element={<DagView ontologyPrefix="MONDO" lattice={lattice} graph={graph} />} />
-                  <Route
-                    path=":vertexID"
-                    element={<DagView ontologyPrefix="MONDO" lattice={lattice} graph={graph} />}
-                  />
-                </Route>
-                <Route path=":vertexID" element={<VertexView ontology={graph.ontologies.MONDO} lattice={lattice} />} />
-              </Route>
-
-              <Route path="compartment">
-                <Route index element={<Navigate to="ontology" replace />} />
-                <Route path="ontology">
-                  <Route index element={<DagView ontologyPrefix="UBERON" lattice={lattice} graph={graph} />} />
-                  <Route
-                    path=":vertexID"
-                    element={<DagView ontologyPrefix="UBERON" lattice={lattice} graph={graph} />}
-                  />
-                </Route>
-                <Route path=":vertexID" element={<VertexView ontology={graph.ontologies.UBERON} lattice={lattice} />} />
+              <Route path="term">
+                <Route path=":vertexID" element={<VertexView graph={graph} />} />
               </Route>
             </Route>
             <Route path="*" element={<NoMatch />} />

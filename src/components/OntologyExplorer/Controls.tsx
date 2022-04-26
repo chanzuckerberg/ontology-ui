@@ -19,7 +19,7 @@ interface OntrologyExplorerControlDrawerProps {
   menubarHeight: number;
   isSubset: boolean;
   outdegreeCutoffNodes: number;
-  xref: NamedOntology;
+  omniXref: NamedOntology;
   handleDagSearchChange: any;
   deselectPinnedNode: any;
   subsetToNode: any;
@@ -41,7 +41,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
   const [xrefVerticesAsArray, setXrefVerticesAsArray] = useState<XrefOmnibarItem[]>([]);
 
   const {
-    xref,
+    omniXref,
     pinnedVertex,
     dagSearchText,
     simulationRunning,
@@ -63,14 +63,14 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
 
   useEffect(() => {
     const _xrefVerticesAsArray: XrefOmnibarItem[] = [];
-    xref.ontology?.forEach((v: OntologyTerm, id) => {
+    omniXref.ontology?.forEach((v: OntologyTerm, id) => {
       _xrefVerticesAsArray.push({ xrefID: id, label: v.label });
     });
     function onlyUnique(value: XrefOmnibarItem, index: number, self: XrefOmnibarItem[]) {
       return self.indexOf(value) === index;
     }
     setXrefVerticesAsArray(_xrefVerticesAsArray.filter(onlyUnique));
-  }, [xref]);
+  }, [omniXref]);
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
   const handleSettingsClose = () => setSettingsIsOpen(false);
@@ -225,7 +225,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
         <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
       </Drawer>
       <Button style={{ marginRight: 20 }} onClick={handleXrefSearchOpen}>
-        Search {xref.name} (c)
+        Search {omniXref.name} (c)
       </Button>
       <XrefOmnibar
         isOpen={xrefSearchIsOpen}
