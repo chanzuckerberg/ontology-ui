@@ -248,7 +248,8 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
     // a single root in practice. Use `append()` OR set the param to
     // a OntologySearch if you want to _add_ a new root rather than
     // replace the existing root.
-    searchParams.set("root", pinnedVertexID);
+    //
+    searchParams.set("root", JSON.stringify(pinnedVertexID));
     setSearchParams(searchParams);
   };
 
