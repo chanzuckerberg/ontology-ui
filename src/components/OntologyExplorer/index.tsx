@@ -22,7 +22,7 @@ import {
   ontologyFilter,
   OntologyFilterAction,
   ontologyQuery,
-  OntologyQuery,
+  compartmentQuery,
 } from "../../util/ontologyDag";
 
 import { useNavigateRef } from "../useNavigateRef";
@@ -156,12 +156,13 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
     if (redrawCanvas) {
       const nodeHighlight = new Map<string, NodeHighlight>();
       if (xref) {
-        for (const id of ontologyQuery(graph.ontologies, ontoID, JSON.parse(xref))) {
+        const [, compartmentCellIds] = compartmentQuery(graph.ontologies, xref);
+        for (const id of compartmentCellIds) {
           nodeHighlight.set(id, "secondary");
         }
       }
       if (match) {
-        for (const id of ontologyQuery(graph.ontologies, ontoID, { $match: match })) {
+        for (const id of ontologyQuery(graph.ontologies, { $match: match }, ontoID)) {
           nodeHighlight.set(id, "primary");
         }
       }
@@ -206,18 +207,13 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
       const [searchParams] = searchParamsRef.current;
       const newSearchParams = createSearchParams(searchParams); // clone
       if (xrefID) {
-        const ids = [...ontologyQuery(graph.ontologies, ontoID, { $walk: xrefID, $via: "part_of" })];
-        const query: OntologyQuery = {
-          $joinOn: "*",
-          $where: ids,
-        };
-        newSearchParams.set("xref", JSON.stringify(query));
+        newSearchParams.set("xref", xrefID);
       } else {
         newSearchParams.delete("xref");
       }
       return newSearchParams;
     },
-    [searchParamsRef, graph.ontologies, ontoID]
+    [searchParamsRef]
   );
 
   const setXrefSearch = (term: { xrefID: string; label: string }) => {
