@@ -59,6 +59,7 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
     for (const [termId, term] of ontology.entries()) {
       // set all defaults
       term.id = termId;
+      term.synonyms = term.synonyms || [];
       term.children = term.children || [];
       term.descendants = term.descendants || new Set<OntologyId>();
       term.deprecated = term.deprecated || false;
