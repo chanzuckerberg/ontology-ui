@@ -371,7 +371,6 @@ function _createDag(
   rootIdQuery: string[],
   options: CreateDagProps
 ): DagState {
-  console.time("createDag");
   const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure } = options;
 
   let ontology = graph.ontologies[ontoID];
@@ -387,39 +386,22 @@ function _createDag(
       ontology = ontologySubDAG(ontology, [...ids]);
     }
   }
-  console.timeLog("createDag", "Root ID query");
 
   // Don't bother with the filter if we are down to small number, as this leads to weird graphs
   // with missing nodes, etc.
   if (ontology.size > 1) {
     ontology = ontologyFilter(ontology, (term: OntologyTerm) => {
-      const { label, in_use } = term;
-
-      const n_cells = term?.n_cells ?? 0;
+      const { in_use, n_cells } = term;
       if (in_use || n_cells > 0) return OntologyFilterAction.Retain;
-
-      // TODO: this will eventually move to graph builder, and out of front-end
-      const nonhumanTerm =
-        label.includes("Mus musculus") || // mouse
-        label.includes("conidium") || //fungus
-        label.includes("sensu Nematoda and Protostomia") ||
-        label.includes("sensu Endopterygota") ||
-        label.includes("fungal") ||
-        label.includes("Fungi") ||
-        label.includes("spore");
       const orphanTerm = !n_cells && term.descendants.size === 0 && term.ancestors.size === 0;
       const nChildren = term.children.length;
-
-      if (nonhumanTerm || orphanTerm || nChildren < minimumOutdegree || nChildren > maximumOutdegree) {
+      if (orphanTerm || nChildren < minimumOutdegree || nChildren > maximumOutdegree) {
         return OntologyFilterAction.RemoveFamily;
       }
       return OntologyFilterAction.Retain;
     });
   }
-  console.timeLog("createDag", "Term filter");
-
   const result = createNodesLinksHulls(ontology, doCreateSugiyamaDatastructure);
-  console.timeEnd("createDag");
   return result;
 }
 
