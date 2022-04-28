@@ -72,6 +72,26 @@ CXG_TERM_COLUMNS = [
     "tissue_ontology_term_id",
 ]
 
+# attributes that link terms (relationships)
+TERM_LINKS = ["parents", "part_of", "have_part", "develops_from", "derives_from"]
+
+# Add additional seed terms that we _always_ want to include in our ontology, even if they
+# are not present in the data.
+SEED_ONTOLOGIES = ["CL", "HANCESTRO", "HsapDv", "MmusDv"]
+
+
+# global names of interest
+PART_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/BFO_0000050"]
+HAVE_PART = owlready2.IRIS["http://purl.obolibrary.org/obo/BFO_0000051"]
+DERIVES_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0001000"]
+DEVELOPS_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002202"]
+# IN_LATERAL_SIDE_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/BSPO_0000126"]
+# LOCATED_IN = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0001025"]
+ONLY_IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002160"]
+# CONTRIBUTES_TO_MORPHOLOGY_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002433"]
+# IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002162"]
+HOMO_SAPIENS = owlready2.IRIS["http://purl.obolibrary.org/obo/NCBITaxon_9606"]
+
 
 def main():
     global tiledb_ctx
@@ -98,7 +118,7 @@ def main():
 
         # identify terms in use by the dataset
         master_ontology = load_ontology.result()
-        terms_directly_in_use, terms_in_use = get_terms_in_use(master_ontology, obs_df)
+        terms_directly_in_use, terms_in_use = get_terms_in_use(args, master_ontology, obs_df)
         if args.output != sys.stdout:
             print(
                 f"{len(terms_directly_in_use)} terms directly in use, "
@@ -110,6 +130,9 @@ def main():
 
         # annotate the in-use ontology with data attributes
         in_use_ontologies = annotate_ontology(in_use_ontologies, obs_df, var_df)
+
+        # filter empty/unused terms to make the graph smaller
+        in_use_ontologies = cleanup_fields(in_use_ontologies)
 
     # Create & save the graph
     result = {
@@ -133,8 +156,8 @@ def create_in_use_ontologies(master_ontology, terms_in_use):
     return in_use_ontologies
 
 
-def annotate_ontology(in_use_ontologies, obs_df, var_df):
-    # Add stats & other annotation
+def annotate_ontology(in_use_ontologies: dict, obs_df: pd.DataFrame, var_df: pd.DataFrame):
+    # Add stats & other annotations
 
     # Number of cells per term
     term_counts = get_term_counts(obs_df)
@@ -145,10 +168,81 @@ def annotate_ontology(in_use_ontologies, obs_df, var_df):
         if ontology_name in in_use_ontologies and termId in in_use_ontologies[ontology_name]:
             in_use_ontologies[ontology_name][termId]["n_cells"] = count
 
+    # Data links between cell_type and tissue_type and save in part_of
+    grouped = (
+        obs_df[["cell_type_ontology_term_id", "tissue_ontology_term_id"]]
+        .groupby(by=["cell_type_ontology_term_id", "tissue_ontology_term_id"])
+        .size()
+    )
+    for fromId in grouped.index.to_frame().to_dict(orient="series")["cell_type_ontology_term_id"].unique():
+        ontology_name = fromId.split(":", 1)[0]
+        if ontology_name != "CL":
+            continue
+        part_of = set(in_use_ontologies[ontology_name][fromId]["part_of"])
+        part_of.update(list(filter(lambda id: id.startswith("UBERON:"), grouped[fromId].index)))
+        in_use_ontologies[ontology_name][fromId]["part_of"] = list(part_of)
+
     return in_use_ontologies
 
 
-def get_terms_in_use(master_ontology, obs_df):
+def cleanup_fields(in_use_ontologies):
+    """Remove anything we don't want to end up in the JSON"""
+
+    def filtered_term(term):
+        del term["iri"]
+        for k in ["synonyms"] + TERM_LINKS:
+            term[k] = list(set(term[k]))
+
+        for link in ["deprecated", "synonyms", "label"] + TERM_LINKS:
+            if not term[link]:
+                del term[link]
+
+        return term
+
+    return {
+        ont_name: {term_id: filtered_term(term) for term_id, term in ontology.items()}
+        for ont_name, ontology in in_use_ontologies.items()
+    }
+
+
+def is_non_human(term_id, term) -> bool:
+    label = term["label"].lower()
+    non_human = (
+        label.endswith("(mus musculus)")
+        or label.endswith("(sensu nematoda and protostomia)")
+        or label.endswith("(sensu endopterygota)")
+        or label.endswith("(sensu fungi)")
+        or label.endswith("(sensu viridiplantae)")
+        or label.endswith("(sensu endopterygota)")
+        or label.endswith("(sensu arthropoda)")
+        or label.endswith("(sensu arthopoda)")  # likely misspelling in CL, but it exists!
+        or label.endswith("(sensu mus)")
+        or label.endswith("(sensu nematoda)")
+        or label.endswith("(sensu diptera)")
+        or label.endswith("(sensu mycetozoa)")
+        or "spore" in label
+        or "sporocyte" in label
+        or "conidium" in label
+        or "fungal" in label
+        or "fungi" in label
+    )
+
+    if not non_human:
+        oc = owlready2.IRIS[term["iri"]]
+        only_in_taxon = get_links(oc.is_a, ONLY_IN_TAXON)
+        non_human = len(only_in_taxon) > 0 and HOMO_SAPIENS not in only_in_taxon
+
+    return non_human
+
+
+def get_seed_terms(args, master_ontology, ont_name):
+    # return seed terms for the specified ontology. Filter as requested.
+    if ont_name in ["CL", "UBERON"] and args.filter_non_human:
+        return (k for k, v in master_ontology[ont_name].items() if not v["deprecated"] and not is_non_human(k, v))
+    return master_ontology[ont_name].keys()
+
+
+def get_terms_in_use(args, master_ontology, obs_df):
     # Seed with terms used by the dataset.
     terms_in_use = set()
     for col in CXG_TERM_COLUMNS:
@@ -180,15 +274,16 @@ def get_terms_in_use(master_ontology, obs_df):
 
     # Add additional seed terms that we _always_ want to include
     # in our ontology, even if they are not present in the data.
-    for ont_name in ["CL", "HANCESTRO", "HsapDv", "MmusDv"]:
-        terms_in_use.update(term_id for term_id in master_ontology[ont_name].keys())
+    for ont_name in SEED_ONTOLOGIES:
+        # terms_in_use.update(term_id for term_id in master_ontology[ont_name].keys())
+        terms_in_use.update(get_seed_terms(args, master_ontology, ont_name))
 
     # generate list of all referenced terms, including links, parents, etc.
     to_be_processed = deque(terms_in_use)
     while len(to_be_processed) > 0:
         term = to_be_processed.popleft()
         ontology_name = term.split(":")[0]
-        for link in ["parents", "part_of"]:
+        for link in TERM_LINKS:
             linked_terms = master_ontology[ontology_name][term][link]
             unprocessed = set(linked_terms) - terms_in_use
             to_be_processed.extend(unprocessed)
@@ -261,7 +356,7 @@ def download(url):
     return tmp_file_name
 
 
-def get_links(is_a, prop, whitelist):
+def get_links(is_a, prop, whitelist=None):
     links = []
     for sc in is_a:
         if not isinstance(sc, owlready2.Restriction):
@@ -271,14 +366,17 @@ def get_links(is_a, prop, whitelist):
 
         if isinstance(sc.value, owlready2.ThingClass):
             term_id = sc.value.name.replace("_", ":")
-            if term_id.split(":", maxsplit=1)[0] in whitelist:
+            if whitelist is not None and term_id.split(":", maxsplit=1)[0] in whitelist:
                 links.append(term_id)
-        elif isinstance(sc.value, owlready2.Not):
-            links.extend(get_links(sc.value.Class, prop, whitelist))
-        elif isinstance(sc.value, owlready2.LogicalClassConstruct):
-            links.extend(get_links(sc.value.Classes, prop, whitelist))
+        elif (
+            isinstance(sc.value, owlready2.Not)
+            or isinstance(sc.value, owlready2.LogicalClassConstruct)
+            or isinstance(sc.value, owlready2.Restriction)
+        ):
+            # too complicated - punt!
+            continue
         else:
-            raise Exception(f"Unknown relation {sc.value}")
+            raise Exception(f"Unknown relation {sc}, {sc.value}")
 
     return links
 
@@ -288,15 +386,6 @@ def build_ontology(owl_info, onto_prefix, onto):
     if onto_iri.endswith("#"):
         onto_iri = onto_iri[0:-1]
     print(f"Building {onto_prefix}")
-
-    PART_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/BFO_0000050"]
-    DERIVES_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0001000"]
-    DEVELOPS_FROM = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002202"]
-    IN_LATERAL_SIDE_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/BSPO_0000126"]
-    LOCATED_IN = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0001025"]
-    ONLY_IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002160"]
-    CONTRIBUTES_TO_MORPHOLOGY_OF = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002433"]
-    IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002162"]
 
     # by default, whitelist a link to any ontology we are incorporating. Update
     # this list with manual overrides as helpful.
@@ -313,21 +402,25 @@ def build_ontology(owl_info, onto_prefix, onto):
         if not name.startswith(iri_onto_prefix):
             continue
 
-        term_id = name.replace("_", ":", 1)
-        term = {}
-        term["label"] = onto_class.label[0] if len(onto_class.label) > 0 else ""
-        term["deprecated"] = True if onto_class.deprecated and onto_class.deprecated.first() else False
-        term["parents"] = [p.name.replace("_", ":") for p in onto_class.__bases__ if p.name.startswith(iri_onto_prefix)]
-        term["synonyms"] = getattr(onto_class, "hasExactSynonym", [])
-        term["part_of"] = get_links(onto_class.is_a, PART_OF, whitelist)
-        term["derives_from"] = get_links(onto_class.is_a, DERIVES_FROM, whitelist)
-        term["develops_from"] = get_links(onto_class.is_a, DEVELOPS_FROM, whitelist)
+        try:
+            term_id = name.replace("_", ":", 1)
+            term = {}
+            term["iri"] = onto_class.iri
+            term["label"] = onto_class.label[0] if len(onto_class.label) > 0 else ""
+            term["deprecated"] = True if onto_class.deprecated and onto_class.deprecated.first() else False
+            term["parents"] = [
+                p.name.replace("_", ":") for p in onto_class.__bases__ if p.name.startswith(iri_onto_prefix)
+            ]
+            term["synonyms"] = getattr(onto_class, "hasExactSynonym", [])
+            term["part_of"] = get_links(onto_class.is_a, PART_OF, whitelist)
+            term["have_part"] = get_links(onto_class.is_a, HAVE_PART, whitelist)
+            term["derives_from"] = get_links(onto_class.is_a, DERIVES_FROM, whitelist)
+            term["develops_from"] = get_links(onto_class.is_a, DEVELOPS_FROM, whitelist)
 
-        # dedup
-        for k in ["parents", "synonyms", "part_of", "derives_from", "develops_from"]:
-            term[k] = list(set(term[k]))
+            ontology[term_id] = term
 
-        ontology[term_id] = term
+        except Exception as e:
+            print(f"Error handling {name}: {e}")
 
     return ontology
 
@@ -435,6 +528,12 @@ def create_args_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("uri", type=str, help="Dataset URI")
     parser.add_argument("--owl-info", type=str, help="cellxenge schema owl_info.yml URI", default=OWL_INFO_URI)
+    parser.add_argument(
+        "--filter-non-human",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Remove (do not include) unreferenced non-human terms",
+    )
     parser.add_argument("-o", "--output", type=argparse.FileType("w"), default=sys.stdout)
     parser.add_argument(
         "--tile-cache-fraction",

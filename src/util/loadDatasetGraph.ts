@@ -57,10 +57,21 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
   //
   for (const ontology of Object.values(datasetGraph.ontologies)) {
     for (const [termId, term] of ontology.entries()) {
+      // set all defaults
       term.id = termId;
+      term.synonyms = term.synonyms || [];
       term.children = term.children || [];
       term.descendants = term.descendants || new Set<OntologyId>();
+      term.deprecated = term.deprecated || false;
+      term.parents = term.parents || [];
+      term.part_of = term.part_of || [];
+      term.have_part = term.have_part || [];
+      term.develops_from = term.develops_from || [];
+      term.derives_from = term.derives_from || [];
+      if (term.n_cells === undefined) term.n_cells = 0;
+    }
 
+    for (const term of ontology.values()) {
       accumChildren(ontology, term);
       createAncestors(ontology, term);
       accumDescendants(ontology, term);
@@ -68,8 +79,6 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
       // consolidate searchable terms in one set.
       // XXX - TODO - needs updating once we finalize data model (eg, part_of, ...)
       term.xref = [...term.part_of, ...term.derives_from, ...term.develops_from];
-
-      if (term.n_cells === undefined) term.n_cells = 0;
     }
 
     // mark all in-use terms

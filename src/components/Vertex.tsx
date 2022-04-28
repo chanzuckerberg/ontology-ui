@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { olsLookupTermByOboId } from "../util/fetchEBITerm";
 import { DatasetGraph, EBIOlsTerm, OntologyTerm, OntologyId } from "../d";
-import { ontologyLookupId } from "../util/ontologyDag";
+import { ontologyLookupId, ontologyQuery, LinkNames } from "../util/ontologyDag";
 
 export interface VertexProps {
   graph: DatasetGraph;
@@ -83,7 +83,7 @@ export default function Vertex({ graph, vertex, query, makeTo }: VertexProps) {
       <h3> Part-of (compartment)</h3>
       <ul>
         {vertex &&
-          allUniqueAncestors(graph, vertex.part_of).map((id: string, i: number) => {
+          allUniqueAncestors(graph, ontoID, vertex, "part_of").map((id: string, i: number) => {
             const term = ontologyLookupId(graph.ontologies, id)?.term;
             return (
               <li key={id}>
@@ -96,7 +96,7 @@ export default function Vertex({ graph, vertex, query, makeTo }: VertexProps) {
       <h3> Derived-from</h3>
       <ul>
         {vertex &&
-          allUniqueAncestors(graph, vertex.derives_from).map((id: string, i: number) => {
+          allUniqueAncestors(graph, ontoID, vertex, "derives_from").map((id: string, i: number) => {
             const term = ontologyLookupId(graph.ontologies, id)?.term;
             return (
               <li key={id}>
@@ -109,7 +109,7 @@ export default function Vertex({ graph, vertex, query, makeTo }: VertexProps) {
       <h3> Develops-from</h3>
       <ul>
         {vertex &&
-          allUniqueAncestors(graph, vertex.develops_from).map((id: string, i: number) => {
+          allUniqueAncestors(graph, ontoID, vertex, "develops_from").map((id: string, i: number) => {
             const term = ontologyLookupId(graph.ontologies, id)?.term;
             return (
               <li key={id}>
@@ -122,8 +122,15 @@ export default function Vertex({ graph, vertex, query, makeTo }: VertexProps) {
   );
 }
 
-function allUniqueAncestors(graph: DatasetGraph, ids: OntologyId[]): OntologyId[] {
+function allUniqueAncestors(graph: DatasetGraph, ontoID: string, vertex: OntologyTerm, link: LinkNames): OntologyId[] {
   return [
-    ...new Set<OntologyId>(...ids.flatMap((id) => ontologyLookupId(graph.ontologies, id)?.term?.ancestors ?? [])),
+    ...ontologyQuery(
+      graph.ontologies,
+      {
+        $walk: vertex[link],
+        $on: link,
+      },
+      ontoID
+    ),
   ];
 }

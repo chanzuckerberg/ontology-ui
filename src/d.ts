@@ -13,6 +13,7 @@ export interface OntologyTerm {
   part_of: OntologyId[]; // part_of relations/link
   derives_from: OntologyId[];
   develops_from: OntologyId[];
+  have_part: OntologyId[];
   xref: OntologyId[]; // cross-ref & related terms - in this and other ontologies
   synonyms: string[];
 

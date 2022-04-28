@@ -5,7 +5,7 @@
 // TODO XXX: we should define the DAG types in this file, and then
 // have the ontology specialize them. For now, just use the ontology
 // objects directly.
-import { Ontology, OntologyTerm, OntologyId, OntologyPrefix, DatasetGraph } from "../d";
+import { Ontology, OntologyTerm, OntologyId, OntologyPrefix } from "../d";
 
 /**
  * Given an ID, return its ontology, term and prefix, OR return undefined.
@@ -117,8 +117,8 @@ export function ontologySubDAG(ontology: Ontology, rootIds: OntologyId[]): Ontol
  * Search/query the DAGs
  */
 // query type elements
-type LinkNames = "part_of" | "derives_from" | "develops_from" | "children" | "parents";
-const AllLinkNames: LinkNames[] = ["part_of", "derives_from", "develops_from", "parents", "children"];
+export type LinkNames = "part_of" | "have_part" | "derives_from" | "develops_from" | "children" | "parents";
+const AllLinkNames: LinkNames[] = ["part_of", "have_part", "derives_from", "develops_from", "parents", "children"];
 interface From {
   $from?: OntologyPrefix;
 }
@@ -127,73 +127,90 @@ interface From {
 interface Literal {
   $: OntologyId | OntologyId[];
 }
+// iterate down a given link
 type WalkQuery = From & {
+  // maybe this should be { $walkOn: link, $from: query }
   $walk: OntologyQuery;
-  $via?: LinkNames;
+  $on?: LinkNames;
 };
+// Free text search.
 type MatchQuery = From & {
   $match: string;
 };
+// Merge (union) of query results
 type MergeQuery = From & {
   $merge: OntologyQuery[];
 };
+// Filter (intersect) query results
 type FilterQuery = From & {
   $filter: OntologyQuery[];
 };
-
+// Join on a query with a link
 type JoinQuery = From & {
   $joinOn: LinkNames | "*";
+  $where: OntologyQuery;
+};
+type JoinTreeQuery = From & {
+  $joinTreeOn: LinkNames | "*";
   $where: OntologyQuery;
 };
 
 export type OntologyQuery =
   | OntologyId
   | OntologyId[]
+  | Set<OntologyId>
   | MatchQuery
   | MergeQuery
   | FilterQuery
   | JoinQuery
+  | JoinTreeQuery
   | Literal
   | WalkQuery;
 
 export function ontologyQuery(
   ontologies: Record<OntologyPrefix, Ontology>,
-  from: OntologyPrefix,
-  query: OntologyQuery
+  query: OntologyQuery,
+  from?: OntologyPrefix
 ): Set<OntologyId> {
   /*
    * Literals
    */
   if (typeof query === "string") return new Set([query]);
   if (Array.isArray(query)) return new Set(query);
+  if (query instanceof Set) return query;
   if ("$" in query) {
-    return new Set(Array.isArray(query.$) ? query.$ : [query.$]);
+    return query.$ instanceof Set ? query.$ : new Set(Array.isArray(query.$) ? query.$ : [query.$]);
   }
 
   // the remainder accept a change in the search ontology, aka $from
   from = query.$from || from;
+  if (from === undefined) throw new Error("Missing default context for ontology search.");
 
+  let result: Set<OntologyId>;
   if ("$walk" in query) {
-    return doWalk(ontologies, from, query);
+    result = doWalk(ontologies, from, query);
+  } else if ("$match" in query) {
+    result = doMatch(ontologies, from, query);
+  } else if ("$merge" in query) {
+    result = doMerge(ontologies, from, query);
+  } else if ("$filter" in query) {
+    result = doFilter(ontologies, from, query);
+  } else if ("$joinOn" in query) {
+    result = doJoin(ontologies, from, query);
+  } else if ("$joinTreeOn" in query) {
+    result = doJoinTree(ontologies, from, query);
+  } else {
+    throw new Error("Unknown query structure.");
   }
 
-  if ("$match" in query) {
-    return doMatch(ontologies, from, query);
+  if ("$from" in query) {
+    const prefix = query.$from + ":";
+    for (const id of result) {
+      if (!id.startsWith(prefix)) result.delete(id);
+    }
   }
 
-  if ("$merge" in query) {
-    return doMerge(ontologies, from, query);
-  }
-
-  if ("$filter" in query) {
-    return doFilter(ontologies, from, query);
-  }
-
-  if ("$joinOn" in query) {
-    return doJoin(ontologies, from, query);
-  }
-
-  throw new Error("Unknown query structure.");
+  return result;
 }
 
 /**
@@ -232,29 +249,14 @@ function doMerge(
   query: MergeQuery
 ): Set<OntologyId> {
   const { $merge } = query;
-  const ontology = ontologies[from];
-  if (!ontology || !Array.isArray($merge)) return new Set();
-
+  if (!Array.isArray($merge)) return new Set();
   const results = new Set<OntologyId>();
   for (const subQuery of $merge) {
-    for (const r of ontologyQuery(ontologies, from, subQuery)) {
+    for (const r of ontologyQuery(ontologies, subQuery, from)) {
       results.add(r);
     }
   }
   return results;
-}
-
-/**
- * Return the intersection of the sub-queries
- */
-function intersect<T extends any>(setA: Set<T>, setB: Set<T>): Set<T> {
-  let _intersection = new Set<T>();
-  for (const elem of setB) {
-    if (setA.has(elem)) {
-      _intersection.add(elem);
-    }
-  }
-  return _intersection;
 }
 
 function doFilter(
@@ -264,13 +266,12 @@ function doFilter(
 ): Set<OntologyId> {
   const { $filter } = query;
   if (!Array.isArray($filter)) return new Set();
-
   let results: Set<OntologyId> | undefined;
   for (const subQuery of $filter) {
     if (results === undefined) {
-      results = ontologyQuery(ontologies, from, subQuery);
+      results = ontologyQuery(ontologies, subQuery, from);
     } else {
-      results = intersect(results, ontologyQuery(ontologies, from, subQuery));
+      results = intersect(results, ontologyQuery(ontologies, subQuery, from));
     }
   }
   return results ?? new Set();
@@ -284,7 +285,7 @@ function doJoin(ontologies: Record<OntologyPrefix, Ontology>, from: OntologyPref
   const ontology = ontologies[from];
   if (!ontology || !$joinOn || !$where) return new Set();
 
-  const joinIds = ontologyQuery(ontologies, from, $where);
+  const joinIds = ontologyQuery(ontologies, $where, from);
   const results = new Set<OntologyId>();
 
   // TODO: this begs for an inverted index
@@ -319,12 +320,12 @@ function walk(ontologies: Record<OntologyPrefix, Ontology>, term: OntologyTerm, 
 }
 
 function doWalk(ontologies: Record<OntologyPrefix, Ontology>, from: OntologyPrefix, query: WalkQuery): Set<OntologyId> {
-  const { $walk, $via } = query;
+  const { $walk, $on } = query;
   if (!$walk) return new Set();
-  const link: LinkNames = $via ?? "children";
+  const link: LinkNames = $on ?? "children";
 
   const results = new Set<OntologyId>();
-  for (const query_result of ontologyQuery(ontologies, from, $walk)) {
+  for (const query_result of ontologyQuery(ontologies, $walk, from)) {
     const term = ontologyLookupId(ontologies, query_result)?.term;
     if (!term) continue;
     results.add(term.id);
@@ -345,4 +346,81 @@ function doWalk(ontologies: Record<OntologyPrefix, Ontology>, from: OntologyPref
     }
   }
   return results;
+}
+
+function doJoinTree(
+  ontologies: Record<OntologyPrefix, Ontology>,
+  from: OntologyPrefix,
+  query: JoinTreeQuery
+): Set<OntologyId> {
+  const { $joinTreeOn, $where } = query;
+  // const ontology = ontologies[from];
+  // if (!ontology || !$joinTreeOn || !$where) return new Set();
+  if (!$joinTreeOn || !$where) return new Set();
+
+  const results = new Set<OntologyId>();
+  let subQuery: OntologyQuery = $where;
+  do {
+    const subQueryresults = ontologyQuery(ontologies, { $joinOn: $joinTreeOn, $where: subQuery }, from);
+    subQuery = [];
+    for (const id of subQueryresults) {
+      if (!results.has(id)) subQuery.push(id);
+    }
+    merge(results, subQueryresults);
+  } while (subQuery.length > 0);
+  return results;
+}
+
+/**
+ * Set ops
+ */
+
+/**
+ * Return the intersection of the sets
+ */
+function intersect<T extends any>(A: Set<T>, B: Set<T>): Set<T> {
+  let _intersection = new Set<T>();
+  for (const elem of B) {
+    if (A.has(elem)) {
+      _intersection.add(elem);
+    }
+  }
+  return _intersection;
+}
+
+/**
+ * Merge sets - source into target. Mutates target.
+ */
+function merge<T extends any>(target: Set<T>, source: Set<T>): Set<T> {
+  for (const elem of source) {
+    target.add(elem);
+  }
+  return target;
+}
+
+/**
+ * Search for UBERON and CL terms associated with a compartment.
+ */
+export function compartmentQuery(
+  ontologies: Record<OntologyPrefix, Ontology>,
+  compartmentQuery: OntologyQuery
+): [Set<OntologyId>, Set<OntologyId>] {
+  const compartmentRootIds = ontologyQuery(ontologies, compartmentQuery, "UBERON");
+  const compartmentIds = ontologyQuery(ontologies, {
+    $merge: [
+      { $joinTreeOn: "part_of", $where: compartmentRootIds },
+      { $walk: compartmentRootIds, $on: "have_part" },
+    ],
+    $from: "UBERON",
+  });
+
+  const celltypeIds = ontologyQuery(ontologies, {
+    $merge: [
+      { $walk: compartmentIds, $on: "have_part" },
+      { $joinOn: "part_of", $where: compartmentIds },
+    ],
+    $from: "CL",
+  });
+
+  return [compartmentIds, celltypeIds];
 }
