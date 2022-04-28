@@ -44,38 +44,42 @@ const SearchTerm = (props: SearchTermProps) => {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 15 }}>
       <div style={{ width: 290, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
-        <Button
-          onClick={() => {
-            console.log("color by ", term.match, term.compartment);
-          }}
-          icon={<Icon icon="tint" iconSize={16} />}
-        />
+        <ButtonGroup>
+          <Button
+            onClick={() => {
+              console.log("color by ", term.match, term.compartment);
+            }}
+            icon={<Icon icon="tint" iconSize={16} />}
+          />
+
+          <Popover2
+            popoverClassName={Classes.POPOVER2_CONTENT_SIZING}
+            content={
+              <RadioGroup
+                onChange={(d) => {
+                  console.log("graph action radio button selection");
+                }}
+                selectedValue={"none"}
+              >
+                <Radio label="none" value="none" />
+                <Radio label={`keep nodes matching: ${term.match} ${term.compartment}`} value="keep graph to only" />
+
+                <Radio label={`remove nodes matching: ${term.match} ${term.compartment}`} value="remove just this" />
+              </RadioGroup>
+            }
+            placement={"bottom-end"}
+          >
+            <Button
+              rightIcon={<Icon icon="caret-down" iconSize={16} />}
+              icon={<Icon icon={"filter" /* set depending on selection */} iconSize={16} />}
+            />
+          </Popover2>
+        </ButtonGroup>
+
         <span style={{ marginLeft: marginUnit, marginRight: marginUnit }}>
           {term.match}
           {term.compartment}
         </span>
-        <Popover2
-          popoverClassName={Classes.POPOVER2_CONTENT_SIZING}
-          content={
-            <RadioGroup
-              onChange={(d) => {
-                console.log("graph action radio button selection");
-              }}
-              selectedValue={"none"}
-            >
-              <Radio label="none" value="none" />
-              <Radio label={`keep nodes matching: ${term.match} ${term.compartment}`} value="keep graph to only" />
-
-              <Radio label={`remove nodes matching: ${term.match} ${term.compartment}`} value="remove just this" />
-            </RadioGroup>
-          }
-          placement={"bottom-end"}
-        >
-          <Button
-            rightIcon={<Icon icon="caret-down" iconSize={16} />}
-            icon={<Icon icon={"filter" /* set depending on selection */} iconSize={16} />}
-          />
-        </Popover2>
       </div>
       <Button minimal icon={<Icon icon="delete" iconSize={16} />} />
     </div>
