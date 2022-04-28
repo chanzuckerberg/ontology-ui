@@ -7,6 +7,7 @@ import { drawForceDag, DrawForceDagHighlightProps, NodeHighlight } from "./drawF
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
+import SearchSidebar from "./searchSidebar";
 import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d";
 import {
   ForceCanvasProps,
@@ -42,7 +43,7 @@ const defaultForceHightlightProps: DrawForceDagHighlightProps = {
 
 const defaultState: OntologyExplorerState = {
   dagCreateProps: {
-    minimumOutdegree: 3,
+    minimumOutdegree: 0,
     maximumOutdegree: 12345,
     outdegreeCutoffXYZ: 0,
     doCreateSugiyamaDatastructure: true,
@@ -66,6 +67,7 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
 
   const windowHeight = useWindowHeight();
   const menubarHeight = 50;
+  const cardPadding = 10;
 
   const { dagCreateProps, cardWidth, sugiyamaRenderThreshold } = state;
 
@@ -308,7 +310,7 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
             margin: 0,
           }}
         >
-          <div id="innerDivToPreventPaddingSizeIncrease" style={{ padding: 10 }}>
+          <div id="innerDivToPreventPaddingSizeIncrease" style={{ padding: cardPadding }}>
             {/**
              * Render cards
              */}
@@ -336,6 +338,33 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
           height={forceCanvasHeight * window.devicePixelRatio}
           ref={dagCanvasRef}
         />
+        <div
+          id="rightSideBarContainer"
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            width: cardWidth,
+            padding: cardPadding,
+          }}
+        >
+          <SearchSidebar
+            terms={[
+              {
+                highlight: true,
+                action: "none", //include, exclude, none, (string)
+                match: "neuron ",
+                compartment: "",
+              },
+              {
+                highlight: false, // (boolean)
+                action: "include", //include, exclude, none, (string)
+                match: "",
+                compartment: "eye",
+              },
+            ]}
+          />
+        </div>
         {/**
          * Render sugiyama
          */}
