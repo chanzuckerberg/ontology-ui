@@ -1,5 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import { HelmetProvider } from "react-helmet-async";
+
 import App from "./App";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/popover2/lib/css/blueprint-popover2.css";
@@ -8,9 +10,11 @@ import { HotkeysProvider } from "@blueprintjs/core";
 
 ReactDOM.render(
   <React.StrictMode>
-    <HotkeysProvider>
-      <App />
-    </HotkeysProvider>
+    <HelmetProvider>
+      <HotkeysProvider>
+        <App />
+      </HotkeysProvider>
+    </HelmetProvider>
   </React.StrictMode>,
   document.getElementById("root")
 );

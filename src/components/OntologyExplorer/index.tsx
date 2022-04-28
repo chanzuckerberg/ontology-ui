@@ -23,7 +23,7 @@ import {
   ontologyFilter,
   OntologyFilterAction,
   ontologyQuery,
-  OntologyQuery,
+  compartmentQuery,
 } from "../../util/ontologyDag";
 
 import { useNavigateRef } from "../useNavigateRef";
@@ -158,12 +158,13 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
     if (redrawCanvas) {
       const nodeHighlight = new Map<string, NodeHighlight>();
       if (xref) {
-        for (const id of ontologyQuery(graph.ontologies, ontoID, JSON.parse(xref))) {
+        const [, compartmentCellIds] = compartmentQuery(graph.ontologies, xref);
+        for (const id of compartmentCellIds) {
           nodeHighlight.set(id, "secondary");
         }
       }
       if (match) {
-        for (const id of ontologyQuery(graph.ontologies, ontoID, { $match: match })) {
+        for (const id of ontologyQuery(graph.ontologies, { $match: match }, ontoID)) {
           nodeHighlight.set(id, "primary");
         }
       }
@@ -208,18 +209,13 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
       const [searchParams] = searchParamsRef.current;
       const newSearchParams = createSearchParams(searchParams); // clone
       if (xrefID) {
-        const ids = [...ontologyQuery(graph.ontologies, ontoID, { $walk: xrefID, $via: "part_of" })];
-        const query: OntologyQuery = {
-          $joinOn: "*",
-          $where: ids,
-        };
-        newSearchParams.set("xref", JSON.stringify(query));
+        newSearchParams.set("xref", xrefID);
       } else {
         newSearchParams.delete("xref");
       }
       return newSearchParams;
     },
-    [searchParamsRef, graph.ontologies, ontoID]
+    [searchParamsRef]
   );
 
   const setXrefSearch = (term: { xrefID: string; label: string }) => {
@@ -404,7 +400,6 @@ function _createDag(
   rootIdQuery: string[],
   options: CreateDagProps
 ): DagState {
-  console.time("createDag");
   const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure } = options;
 
   let ontology = graph.ontologies[ontoID];
@@ -420,39 +415,22 @@ function _createDag(
       ontology = ontologySubDAG(ontology, [...ids]);
     }
   }
-  console.timeLog("createDag", "Root ID query");
 
   // Don't bother with the filter if we are down to small number, as this leads to weird graphs
   // with missing nodes, etc.
   if (ontology.size > 1) {
     ontology = ontologyFilter(ontology, (term: OntologyTerm) => {
-      const { label, in_use } = term;
-
-      const n_cells = term?.n_cells ?? 0;
+      const { in_use, n_cells } = term;
       if (in_use || n_cells > 0) return OntologyFilterAction.Retain;
-
-      // TODO: this will eventually move to graph builder, and out of front-end
-      const nonhumanTerm =
-        label.includes("Mus musculus") || // mouse
-        label.includes("conidium") || //fungus
-        label.includes("sensu Nematoda and Protostomia") ||
-        label.includes("sensu Endopterygota") ||
-        label.includes("fungal") ||
-        label.includes("Fungi") ||
-        label.includes("spore");
       const orphanTerm = !n_cells && term.descendants.size === 0 && term.ancestors.size === 0;
       const nChildren = term.children.length;
-
-      if (nonhumanTerm || orphanTerm || nChildren < minimumOutdegree || nChildren > maximumOutdegree) {
+      if (orphanTerm || nChildren < minimumOutdegree || nChildren > maximumOutdegree) {
         return OntologyFilterAction.RemoveFamily;
       }
       return OntologyFilterAction.Retain;
     });
   }
-  console.timeLog("createDag", "Term filter");
-
   const result = createNodesLinksHulls(ontology, doCreateSugiyamaDatastructure);
-  console.timeEnd("createDag");
   return result;
 }
 
