@@ -22,10 +22,25 @@ const SearchSidebar = (props: SearchSidebarProps) => {
   const marginUnit = 15;
   return (
     <div>
-      <h2 style={{ marginBottom: marginUnit * 2 }}>Search & filter</h2>
+      <div style={{ marginBottom: marginUnit * 2 }}>
+        <h2>Search & filter</h2>
+        <p style={{ fontStyle: "italic" }}>Searches are execulted in the order they appear here.</p>
+      </div>
       {terms.map((term) => {
         return <SearchTerm term={term} marginUnit={marginUnit} />;
       })}
+      <input type="text" />
+      <RadioGroup
+        onChange={(d) => {
+          console.log("search mode");
+        }}
+        selectedValue={"none"}
+      >
+        <Radio label={`compartment (e.g., eye, lung, UBERON:0002048)`} value="compartment" />
+        <Radio label={`terms (e.g., b cell, neuron, CL:0000057)`} value="terms" />
+        <Radio label={`terms and their children (e.g., b cell, neuron)`} value="terms and children" />
+      </RadioGroup>
+
       <Button
         style={{ marginTop: marginUnit }}
         onClick={() => {
@@ -63,7 +78,6 @@ const SearchTerm = (props: SearchTermProps) => {
               >
                 <Radio label="none" value="none" />
                 <Radio label={`keep nodes matching: ${term.match} ${term.compartment}`} value="keep graph to only" />
-
                 <Radio label={`remove nodes matching: ${term.match} ${term.compartment}`} value="remove just this" />
               </RadioGroup>
             }
