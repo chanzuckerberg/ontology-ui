@@ -44,7 +44,6 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     omniXref,
     pinnedVertex,
     dagSearchText,
-    simulationRunning,
     menubarHeight,
     isSubset,
     handleDagSearchChange,
@@ -101,27 +100,12 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
       >
         cellxgene-ontology
       </p>
-      <div style={{ marginRight: 20 }}>
-        <InputGroup
-          type="text"
-          leftIcon="geosearch"
-          placeholder="cell type search"
-          disabled={simulationRunning}
-          style={{
-            fontSize: 14,
-            marginRight: 20,
-          }}
-          onChange={(e) => {
-            handleDagSearchChange(e);
-          }}
-          value={simulationRunning ? "computing layout..." : dagSearchText}
-        />
-      </div>
 
       <Button onClick={deselectPinnedNode} style={{ marginRight: 20 }} disabled={!pinnedVertex}>
         Deselect
       </Button>
-      {pinnedVertex && (
+
+      {/* {pinnedVertex && (
         <Button icon="pie-chart" onClick={subsetToNode} style={{ marginRight: 20 }}>
           subset to {pinnedVertex.id}
         </Button>
@@ -130,7 +114,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
         <Button icon="full-circle" onClick={resetSubset} style={{ marginRight: 20 }}>
           reset to whole
         </Button>
-      )}
+      )} */}
 
       <Drawer
         isOpen={settingsIsOpen}
@@ -224,9 +208,9 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
         </div>
         <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
       </Drawer>
-      <Button style={{ marginRight: 20 }} onClick={handleXrefSearchOpen}>
+      {/* <Button style={{ marginRight: 20 }} onClick={handleXrefSearchOpen}>
         Search {omniXref.name} (c)
-      </Button>
+      </Button> */}
       <XrefOmnibar
         isOpen={xrefSearchIsOpen}
         onClose={handleXrefSearchClose}

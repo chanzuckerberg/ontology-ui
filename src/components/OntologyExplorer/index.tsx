@@ -7,6 +7,7 @@ import { drawForceDag, DrawForceDagHighlightProps, NodeHighlight } from "./drawF
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
+import SearchSidebar from "./searchSidebar";
 import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d";
 import {
   ForceCanvasProps,
@@ -42,7 +43,7 @@ const defaultForceHightlightProps: DrawForceDagHighlightProps = {
 
 const defaultState: OntologyExplorerState = {
   dagCreateProps: {
-    minimumOutdegree: 3,
+    minimumOutdegree: 0,
     maximumOutdegree: 12345,
     outdegreeCutoffXYZ: 0,
     doCreateSugiyamaDatastructure: true,
@@ -60,12 +61,27 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
   const [hoverNode, setHoverNode] = useState<OntologyVertexDatum>();
   const [simulationRunning, setSimulationRunning] = useState<boolean>(false);
   const [dagState, setDagState] = useState<DagState | null>(null);
+  const [searchTerms, setSearchTerms] = useState([
+    {
+      highlight: false, // (boolean)
+      action: "include", //include, exclude, none, (string)
+      searchString: "eye",
+      searchMode: "compartment",
+    },
+    {
+      highlight: true,
+      action: "none", //include, exclude, none, (string)
+      searchString: "neuron ",
+      searchMode: "terms that match in CL",
+    },
+  ]);
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
 
   const windowHeight = useWindowHeight();
   const menubarHeight = 50;
+  const cardPadding = 10;
 
   const { dagCreateProps, cardWidth, sugiyamaRenderThreshold } = state;
 
@@ -304,7 +320,7 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
             margin: 0,
           }}
         >
-          <div id="innerDivToPreventPaddingSizeIncrease" style={{ padding: 10 }}>
+          <div id="innerDivToPreventPaddingSizeIncrease" style={{ padding: cardPadding }}>
             {/**
              * Render cards
              */}
@@ -332,6 +348,18 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
           height={forceCanvasHeight * window.devicePixelRatio}
           ref={dagCanvasRef}
         />
+        <div
+          id="rightSideBarContainer"
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            width: cardWidth + 50,
+            padding: cardPadding,
+          }}
+        >
+          <SearchSidebar terms={searchTerms} setTerms={setSearchTerms} />
+        </div>
         {/**
          * Render sugiyama
          */}
