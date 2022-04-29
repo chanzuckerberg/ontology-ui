@@ -1,37 +1,65 @@
+import { useState } from "react";
 import { Button, RadioGroup, Radio, Icon, ButtonGroup, InputGroup, ControlGroup, HTMLSelect } from "@blueprintjs/core";
 import { Classes, Popover2 } from "@blueprintjs/popover2";
-import { useState } from "react";
 
-interface Term {
+export type FilterMode = "none" | "keep" | "remove";
+export type SearchMode = "compartment" | "celltype";
+export interface SearchTerm {
   highlight: boolean;
-  action: string; //include, exclude, none, so could be 'one of'
   searchString: string;
-  searchMode: string;
+  filterMode: FilterMode;
+  searchMode: SearchMode;
 }
 
 interface SearchSidebarProps {
-  terms: Term[];
-  setTerms: any;
+  searchTerms: SearchTerm[];
+  setSearchTerms: (searches: SearchTerm[]) => void;
 }
 
 interface SearchTermProps {
-  term: Term;
+  id: number;
+  term: SearchTerm;
   marginUnit: number;
+  onChange: (term: SearchTerm, key: number) => void;
+  onDelete: (key: number) => void;
 }
 
+const SearchModes: { label: string; value: SearchMode }[] = [
+  {
+    label: `🫁 compartment`,
+    value: "compartment",
+  },
+  {
+    label: `cell type`,
+    value: "celltype",
+  },
+];
+
 const SearchSidebar = (props: SearchSidebarProps) => {
-  const { terms, setTerms } = props;
+  const { searchTerms, setSearchTerms } = props;
   const marginUnit = 15;
-  const [searchString, setSearchString] = useState("");
-  const [searchMode, setSearchMode] = useState("🫁 compartment");
+  const [searchString, setSearchString] = useState<string>("");
+  const [searchMode, setSearchMode] = useState<SearchMode>("compartment");
+
+  const handleSearchTermChange = (term: SearchTerm, id: number) => {
+    const updatedSearchTerms = [...searchTerms];
+    updatedSearchTerms[id] = term;
+    setSearchTerms(updatedSearchTerms);
+  };
+
+  const handleSearchTermDelete = (id: number) => {
+    const updatedSearchTerms = [...searchTerms];
+    updatedSearchTerms.splice(id, 1);
+    setSearchTerms(updatedSearchTerms);
+  };
 
   return (
     <div>
       <div style={{ marginBottom: marginUnit * 2 }}>
-        <h2>Search & filter</h2>
+        <h2>Search &amp; filter</h2>
         <p style={{ fontStyle: "italic" }}>
-          Search & add terms: a search might be a compartment (e.g., eye, lung, UBERON:0002048) or cell type (e.g., T
-          cell, neuron, CL:0000057).
+          Search &amp; add terms: a search might be a compartment (e.g., eye, lung, UBERON:0002048) or cell type (e.g.,
+          T cell, neuron, CL:0000057).
         </p>
         <p style={{ fontStyle: "italic" }}>
           Use terms to modify the graph: they are executed in the order they appear.
@@ -40,9 +68,9 @@ const SearchSidebar = (props: SearchSidebarProps) => {
       <ControlGroup fill style={{ marginBottom: marginUnit * 2 }}>
         <HTMLSelect
           value={searchMode}
-          options={[`🫁 compartment`, `cell type`]}
+          options={SearchModes}
           onChange={(e) => {
-            setSearchMode(e.target.value);
+            setSearchMode(e.target.value as SearchMode);
           }}
         />
         <InputGroup
@@ -54,45 +82,53 @@ const SearchSidebar = (props: SearchSidebarProps) => {
         />
         <Button
           icon="plus"
+          disabled={!searchString}
           onClick={() => {
-            setTerms([...terms, { highlight: false, action: "none", searchString, searchMode }]);
+            setSearchTerms([...searchTerms, { highlight: true, searchString, searchMode, filterMode: "none" }]);
             setSearchString("");
           }}
         />
       </ControlGroup>
-      {terms.map((term, i) => {
-        return <SearchTerm key={i} term={term} marginUnit={marginUnit} />;
+      {searchTerms.map((term, i) => {
+        return (
+          <SearchTermView
+            key={i}
+            id={i}
+            term={term}
+            marginUnit={marginUnit}
+            onChange={handleSearchTermChange}
+            onDelete={handleSearchTermDelete}
+          />
+        );
       })}
       <div style={{ marginTop: marginUnit * 3 }}></div>
     </div>
   );
 };
 
-const SearchTerm = (props: SearchTermProps) => {
-  const { term, marginUnit } = props;
+const SearchTermView = (props: SearchTermProps) => {
+  const { id, term, marginUnit, onDelete, onChange } = props;
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 15 }}>
       <div style={{ width: 290, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
         <ButtonGroup>
           <Button
-            onClick={() => {
-              console.log("color by ", term.searchString);
-            }}
+            onClick={() => onChange({ ...term, highlight: !term.highlight }, id)}
             icon={<Icon icon="tint" iconSize={16} />}
+            active={term.highlight}
+            intent={term.highlight ? "primary" : "none"}
           />
 
           <Popover2
             popoverClassName={Classes.POPOVER2_CONTENT_SIZING}
             content={
               <RadioGroup
-                onChange={(e) => {
-                  console.log("change graph: ", e.currentTarget.value, term.searchString);
-                }}
-                selectedValue={"none"}
+                onChange={(e) => onChange({ ...term, filterMode: e.currentTarget.value as FilterMode }, id)}
+                selectedValue={term.filterMode}
               >
                 <Radio label="none" value="none" />
-                <Radio label={`keep nodes matching: ${term.searchString}`} value="keep only term" />
-                <Radio label={`remove nodes matching: ${term.searchString}`} value="remove term" />
+                <Radio label={`keep nodes matching: ${term.searchString}`} value="keep" />
+                <Radio label={`remove nodes matching: ${term.searchString}`} value="remove" />
               </RadioGroup>
             }
             placement={"bottom-end"}
@@ -103,23 +139,35 @@ const SearchTerm = (props: SearchTermProps) => {
             />
           </Popover2>
         </ButtonGroup>
-
         <span style={{ marginLeft: marginUnit, marginRight: marginUnit }}>{term.searchString}</span>
       </div>
-      <Button
-        minimal
-        icon={
-          <Icon
-            icon="delete"
-            iconSize={16}
-            onClick={() => {
-              console.log("remove term ", term.searchString);
-            }}
-          />
-        }
-      />
+      <Button minimal icon={<Icon icon="delete" iconSize={16} onClick={() => onDelete(id)} />} />
     </div>
   );
 };
+
+export function searchTermToSearchQuery(term: SearchTerm): string {
+  const { highlight, searchString, searchMode, filterMode } = term;
+  const highlightFlag = highlight ? "T" : "F";
+  const searchFlag = searchMode === "celltype" ? "C" : "U";
+  const filterFlag = filterMode === "none" ? "I" : filterMode === "keep" ? "K" : "R";
+  return `${highlightFlag}${searchFlag}${filterFlag}${searchString}`;
+}
+
+export function searchQueryToSearchTerm(qstr: string): SearchTerm {
+  const highlight: boolean = qstr[0] === "T";
+  const searchMode: SearchMode = qstr[1] === "C" ? "celltype" : "compartment";
+  const filterMode: FilterMode = qstr[2] === "I" ? "none" : qstr[2] === "K" ? "keep" : "remove";
+  const searchString = qstr.slice(3);
+  return { highlight, searchMode, filterMode, searchString };
+}
+
+export function searchQueriesToSearchTerms(queryStrings: string[]): SearchTerm[] {
+  return queryStrings.map(searchQueryToSearchTerm);
+}
+
+export function searchTermsToSearchQueries(terms: SearchTerm[]): string[] {
+  return terms.map(searchTermToSearchQuery);
+}
 
 export default SearchSidebar;

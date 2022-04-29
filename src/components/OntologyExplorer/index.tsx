@@ -7,7 +7,7 @@ import { drawForceDag, DrawForceDagHighlightProps, NodeHighlight } from "./drawF
 import Vertex from "../Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
-import SearchSidebar from "./searchSidebar";
+import SearchSidebar, { SearchTerm, searchQueriesToSearchTerms, searchTermToSearchQuery } from "./searchSidebar";
 import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d";
 import {
   ForceCanvasProps,
@@ -22,8 +22,10 @@ import {
   ontologySubDAG,
   ontologyFilter,
   OntologyFilterAction,
+  OntologyQuery,
   ontologyQuery,
   compartmentQuery,
+  createCompartmentQuery,
 } from "../../util/ontologyDag";
 
 import { useNavigateRef } from "../useNavigateRef";
@@ -53,7 +55,7 @@ const defaultState: OntologyExplorerState = {
   cardHeight: 850,
 };
 
-export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerProps): JSX.Element {
+export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.Element {
   /*
    * Component internal state
    */
@@ -61,20 +63,6 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
   const [hoverNode, setHoverNode] = useState<OntologyVertexDatum>();
   const [simulationRunning, setSimulationRunning] = useState<boolean>(false);
   const [dagState, setDagState] = useState<DagState | null>(null);
-  const [searchTerms, setSearchTerms] = useState([
-    {
-      highlight: false, // (boolean)
-      action: "include", //include, exclude, none, (string)
-      searchString: "eye",
-      searchMode: "compartment",
-    },
-    {
-      highlight: true,
-      action: "none", //include, exclude, none, (string)
-      searchString: "neuron ",
-      searchMode: "terms that match in CL",
-    },
-  ]);
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
@@ -95,7 +83,8 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
    *    ontoID (path element): the current ontology prefix
    *    vertexID (path element): the currently selected/pinned vertex
    *    root (query param): subset graph on the IDs returned by the OntologyQuery
-   *    match (query param): the free text search within current ontology
+   *    search (query param): the right side bar search state
+   *    xref (query param): the left side bar cross-ref state
    */
   const params = useParams();
   const { vertexID: pinnedVertexID } = params;
@@ -105,12 +94,14 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
 
   const searchParamsRef = useSearchParamsRef();
   const root = searchParamsRef.current[0].getAll("root");
-  const match = searchParamsRef.current[0].get("match");
+  const search = searchParamsRef.current[0].getAll("search");
   const xref = searchParamsRef.current[0].get("xref");
   const query = searchParamsRef.current[0].toString();
 
   const forceCanvasProps = defaultForceCanvasProps;
   const dagCanvasRef = useRef<HTMLCanvasElement>(null);
+  const searchTerms = searchQueriesToSearchTerms(search);
+  const highlightQuery: OntologyQuery | null = buildSearchTermsOntologyQueries(searchTerms);
 
   /*
    * memoized callback to navigate.
@@ -172,13 +163,13 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
     if (redrawCanvas) {
       const nodeHighlight = new Map<string, NodeHighlight>();
       if (xref) {
-        const [, compartmentCellIds] = compartmentQuery(graph.ontologies, xref);
+        const compartmentCellIds = compartmentQuery(graph.ontologies, xref);
         for (const id of compartmentCellIds) {
           nodeHighlight.set(id, "secondary");
         }
       }
-      if (match) {
-        for (const id of ontologyQuery(graph.ontologies, { $match: match }, ontoID)) {
+      if (highlightQuery) {
+        for (const id of ontologyQuery(graph.ontologies, highlightQuery, ontoID)) {
           nodeHighlight.set(id, "primary");
         }
       }
@@ -189,7 +180,7 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
       };
       redrawCanvas(highlights);
     }
-  }, [redrawCanvas, forceCanvasHighlightProps, pinnedVertexID, ontoID, match, xref, graph.ontologies]);
+  }, [redrawCanvas, forceCanvasHighlightProps, pinnedVertexID, ontoID, highlightQuery, xref, graph.ontologies]);
 
   const hoverVertex: OntologyTerm | undefined = hoverNode && ontology.get(hoverNode.id);
   const pinnedVertex: OntologyTerm | undefined =
@@ -209,13 +200,14 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
       [highlightKey]: !s[highlightKey],
     }));
 
-  const handleSearchStringChange = (e: any) => {
-    // TODO: param typing
+  const handleSetSearchTerms = (terms: SearchTerm[]) => {
     const [searchParams, setSearchParams] = searchParamsRef.current;
-    const val = e.target.value;
-    if (val) searchParams.set("match", val);
-    else searchParams.delete("match");
-    setSearchParams(searchParams);
+    const newSearchParams = createSearchParams(searchParams); // clone
+    newSearchParams.delete("search");
+    for (const term of terms) {
+      newSearchParams.append("search", searchTermToSearchQuery(term));
+    }
+    setSearchParams(newSearchParams); // will navigate
   };
 
   const updateXref = useCallback(
@@ -231,12 +223,6 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
     },
     [searchParamsRef]
   );
-
-  const setXrefSearch = (term: { xrefID: string; label: string }) => {
-    const [, setSearchParams] = searchParamsRef.current;
-    const searchParams = updateXref(term.xrefID);
-    setSearchParams(searchParams); // will navigate
-  };
 
   const makeLsbTo = useCallback(
     (id: OntologyId): string => {
@@ -291,18 +277,14 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
     <div id="ontologyExplorerContainer">
       <Controls
         pinnedVertex={pinnedVertex}
-        dagSearchText={match ?? ""}
         simulationRunning={simulationRunning}
         menubarHeight={menubarHeight}
         isSubset={isSubset}
         outdegreeCutoffNodes={minimumOutdegree}
-        omniXref={omniXref}
-        handleDagSearchChange={handleSearchStringChange}
         deselectPinnedNode={deselectPinnedVertex}
         subsetToNode={subsetToNode}
         handleMinOutdegreeChange={handleMinOutdegreeChange}
         resetSubset={resetSubset}
-        setXrefSearch={setXrefSearch}
         hullsEnabled={!!hullsEnabled}
         handleHullChange={onHighlightToggle("hullsEnabled")}
         highlightAncestors={!!highlightAncestors}
@@ -354,7 +336,7 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
             padding: cardPadding,
           }}
         >
-          <SearchSidebar terms={searchTerms} setTerms={setSearchTerms} />
+          <SearchSidebar searchTerms={searchTerms} setSearchTerms={handleSetSearchTerms} />
         </div>
         {/**
          * Render sugiyama
@@ -441,4 +423,32 @@ function useSearchParamsRef() {
   const searchParamsRef = useRef(sp);
   searchParamsRef.current = sp;
   return searchParamsRef;
+}
+
+/**
+ * Create an ontology query for term highlight from the current
+ * search state.
+ */
+
+function buildSearchTermsOntologyQueries(searchTerms: SearchTerm[]): OntologyQuery | null {
+  const highlightCompartmentTerms = searchTerms.filter((term) => term.highlight && term.searchMode === "compartment");
+  const highlightCellTypeTerms = searchTerms.filter((term) => term.highlight && term.searchMode === "celltype");
+
+  const queries: OntologyQuery[] = highlightCellTypeTerms.map((term) => {
+    const { searchString } = term;
+    if (/^CL:[0-9]{7}$/.test(searchString)) return searchString;
+    else return { $match: searchString, $from: "CL" };
+  });
+
+  const compartmentBaseQueries: OntologyQuery[] = highlightCompartmentTerms.map((term) => {
+    const { searchString } = term;
+    if (/^UBERON:[0-9]{7}$/.test(searchString)) return searchString;
+    else return { $match: searchString, $from: "UBERON" };
+  });
+  if (compartmentBaseQueries.length > 0) queries.push(createCompartmentQuery({ $merge: compartmentBaseQueries }));
+
+  if (queries.length === 0) return null;
+  return {
+    $merge: queries,
+  };
 }

@@ -1,30 +1,17 @@
-import { useState, useEffect } from "react";
-import { Button, Classes, Drawer, RadioGroup, Radio, InputGroup, Checkbox, MenuItem } from "@blueprintjs/core";
-import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select";
+import { useState } from "react";
+import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox } from "@blueprintjs/core";
 
 import { OntologyTerm } from "../../d";
-import { NamedOntology } from "./types";
-
-interface XrefOmnibarItem {
-  xrefID: string;
-  label: string;
-}
-
-const XrefOmnibar = Omnibar.ofType<XrefOmnibarItem>();
 
 interface OntrologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
-  dagSearchText: string;
   simulationRunning: boolean;
   menubarHeight: number;
   isSubset: boolean;
   outdegreeCutoffNodes: number;
-  omniXref: NamedOntology;
-  handleDagSearchChange: any;
   deselectPinnedNode: any;
   subsetToNode: any;
   resetSubset: any;
-  setXrefSearch: any;
   handleHullChange: any;
   hullsEnabled: boolean;
   highlightAncestors: boolean;
@@ -37,20 +24,14 @@ interface OntrologyExplorerControlDrawerProps {
 
 export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerControlDrawerProps): JSX.Element {
   const [settingsIsOpen, setSettingsIsOpen] = useState<boolean>(false);
-  const [xrefSearchIsOpen, setXrefSearchIsOpenState] = useState<boolean>(false);
-  const [xrefVerticesAsArray, setXrefVerticesAsArray] = useState<XrefOmnibarItem[]>([]);
 
   const {
-    omniXref,
     pinnedVertex,
-    dagSearchText,
     menubarHeight,
-    isSubset,
-    handleDagSearchChange,
+    // isSubset,
     deselectPinnedNode,
-    subsetToNode,
-    resetSubset,
-    setXrefSearch,
+    // subsetToNode,
+    // resetSubset,
     hullsEnabled,
     handleHullChange,
     highlightAncestors,
@@ -60,21 +41,8 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     handleMinOutdegreeChange,
   } = props;
 
-  useEffect(() => {
-    const _xrefVerticesAsArray: XrefOmnibarItem[] = [];
-    omniXref.ontology?.forEach((v: OntologyTerm, id) => {
-      _xrefVerticesAsArray.push({ xrefID: id, label: v.label });
-    });
-    function onlyUnique(value: XrefOmnibarItem, index: number, self: XrefOmnibarItem[]) {
-      return self.indexOf(value) === index;
-    }
-    setXrefVerticesAsArray(_xrefVerticesAsArray.filter(onlyUnique));
-  }, [omniXref]);
-
   const handleSettingsOpen = () => setSettingsIsOpen(true);
   const handleSettingsClose = () => setSettingsIsOpen(false);
-  const handleXrefSearchOpen = () => setXrefSearchIsOpenState(true);
-  const handleXrefSearchClose = () => setXrefSearchIsOpenState(false);
 
   return (
     <div
@@ -104,17 +72,6 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
       <Button onClick={deselectPinnedNode} style={{ marginRight: 20 }} disabled={!pinnedVertex}>
         Deselect
       </Button>
-
-      {/* {pinnedVertex && (
-        <Button icon="pie-chart" onClick={subsetToNode} style={{ marginRight: 20 }}>
-          subset to {pinnedVertex.id}
-        </Button>
-      )}
-      {isSubset && (
-        <Button icon="full-circle" onClick={resetSubset} style={{ marginRight: 20 }}>
-          reset to whole
-        </Button>
-      )} */}
 
       <Drawer
         isOpen={settingsIsOpen}
@@ -208,39 +165,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
         </div>
         <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
       </Drawer>
-      {/* <Button style={{ marginRight: 20 }} onClick={handleXrefSearchOpen}>
-        Search {omniXref.name} (c)
-      </Button> */}
-      <XrefOmnibar
-        isOpen={xrefSearchIsOpen}
-        onClose={handleXrefSearchClose}
-        onItemSelect={setXrefSearch}
-        items={xrefVerticesAsArray}
-        itemRenderer={renderXrefOption}
-        itemPredicate={filterXref}
-        noResults={<MenuItem disabled={true} text="No results." />}
-        resetOnSelect={true}
-      />
       <Button style={{ marginRight: 20 }} icon="settings" onClick={handleSettingsOpen} />
     </div>
   );
 }
-
-const renderXrefOption: ItemRenderer<XrefOmnibarItem> = (xrefTerm, { handleClick, modifiers, query }) => {
-  if (!modifiers.matchesPredicate) {
-    return null;
-  }
-
-  return <MenuItem label={xrefTerm.xrefID} key={xrefTerm.xrefID} onClick={handleClick} text={xrefTerm.label} />;
-};
-
-const filterXref: ItemPredicate<XrefOmnibarItem> = (query, xref, _index, exactMatch) => {
-  const normalizedTitle = xref.label.toLowerCase();
-  const normalizedQuery = query.toLowerCase();
-
-  if (exactMatch) {
-    return normalizedTitle === normalizedQuery;
-  } else {
-    return `${xref.label}`.indexOf(normalizedQuery) >= 0;
-  }
-};

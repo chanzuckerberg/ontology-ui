@@ -401,26 +401,27 @@ function merge<T extends any>(target: Set<T>, source: Set<T>): Set<T> {
 /**
  * Search for UBERON and CL terms associated with a compartment.
  */
-export function compartmentQuery(
-  ontologies: Record<OntologyPrefix, Ontology>,
-  compartmentQuery: OntologyQuery
-): [Set<OntologyId>, Set<OntologyId>] {
-  const compartmentRootIds = ontologyQuery(ontologies, compartmentQuery, "UBERON");
-  const compartmentIds = ontologyQuery(ontologies, {
+
+export function createCompartmentQuery(baseQuery: OntologyQuery): OntologyQuery {
+  const compartmentQuery: OntologyQuery = {
     $merge: [
-      { $joinTreeOn: "part_of", $where: compartmentRootIds },
-      { $walk: compartmentRootIds, $on: "have_part" },
+      { $joinTreeOn: "part_of", $where: baseQuery },
+      { $walk: baseQuery, $on: "have_part" },
     ],
     $from: "UBERON",
-  });
-
-  const celltypeIds = ontologyQuery(ontologies, {
+  };
+  return {
     $merge: [
-      { $walk: compartmentIds, $on: "have_part" },
-      { $joinOn: "part_of", $where: compartmentIds },
+      { $walk: compartmentQuery, $on: "have_part" },
+      { $joinOn: "part_of", $where: compartmentQuery },
     ],
     $from: "CL",
-  });
+  };
+}
 
-  return [compartmentIds, celltypeIds];
+export function compartmentQuery(
+  ontologies: Record<OntologyPrefix, Ontology>,
+  baseQuery: OntologyQuery
+): Set<OntologyId> {
+  return ontologyQuery(ontologies, createCompartmentQuery(baseQuery));
 }
