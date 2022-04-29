@@ -49,7 +49,7 @@ const defaultState: OntologyExplorerState = {
     doCreateSugiyamaDatastructure: true,
   },
   sugiyamaRenderThreshold: 49,
-  cardWidth: 350,
+  cardWidth: 400,
   cardHeight: 850,
 };
 
@@ -310,7 +310,7 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
         minimumOutdegree={minimumOutdegree + ""}
         maximumOutdegree={maximumOutdegree + ""}
       />
-      <div id="horizontalScroll">
+      <div id="horizontalScroll" style={{ display: "flex", justifyContent: "space-between" }}>
         <div
           id="card"
           style={{
@@ -335,26 +335,22 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
         {/**
          * Render ontology force layout
          */}
-        <canvas
-          style={{
-            position: "absolute",
-            top: menubarHeight,
-            left: cardWidth,
-            cursor: "crosshair",
-            width: forceCanvasWidth, // scale back down with css if we scaled up for retina
-            height: forceCanvasHeight,
-          }}
-          width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina
-          height={forceCanvasHeight * window.devicePixelRatio}
-          ref={dagCanvasRef}
-        />
+        <div style={{ flexGrow: 1 }}>
+          <canvas
+            style={{
+              cursor: "crosshair",
+              width: forceCanvasWidth, // scale back down with css if we scaled up for retina
+              height: forceCanvasHeight,
+            }}
+            width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina
+            height={forceCanvasHeight * window.devicePixelRatio}
+            ref={dagCanvasRef}
+          />
+        </div>
         <div
           id="rightSideBarContainer"
           style={{
-            position: "absolute",
-            right: 0,
-            top: 0,
-            width: cardWidth + 50,
+            width: cardWidth,
             padding: cardPadding,
           }}
         >
