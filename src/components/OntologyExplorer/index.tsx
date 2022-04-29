@@ -340,23 +340,23 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
             position: "absolute",
             right: 0,
             top: 0,
-            width: cardWidth,
+            width: cardWidth + 50,
             padding: cardPadding,
           }}
         >
           <SearchSidebar
             terms={[
               {
-                highlight: true,
-                action: "none", //include, exclude, none, (string)
-                match: "neuron ",
-                compartment: "",
-              },
-              {
                 highlight: false, // (boolean)
                 action: "include", //include, exclude, none, (string)
-                match: "",
-                compartment: "eye",
+                searchString: "eye",
+                searchMode: "compartment",
+              },
+              {
+                highlight: true,
+                action: "none", //include, exclude, none, (string)
+                searchString: "neuron ",
+                searchMode: "terms that match in CL",
               },
             ]}
           />
