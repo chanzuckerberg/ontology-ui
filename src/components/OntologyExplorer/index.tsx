@@ -353,6 +353,19 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
             width: cardWidth,
             padding: cardPadding,
           }}
+          width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina
+          height={forceCanvasHeight * window.devicePixelRatio}
+          ref={dagCanvasRef}
+        />
+        <div
+          id="rightSideBarContainer"
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            width: cardWidth + 50,
+            padding: cardPadding,
+          }}
         >
           <SearchSidebar terms={searchTerms} setTerms={setSearchTerms} />
         </div>
