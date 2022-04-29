@@ -20,7 +20,6 @@ export interface NamedOntology {
 
 export interface OntologyExplorerProps {
   graph: DatasetGraph;
-  omniXref: NamedOntology;
 }
 
 // state related to creating the DAG

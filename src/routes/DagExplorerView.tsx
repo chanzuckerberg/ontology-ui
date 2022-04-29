@@ -6,5 +6,5 @@ export interface DagExplorerViewProps {
 }
 
 export default function DagExplorerView({ graph }: DagExplorerViewProps) {
-  return <OntologyExplorer graph={graph} omniXref={{ ontology: graph.ontologies.UBERON, name: "UBERON" }} />;
+  return <OntologyExplorer graph={graph} />;
 }

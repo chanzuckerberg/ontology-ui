@@ -341,20 +341,21 @@ export const drawForceDag = (
 
   // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
   canvas.on("mousemove", (event: MouseEvent) => {
+    event.preventDefault();
     const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
     const zeroY = event.clientY - boundingRect.top;
 
     hoverNode = simulation.find(zeroX * dpr, zeroY * dpr);
     setHoverNode(hoverNode);
-    ticked();
   });
+
   canvas.on("click", (event: MouseEvent) => {
+    event.preventDefault();
     const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
     const zeroY = event.clientY - boundingRect.top;
 
     const clickNode = simulation.find(zeroX * dpr, zeroY * dpr);
     setPinnedNode(clickNode);
-    ticked();
   });
 
   /**
