@@ -1,5 +1,6 @@
 import { Button, RadioGroup, Radio, Icon, ButtonGroup, InputGroup, ControlGroup, HTMLSelect } from "@blueprintjs/core";
 import { Classes, Popover2 } from "@blueprintjs/popover2";
+import { useState } from "react";
 
 interface Term {
   highlight: boolean;
@@ -10,6 +11,7 @@ interface Term {
 
 interface SearchSidebarProps {
   terms: Term[];
+  setTerms: any;
 }
 
 interface SearchTermProps {
@@ -18,8 +20,11 @@ interface SearchTermProps {
 }
 
 const SearchSidebar = (props: SearchSidebarProps) => {
-  const { terms } = props;
+  const { terms, setTerms } = props;
   const marginUnit = 15;
+  const [searchString, setSearchString] = useState("");
+  const [searchMode, setSearchMode] = useState("🫁 compartment");
+
   return (
     <div>
       <div style={{ marginBottom: marginUnit * 2 }}>
@@ -33,12 +38,25 @@ const SearchSidebar = (props: SearchSidebarProps) => {
         </p>
       </div>
       <ControlGroup fill style={{ marginBottom: marginUnit * 2 }}>
-        <HTMLSelect options={[`🫁 compartment`, `cell type`]} />
-        <InputGroup placeholder="Search..." />
+        <HTMLSelect
+          value={searchMode}
+          options={[`🫁 compartment`, `cell type`]}
+          onChange={(e) => {
+            setSearchMode(e.target.value);
+          }}
+        />
+        <InputGroup
+          placeholder="Search..."
+          value={searchString}
+          onChange={(e) => {
+            setSearchString(e.target.value);
+          }}
+        />
         <Button
           icon="plus"
-          onClick={(e) => {
-            console.log("add term", e.target);
+          onClick={() => {
+            setTerms([...terms, { highlight: false, action: "none", searchString, searchMode }]);
+            setSearchString("");
           }}
         />
       </ControlGroup>

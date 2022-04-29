@@ -61,6 +61,20 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
   const [hoverNode, setHoverNode] = useState<OntologyVertexDatum>();
   const [simulationRunning, setSimulationRunning] = useState<boolean>(false);
   const [dagState, setDagState] = useState<DagState | null>(null);
+  const [searchTerms, setSearchTerms] = useState([
+    {
+      highlight: false, // (boolean)
+      action: "include", //include, exclude, none, (string)
+      searchString: "eye",
+      searchMode: "compartment",
+    },
+    {
+      highlight: true,
+      action: "none", //include, exclude, none, (string)
+      searchString: "neuron ",
+      searchMode: "terms that match in CL",
+    },
+  ]);
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
@@ -344,22 +358,7 @@ export default function OntologyExplorer({ graph, omniXref }: OntologyExplorerPr
             padding: cardPadding,
           }}
         >
-          <SearchSidebar
-            terms={[
-              {
-                highlight: false, // (boolean)
-                action: "include", //include, exclude, none, (string)
-                searchString: "eye",
-                searchMode: "compartment",
-              },
-              {
-                highlight: true,
-                action: "none", //include, exclude, none, (string)
-                searchString: "neuron ",
-                searchMode: "terms that match in CL",
-              },
-            ]}
-          />
+          <SearchSidebar terms={searchTerms} setTerms={setSearchTerms} />
         </div>
         {/**
          * Render sugiyama
