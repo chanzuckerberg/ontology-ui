@@ -23,6 +23,7 @@ import {
 } from "../../util/ontologyDag";
 
 import { useNavigateRef } from "../useNavigateRef";
+import { Drawer, Classes, Button } from "@blueprintjs/core";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
@@ -318,6 +319,31 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         {/**
          * Render sugiyama
          */}
+        <Drawer
+          icon="layout-hierarchy"
+          onClose={() => {
+            console.log("handle close");
+          }}
+          title="Hierarchical sub-dag view"
+          position={"bottom"}
+          isOpen={false}
+          canOutsideClickClose={true}
+          canEscapeKeyClose={true}
+        >
+          <div className={Classes.DRAWER_BODY}>
+            <div className={Classes.DIALOG_BODY}>
+              <p>
+                <strong>foo</strong>
+              </p>
+              <p>interesting details</p>
+              <p>cell types</p>
+              <p>background</p>
+            </div>
+          </div>
+          <div className={Classes.DRAWER_FOOTER}>
+            Perhaps some buttons <Button>Like this one</Button>
+          </div>
+        </Drawer>
         {dagState?.sugiyamaStratifyData && dagState?.sugiyamaStratifyData.length < sugiyamaRenderThreshold && (
           <div
             style={{
