@@ -37,14 +37,6 @@ export interface DagState {
   sugiyamaStratifyData: any;
 }
 
-// state related to the creation of the force-graph
-export interface ForceCanvasProps {
-  forceCanvasWidth: number;
-  forceCanvasHeight: number;
-  scaleFactor: number;
-  translateCenter: number;
-}
-
 // Other DAG exploration state
 export interface OntologyExplorerState {
   dagCreateProps: CreateDagProps;
