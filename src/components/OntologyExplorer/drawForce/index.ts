@@ -190,11 +190,11 @@ export const drawForceDag = (
      * Clear
      */
     context.save();
-    context.clearRect(0, 0, width, height);
 
     const canvasMinDimension = width < height ? width : height;
     const canvasScale = (window.devicePixelRatio * canvasMinDimension) / graphDiameter;
     context.scale(canvasScale, canvasScale);
+    context.clearRect(0, 0, width, height);
     context.translate(graphRadius + width / 2, graphRadius + height / 2);
     canvasInvTransformMatrix = context.getTransform().inverse();
 
