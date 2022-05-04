@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams, createSearchParams } from "react-router-dom";
-import { useWindowHeight } from "@react-hook/window-size";
+import { useWindowSize } from "@react-hook/window-size";
 
 import { createNodesLinksHulls } from "../../util/createNodesLinksHulls";
 import { drawForceDag, DrawForceDagHighlightProps, NodeHighlight } from "./drawForce";
@@ -10,7 +10,6 @@ import Controls from "./Controls";
 import SearchSidebar, { SearchTerm, searchQueriesToSearchTerms, searchTermToSearchQuery } from "./searchSidebar";
 import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d";
 import {
-  ForceCanvasProps,
   OntologyExplorerState,
   OntologyExplorerProps,
   OntologyVertexDatum,
@@ -29,13 +28,6 @@ import {
 } from "../../util/ontologyDag";
 
 import { useNavigateRef } from "../useNavigateRef";
-
-const defaultForceCanvasProps: ForceCanvasProps = {
-  forceCanvasWidth: 850,
-  forceCanvasHeight: 850,
-  scaleFactor: 0.165,
-  translateCenter: -350,
-};
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
@@ -67,9 +59,11 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
 
-  const windowHeight = useWindowHeight();
+  const [windowWidth, windowHeight] = useWindowSize();
   const menubarHeight = 50;
   const cardPadding = 10;
+  const forceCanvasWidth = windowWidth - 800;
+  const forceCanvasHeight = windowHeight - menubarHeight - 16;
 
   const { dagCreateProps, cardWidth, sugiyamaRenderThreshold } = state;
 
@@ -98,7 +92,6 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const xref = searchParamsRef.current[0].get("xref");
   const query = searchParamsRef.current[0].toString();
 
-  const forceCanvasProps = defaultForceCanvasProps;
   const dagCanvasRef = useRef<HTMLCanvasElement>(null);
   const searchTerms = searchQueriesToSearchTerms(search);
   const highlightQuery: OntologyQuery | null = buildSearchTermsOntologyQueries(searchTerms);
@@ -136,14 +129,9 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     */
     if (dagState) {
       const { nodes, links } = dagState;
-      const { forceCanvasWidth, forceCanvasHeight, scaleFactor, translateCenter } = forceCanvasProps;
       const _redrawCanvas = drawForceDag(
         nodes,
         links,
-        forceCanvasWidth,
-        forceCanvasHeight,
-        scaleFactor,
-        translateCenter,
         dagCanvasRef,
         ontology,
         (node?: OntologyVertexDatum) => setHoverNode(node),
@@ -154,7 +142,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagState, dagCanvasRef, forceCanvasProps, go]);
+  }, [ontology, dagState, dagCanvasRef, go]);
 
   useEffect(() => {
     /*
@@ -182,12 +170,18 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     }
   }, [redrawCanvas, forceCanvasHighlightProps, pinnedVertexID, ontoID, highlightQuery, xref, graph.ontologies]);
 
+  useEffect(() => {
+    /*
+    Redraw the DAG whenever the canvas size has changed
+    */
+    if (redrawCanvas) redrawCanvas();
+  }, [redrawCanvas, forceCanvasWidth, forceCanvasHeight]);
+
   const hoverVertex: OntologyTerm | undefined = hoverNode && ontology.get(hoverNode.id);
   const pinnedVertex: OntologyTerm | undefined =
     pinnedVertexID !== undefined ? ontology.get(pinnedVertexID) : undefined;
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
-  const { forceCanvasWidth, forceCanvasHeight } = forceCanvasProps;
   const isSubset = root.length > 0;
   const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
 
@@ -321,10 +315,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
           <canvas
             style={{
               cursor: "crosshair",
-              width: forceCanvasWidth, // scale back down with css if we scaled up for retina
+              width: forceCanvasWidth,
               height: forceCanvasHeight,
             }}
-            width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina
+            width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina/hidpi
             height={forceCanvasHeight * window.devicePixelRatio}
             ref={dagCanvasRef}
           />

@@ -2,6 +2,18 @@ import { OntologyId, EBIOlsTerm, EBIOlsTermAPIResponse } from "../d";
 
 const EBIBaseUrl = "https://www.ebi.ac.uk/ols/api";
 
+/*
+ * Cache
+ */
+const responseCache = new Map<OntologyId, EBIOlsTerm[]>();
+const MaxResponseCacheSize = 10000;
+function pruneCache(cache: Map<OntologyId, EBIOlsTerm[]>): void {
+  if (cache.size > MaxResponseCacheSize) {
+    /* Least recent insertion deletion */
+    cache.delete(cache.keys().next().value);
+  }
+}
+
 /**
  * Lookup a term in EBS OLS by Term OBO ID. Return the
  * result from the _defining_ ontology. Because OBO IDs are
@@ -14,6 +26,10 @@ const EBIBaseUrl = "https://www.ebi.ac.uk/ols/api";
  * @returns array of term definition
  */
 export async function olsLookupTermByOboId(oboId: OntologyId): Promise<EBIOlsTerm[]> {
+  if (responseCache.has(oboId)) {
+    return responseCache.get(oboId) as EBIOlsTerm[];
+  }
+
   const [ontologyName] = oboId.split(":");
   const response = await fetch(`${EBIBaseUrl}/ontologies/${ontologyName}/terms?obo_id=${oboId}`, {
     headers: { Accept: "application/json" },
@@ -21,6 +37,8 @@ export async function olsLookupTermByOboId(oboId: OntologyId): Promise<EBIOlsTer
 
   if (response.ok) {
     const r: EBIOlsTermAPIResponse = await response.json();
+    responseCache.set(oboId, r._embedded.terms);
+    pruneCache(responseCache);
     return r._embedded.terms;
   }
 

@@ -38,10 +38,6 @@ export interface DrawForceDagHighlightProps {
  *
  * @param nodes
  * @param links
- * @param width
- * @param height
- * @param scaleFactor
- * @param translateCenter
  * @param dagCanvasRef
  * @param ontology
  * @param setHoverNode
@@ -53,10 +49,6 @@ export interface DrawForceDagHighlightProps {
 export const drawForceDag = (
   nodes: OntologyVertexDatum[],
   links: SimulationLinkDatum<any>[],
-  width: number,
-  height: number,
-  scaleFactor: number,
-  translateCenter: number,
   dagCanvasRef: React.RefObject<HTMLCanvasElement>,
   ontology: Ontology,
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
@@ -69,10 +61,8 @@ export const drawForceDag = (
   /**
    * DOM element
    */
-  const canvas = select(dagCanvasRef.current);
-  const context = dagCanvasRef.current!.getContext("2d");
-  const boundingRect = dagCanvasRef.current.getBoundingClientRect();
-  const dpr = window.devicePixelRatio;
+  const htmlCanvas = dagCanvasRef.current;
+  const canvas = select(htmlCanvas);
 
   /**
    * Hover state
@@ -154,6 +144,17 @@ export const drawForceDag = (
   const nodeColorSecondary = "orange";
 
   /**
+   * Estimated the coordinate space for the simulation. This is a CRUDE estimate based
+   * upon the internals of d3-force::initializeNodes().
+   *
+   * If we switch to a different layout engine, we'll need to revise this.
+   */
+  const initialRadius = 10;
+  const graphRadius = initialRadius * Math.sqrt(0.5 + nodes.length);
+  const graphDiameter = 4 * graphRadius;
+  let canvasInvTransformMatrix: DOMMatrixReadOnly = dagCanvasRef.current.getContext("2d")!.getTransform().inverse();
+
+  /**
    * Set up d3 force simulation
    */
   const simulation = forceSimulation(nodes)
@@ -165,38 +166,47 @@ export const drawForceDag = (
       forceLink(links).id((d: any) => d.id)
     )
     .force("charge", forceManyBody())
-    // collision breaks the hovering math below at simulation.find(zeroX * dpr, zeroY * dpr);
     .force(
       "collision",
       forceCollide().radius((d: any) => {
-        return d.n_cells ? nCellsScale(d.n_cells) : deemphasizeNodeSize; // d.n_counts;
+        return d.n_cells ? nCellsScale(d.n_cells) : deemphasizeNodeSize;
       })
     )
-    // we are disjoint because we're disconnecting the dag to get territories
+    // Graph is potentially disjoint, so use separate forces,
     // https://observablehq.com/@d3/disjoint-force-directed-graph
-    .force("x", forceX((width * dpr) / 2))
-    .force("y", forceY((height * dpr) / 2));
+    .force("x", forceX())
+    .force("y", forceY());
 
   /**
    * Animation frame.
    */
   const ticked = () => {
+    const context = htmlCanvas.getContext("2d");
     if (!context) return;
-
+    const { width, height } = htmlCanvas.getBoundingClientRect();
     const { highlightAncestors, hullsEnabled, nodeHighlight } = highlightProps;
 
     /**
      * Clear
      */
     context.save();
-    context.clearRect(0, 0, width * dpr, height * dpr);
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, htmlCanvas.width, htmlCanvas.height);
+
+    const canvasMinDimension = width < height ? width : height;
+    const canvasScale = (window.devicePixelRatio * canvasMinDimension) / graphDiameter;
+    context.scale(canvasScale, canvasScale);
+    context.translate(graphRadius + width / 2, graphRadius + height / 2);
+    canvasInvTransformMatrix = context.getTransform().inverse();
 
     /**
      * Draw links
      */
     context.lineWidth = 1;
     context.beginPath();
-    links.forEach(drawLink);
+    for (const link of links) {
+      drawLink(link, context);
+    }
     context.strokeStyle = linkColor;
     context.stroke();
 
@@ -205,7 +215,7 @@ export const drawForceDag = (
      */
     for (const node of nodes) {
       context.beginPath();
-      drawNode(node);
+      drawNode(node, context);
 
       // set default fill/stroke color.
       const highlightStyle = nodeHighlight?.get(node.id);
@@ -286,7 +296,7 @@ export const drawForceDag = (
     context.restore();
   };
 
-  const drawLink = (d: SimulationLinkDatum<any>) => {
+  const drawLink = (d: SimulationLinkDatum<any>, context: CanvasRenderingContext2D) => {
     if (context) {
       context.moveTo(d.source.x, d.source.y);
       context.lineTo(d.target.x, d.target.y);
@@ -294,7 +304,7 @@ export const drawForceDag = (
     return null;
   };
 
-  const drawNode = (d: OntologyVertexDatum) => {
+  const drawNode = (d: OntologyVertexDatum, context: CanvasRenderingContext2D) => {
     /**
      * identify orphan nodes, eject
      */
@@ -339,22 +349,28 @@ export const drawForceDag = (
   simulation.on("tick", ticked);
   simulation.on("end", onForceSimulationEnd);
 
-  // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
+  /**
+   * Return the vertex/node that is nearest the mouse event coordinates.
+   */
+  const findNode = (event: MouseEvent) => {
+    const { left, top } = canvas.node()!.getBoundingClientRect();
+    const dpr = window.devicePixelRatio;
+    const zeroX = (event.clientX - left) * dpr; // pretend we're relative to upper left of window
+    const zeroY = (event.clientY - top) * dpr;
+    const { x, y } = canvasInvTransformMatrix.transformPoint({ x: zeroX, y: zeroY });
+    return simulation.find(x, y);
+  };
+
   canvas.on("mousemove", (event: MouseEvent) => {
     event.preventDefault();
-    const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
-    const zeroY = event.clientY - boundingRect.top;
-
-    hoverNode = simulation.find(zeroX * dpr, zeroY * dpr);
+    hoverNode = findNode(event);
     setHoverNode(hoverNode);
+    ticked();
   });
 
   canvas.on("click", (event: MouseEvent) => {
     event.preventDefault();
-    const zeroX = event.clientX - boundingRect.left; // pretend we're relative to upper left of window
-    const zeroY = event.clientY - boundingRect.top;
-
-    const clickNode = simulation.find(zeroX * dpr, zeroY * dpr);
+    const clickNode = findNode(event);
     setPinnedNode(clickNode);
   });
 
