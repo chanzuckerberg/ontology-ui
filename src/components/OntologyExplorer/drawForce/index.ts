@@ -193,7 +193,7 @@ export const drawForceDag = (
     context.clearRect(0, 0, width, height);
 
     const canvasMinDimension = width < height ? width : height;
-    const canvasScale = canvasMinDimension / graphDiameter;
+    const canvasScale = (window.devicePixelRatio * canvasMinDimension) / graphDiameter;
     context.scale(canvasScale, canvasScale);
     context.translate(graphRadius + width / 2, graphRadius + height / 2);
     canvasInvTransformMatrix = context.getTransform().inverse();
@@ -348,25 +348,29 @@ export const drawForceDag = (
   simulation.on("tick", ticked);
   simulation.on("end", onForceSimulationEnd);
 
+  /**
+   * Return the vertex/node that is nearest the mouse event coordinates.
+   */
+  function findNode(event: MouseEvent) {
+    const { left, top } = canvas.node()!.getBoundingClientRect();
+    const dpr = window.devicePixelRatio;
+    const zeroX = (event.clientX - left) * dpr; // pretend we're relative to upper left of window
+    const zeroY = (event.clientY - top) * dpr;
+    const { x, y } = canvasInvTransformMatrix.transformPoint({ x: zeroX, y: zeroY });
+    return simulation.find(x, y);
+  }
+
   // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
   canvas.on("mousemove", (event: MouseEvent) => {
     event.preventDefault();
-    const { left, top } = canvas.node()!.getBoundingClientRect();
-    const zeroX = event.clientX - left; // pretend we're relative to upper left of window
-    const zeroY = event.clientY - top;
-    const { x, y } = canvasInvTransformMatrix.transformPoint({ x: zeroX, y: zeroY });
-    hoverNode = simulation.find(x, y);
+    hoverNode = findNode(event);
     setHoverNode(hoverNode);
     ticked();
   });
 
   canvas.on("click", (event: MouseEvent) => {
     event.preventDefault();
-    const { left, top } = canvas.node()!.getBoundingClientRect();
-    const zeroX = event.clientX - left; // pretend we're relative to upper left of window
-    const zeroY = event.clientY - top;
-    const { x, y } = canvasInvTransformMatrix.transformPoint({ x: zeroX, y: zeroY });
-    const clickNode = simulation.find(x, y);
+    const clickNode = findNode(event);
     setPinnedNode(clickNode);
   });
 
