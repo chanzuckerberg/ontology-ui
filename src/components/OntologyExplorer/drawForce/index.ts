@@ -352,16 +352,15 @@ export const drawForceDag = (
   /**
    * Return the vertex/node that is nearest the mouse event coordinates.
    */
-  function findNode(event: MouseEvent) {
+  const findNode = (event: MouseEvent) => {
     const { left, top } = canvas.node()!.getBoundingClientRect();
     const dpr = window.devicePixelRatio;
     const zeroX = (event.clientX - left) * dpr; // pretend we're relative to upper left of window
     const zeroY = (event.clientY - top) * dpr;
     const { x, y } = canvasInvTransformMatrix.transformPoint({ x: zeroX, y: zeroY });
     return simulation.find(x, y);
-  }
+  };
 
-  // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
   canvas.on("mousemove", (event: MouseEvent) => {
     event.preventDefault();
     hoverNode = findNode(event);
