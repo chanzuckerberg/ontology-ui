@@ -187,7 +187,6 @@ export function ontologyQuery(
   if (from === undefined) throw new Error("Missing default context for ontology search.");
 
   let result: Set<OntologyId>;
-  const skipFromFilter = false;
   if ("$" in query) {
     result = doLiteral(ontologies, from, query);
   } else if ("$walk" in query) {
@@ -208,7 +207,7 @@ export function ontologyQuery(
     throw new Error("Unknown query structure.");
   }
 
-  if (!skipFromFilter && "$from" in query) {
+  if ("$from" in query) {
     const prefix = query.$from + ":";
     for (const id of result) {
       if (!id.startsWith(prefix)) result.delete(id);
