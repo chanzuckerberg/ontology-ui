@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox } from "@blueprintjs/core";
+import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../../d";
+import { Link } from "react-router-dom";
 
 interface OntrologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
@@ -24,6 +26,8 @@ interface OntrologyExplorerControlDrawerProps {
 
 export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerControlDrawerProps): JSX.Element {
   const [settingsIsOpen, setSettingsIsOpen] = useState<boolean>(false);
+
+  const params = useParams();
 
   const {
     pinnedVertex,
@@ -63,16 +67,16 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
           fontWeight: 900,
           position: "relative",
           top: 5,
-          marginRight: 40,
+          marginRight: 20,
         }}
       >
-        cellxgene-ontology
+        cellxgene-ontology{params.ontoID && `: ${params.ontoID}`}
       </p>
-
-      <Button onClick={deselectPinnedNode} style={{ marginRight: 20 }} disabled={!pinnedVertex}>
+      {params.ontoID === "CL" && <Link to={"/ontology/UBERON"}> Switch to UBERON</Link>}
+      {params.ontoID === "UBERON" && <Link to={"/ontology/CL"}> Switch to CL</Link>}
+      <Button onClick={deselectPinnedNode} style={{ marginRight: 20, marginLeft: 20 }} disabled={!pinnedVertex}>
         Deselect
       </Button>
-
       <Drawer
         isOpen={settingsIsOpen}
         size={560}
