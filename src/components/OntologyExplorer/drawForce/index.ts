@@ -152,9 +152,6 @@ export const drawForceDag = (
   const initialRadius = 10;
   const graphDiameter = 2 * (initialRadius * Math.sqrt(0.5 + nodes.length));
   let canvasInvTransformMatrix: DOMMatrixReadOnly = dagCanvasRef.current.getContext("2d")!.getTransform().inverse();
-  console.log(
-    `graphDiameter=${graphDiameter}, devicePixelRatio=${devicePixelRatio}, nNodes=${nodes.length}, width=${htmlCanvas.width}, height=${htmlCanvas.height}`
-  );
 
   /**
    * Set up d3 force simulation
