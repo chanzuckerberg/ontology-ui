@@ -149,14 +149,14 @@ const SearchTermView = (props: SearchTermProps) => {
 
 export function searchTermToUrlSearchParam(term: SearchTerm): string {
   const { highlight, searchString, searchMode, filterMode } = term;
-  const highlightFlag = highlight ? "T" : "F";
+  const highlightFlag = highlight ? "1" : "0";
   const searchFlag = searchMode === "celltype" ? "C" : "U";
   const filterFlag = filterMode === "none" ? "I" : filterMode === "keep" ? "K" : "R";
   return `${highlightFlag}${searchFlag}${filterFlag}${searchString}`;
 }
 
 export function urlSearchParamToSearchTerm(qstr: string): SearchTerm {
-  const highlight: boolean = qstr[0] === "T";
+  const highlight: boolean = qstr[0] === "1";
   const searchMode: SearchMode = qstr[1] === "C" ? "celltype" : "compartment";
   const filterMode: FilterMode = qstr[2] === "I" ? "none" : qstr[2] === "K" ? "keep" : "remove";
   const searchString = qstr.slice(3);
