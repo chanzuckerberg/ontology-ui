@@ -14,5 +14,5 @@ export default function VertexView({ graph }: VertexViewProps) {
   const vertex = vertexID ? ontology?.get(vertexID) : undefined;
   if (!vertex) return null;
 
-  return <Vertex graph={graph} vertex={vertex} makeTo={(id: OntologyId) => `../${id}`} />;
+  return null /* <Vertex graph={graph} vertex={vertex} makeTo={(id: OntologyId) => `../${id}`} /> */;
 }

@@ -4,15 +4,19 @@ import { Link } from "react-router-dom";
 import { olsLookupTermByOboId } from "../util/fetchEBITerm";
 import { DatasetGraph, EBIOlsTerm, OntologyTerm, OntologyId } from "../d";
 import { ontologyLookupId, ontologyQuery, LinkNames } from "../util/ontologyDag";
+import { SearchTerm } from "./OntologyExplorer/searchSidebar";
+import { Button, Icon } from "@blueprintjs/core";
 
 export interface VertexProps {
   graph: DatasetGraph;
   vertex: OntologyTerm;
   query?: string;
   makeTo: (to: OntologyId) => string;
+  searchTerms: SearchTerm[];
+  setSearchTerms: (searches: SearchTerm[]) => void;
 }
 
-export default function Vertex({ graph, vertex, query, makeTo }: VertexProps) {
+export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setSearchTerms }: VertexProps) {
   const vertexID = vertex.id;
   const ontoID = vertexID?.split(":", 1)[0];
   const ontology = graph.ontologies[ontoID];
@@ -88,6 +92,18 @@ export default function Vertex({ graph, vertex, query, makeTo }: VertexProps) {
             return (
               <li key={id}>
                 <Link to={makeTo(id)}>{term!.label}</Link>
+                <Button
+                  small
+                  minimal
+                  icon={<Icon icon={"search"} iconSize={10} />}
+                  style={{ marginLeft: 4 }}
+                  onClick={() => {
+                    setSearchTerms([
+                      ...searchTerms,
+                      { highlight: true, searchString: term!.label, searchMode: "compartment", filterMode: "none" },
+                    ]);
+                  }}
+                />
               </li>
             );
           })}
@@ -100,7 +116,7 @@ export default function Vertex({ graph, vertex, query, makeTo }: VertexProps) {
             const term = ontologyLookupId(graph.ontologies, id)?.term;
             return (
               <li key={id}>
-                <Link to={makeTo(id)}>{term!.label}</Link>
+                <Link to={makeTo(id)}>{term!.label}</Link>{" "}
               </li>
             );
           })}

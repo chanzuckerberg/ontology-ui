@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, RadioGroup, Radio, Icon, ButtonGroup, InputGroup, ControlGroup, HTMLSelect } from "@blueprintjs/core";
 import { Classes, Popover2 } from "@blueprintjs/popover2";
 import memoizeOne from "memoize-one";
+import { spawn } from "child_process";
 
 export type FilterMode = "none" | "keep" | "remove";
 export type SearchMode = "compartment" | "celltype";
@@ -66,7 +67,15 @@ const SearchSidebar = (props: SearchSidebarProps) => {
           Use terms to modify the graph: they are executed in the order they appear.
         </p>
       </div>
-      <ControlGroup fill style={{ marginBottom: marginUnit * 2 }}>
+
+      <form
+        style={{ display: "flex", justifyContent: "space-between", marginBottom: marginUnit * 2 }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          setSearchTerms([...searchTerms, { highlight: true, searchString, searchMode, filterMode: "none" }]);
+          setSearchString("");
+        }}
+      >
         <HTMLSelect
           value={searchMode}
           options={SearchModes}
@@ -75,6 +84,7 @@ const SearchSidebar = (props: SearchSidebarProps) => {
           }}
         />
         <InputGroup
+          style={{ width: 200 }}
           placeholder="Search..."
           value={searchString}
           onChange={(e) => {
@@ -83,13 +93,15 @@ const SearchSidebar = (props: SearchSidebarProps) => {
         />
         <Button
           icon="plus"
+          type={"submit"}
           disabled={!searchString}
           onClick={() => {
             setSearchTerms([...searchTerms, { highlight: true, searchString, searchMode, filterMode: "none" }]);
             setSearchString("");
           }}
         />
-      </ControlGroup>
+      </form>
+
       {searchTerms.map((term, i) => {
         return (
           <SearchTermView
@@ -109,6 +121,15 @@ const SearchSidebar = (props: SearchSidebarProps) => {
 
 const SearchTermView = (props: SearchTermProps) => {
   const { id, term, marginUnit, onDelete, onChange } = props;
+
+  let filterIcon: "filter" | "filter-keep" | "filter-remove" = "filter";
+
+  if (term.filterMode === "keep") {
+    filterIcon = "filter-keep";
+  } else if (term.filterMode === "remove") {
+    filterIcon = "filter-remove";
+  }
+
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 15 }}>
       <div style={{ width: 290, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
@@ -136,11 +157,16 @@ const SearchTermView = (props: SearchTermProps) => {
           >
             <Button
               rightIcon={<Icon icon="caret-down" iconSize={16} />}
-              icon={<Icon icon={"filter" /* set depending on selection */} iconSize={16} />}
+              icon={<Icon icon={filterIcon} iconSize={16} />}
             />
           </Popover2>
         </ButtonGroup>
-        <span style={{ marginLeft: marginUnit, marginRight: marginUnit }}>{term.searchString}</span>
+        <div style={{ display: "flex", flexDirection: "column", position: "relative", top: -1 }}>
+          <span style={{ marginLeft: marginUnit, marginRight: marginUnit }}>{term.searchString}</span>
+          <span style={{ marginLeft: marginUnit, marginRight: marginUnit, fontSize: 10 }}>
+            {term.searchMode === "compartment" ? "🫁 compartment" : "cell type"}
+          </span>
+        </div>
       </div>
       <Button minimal icon={<Icon icon="delete" iconSize={16} onClick={() => onDelete(id)} />} />
     </div>
@@ -164,8 +190,9 @@ export function urlSearchParamToSearchTerm(qstr: string): SearchTerm {
 }
 
 export const urlSearchParamsToSearchTerms = memoizeOne(
-  (paramStrings: string[]): SearchTerm[] => paramStrings.map(urlSearchParamToSearchTerm), 
-  (first: [string[]], second: [string[]]) => first[0].join(';') === second[0].join(';'))
+  (paramStrings: string[]): SearchTerm[] => paramStrings.map(urlSearchParamToSearchTerm),
+  (first: [string[]], second: [string[]]) => first[0].join(";") === second[0].join(";")
+);
 
 export function searchTermsToSearchQueries(terms: SearchTerm[]): string[] {
   return terms.map(searchTermToUrlSearchParam);
