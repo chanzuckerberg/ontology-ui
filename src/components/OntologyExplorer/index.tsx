@@ -416,8 +416,8 @@ function _buildFilterQueries(searchTerms: SearchTerm[]): OntologyQuery | null {
   for (let idx = 0; idx < searchTerms.length; idx += 1) {
     query =
       searchTerms[idx].filterMode === "keep"
-        ? { $union: [query, searchQueries[idx]] }
-        : { $difference: [query, searchQueries[idx]] };
+        ? { $union: [searchQueries[idx], query] }
+        : { $difference: [searchQueries[idx], query] };
   }
   return query;
 }
