@@ -92,24 +92,21 @@ function deleteId(ontology: Ontology, id: OntologyId): void {
 }
 
 /**
- * ontologySubDAG - create a new DAG(s) which is the sub-DAG rooted at the
- * given terms.
+ * ontologySubDAG - create a new DAG(s) which contains the specified subset
  */
-export function ontologySubDAG(ontology: Ontology, rootIds: OntologyId[]): Ontology {
+export function ontologySubset(ontology: Ontology, subsetIds: Set<OntologyId>): Ontology {
   const subDag = new Map<OntologyId, OntologyTerm>();
-  rootIds = rootIds.filter((id) => ontology.get(id) !== undefined);
-  if (rootIds.length === 0) return subDag;
-  const subDagIds = new Set(rootIds.flatMap((id) => [id, ...(ontology.get(id)?.descendants ?? [])]));
-  for (const cid of subDagIds) {
+  for (const cid of subsetIds) {
     const term = ontology.get(cid);
     if (!term) continue;
     subDag.set(cid, {
       ...term,
-      parents: term.parents.filter((id) => subDagIds.has(id)),
-      ancestors: new Set([...term.ancestors].filter((id) => subDagIds.has(id))),
+      parents: term.parents.filter((id) => subsetIds.has(id)),
+      children: term.children.filter((id) => subsetIds.has(id)),
+      ancestors: new Set([...term.ancestors].filter((id) => subsetIds.has(id))),
+      descendants: new Set([...term.descendants].filter((id) => subsetIds.has(id))),
     });
   }
-
   return subDag;
 }
 
@@ -124,9 +121,9 @@ interface From {
 }
 
 // query types
-interface Literal {
-  $: OntologyId | OntologyId[];
-}
+type Literal = From & {
+  $: "all" | "none";
+};
 // iterate down a given link
 type WalkQuery = From & {
   // maybe this should be { $walkOn: link, $from: query }
@@ -137,13 +134,17 @@ type WalkQuery = From & {
 type MatchQuery = From & {
   $match: string;
 };
-// Merge (union) of query results
-type MergeQuery = From & {
-  $merge: OntologyQuery[];
+// Union of query results
+type UnionQuery = From & {
+  $union: OntologyQuery[];
 };
-// Filter (intersect) query results
-type FilterQuery = From & {
-  $filter: OntologyQuery[];
+// Intersect query results
+type IntersectQuery = From & {
+  $intersect: OntologyQuery[];
+};
+// Difference of query results
+type DifferenceQuery = From & {
+  $difference: OntologyQuery[];
 };
 // Join on a query with a link
 type JoinQuery = From & {
@@ -151,6 +152,7 @@ type JoinQuery = From & {
   $where: OntologyQuery;
 };
 type JoinTreeQuery = From & {
+  // Maybe this should use the term "walk" rather than "tree"?
   $joinTreeOn: LinkNames | "*";
   $where: OntologyQuery;
 };
@@ -160,8 +162,9 @@ export type OntologyQuery =
   | OntologyId[]
   | Set<OntologyId>
   | MatchQuery
-  | MergeQuery
-  | FilterQuery
+  | UnionQuery
+  | IntersectQuery
+  | DifferenceQuery
   | JoinQuery
   | JoinTreeQuery
   | Literal
@@ -178,23 +181,24 @@ export function ontologyQuery(
   if (typeof query === "string") return new Set([query]);
   if (Array.isArray(query)) return new Set(query);
   if (query instanceof Set) return query;
-  if ("$" in query) {
-    return query.$ instanceof Set ? query.$ : new Set(Array.isArray(query.$) ? query.$ : [query.$]);
-  }
 
   // the remainder accept a change in the search ontology, aka $from
-  from = query.$from || from;
+  from = query?.$from ?? from;
   if (from === undefined) throw new Error("Missing default context for ontology search.");
 
   let result: Set<OntologyId>;
-  if ("$walk" in query) {
+  if ("$" in query) {
+    result = doLiteral(ontologies, from, query);
+  } else if ("$walk" in query) {
     result = doWalk(ontologies, from, query);
   } else if ("$match" in query) {
     result = doMatch(ontologies, from, query);
-  } else if ("$merge" in query) {
-    result = doMerge(ontologies, from, query);
-  } else if ("$filter" in query) {
-    result = doFilter(ontologies, from, query);
+  } else if ("$union" in query) {
+    result = doUnion(ontologies, from, query);
+  } else if ("$intersect" in query) {
+    result = doIntersect(ontologies, from, query);
+  } else if ("$difference" in query) {
+    result = doDifference(ontologies, from, query);
   } else if ("$joinOn" in query) {
     result = doJoin(ontologies, from, query);
   } else if ("$joinTreeOn" in query) {
@@ -211,6 +215,19 @@ export function ontologyQuery(
   }
 
   return result;
+}
+
+function doLiteral(
+  ontologies: Record<OntologyPrefix, Ontology>,
+  from: OntologyPrefix,
+  query: Literal
+): Set<OntologyId> {
+  const { $ } = query;
+  const ontology = ontologies[from];
+  if (!ontology || !$) return new Set();
+  if ($ === "none") return new Set();
+  if ($ === "all") return new Set(ontology.keys());
+  throw new Error("Unknown query literal.");
 }
 
 /**
@@ -243,15 +260,15 @@ function doMatch(
 /**
  * Return the union of the sub-queries.
  */
-function doMerge(
+function doUnion(
   ontologies: Record<OntologyPrefix, Ontology>,
   from: OntologyPrefix,
-  query: MergeQuery
+  query: UnionQuery
 ): Set<OntologyId> {
-  const { $merge } = query;
-  if (!Array.isArray($merge)) return new Set();
+  const { $union } = query;
+  if (!Array.isArray($union)) return new Set();
   const results = new Set<OntologyId>();
-  for (const subQuery of $merge) {
+  for (const subQuery of $union) {
     for (const r of ontologyQuery(ontologies, subQuery, from)) {
       results.add(r);
     }
@@ -259,19 +276,43 @@ function doMerge(
   return results;
 }
 
-function doFilter(
+/**
+ * Intersection of queries
+ */
+function doIntersect(
   ontologies: Record<OntologyPrefix, Ontology>,
   from: OntologyPrefix,
-  query: FilterQuery
+  query: IntersectQuery
 ): Set<OntologyId> {
-  const { $filter } = query;
-  if (!Array.isArray($filter)) return new Set();
+  const { $intersect } = query;
+  if (!Array.isArray($intersect)) return new Set();
   let results: Set<OntologyId> | undefined;
-  for (const subQuery of $filter) {
+  for (const subQuery of $intersect) {
     if (results === undefined) {
       results = ontologyQuery(ontologies, subQuery, from);
     } else {
       results = intersect(results, ontologyQuery(ontologies, subQuery, from));
+    }
+  }
+  return results ?? new Set();
+}
+
+/**
+ * Difference of queries
+ */
+function doDifference(
+  ontologies: Record<OntologyPrefix, Ontology>,
+  from: OntologyPrefix,
+  query: DifferenceQuery
+): Set<OntologyId> {
+  const { $difference } = query;
+  if (!Array.isArray($difference)) return new Set();
+  let results: Set<OntologyId> | undefined;
+  for (const subQuery of $difference) {
+    if (results === undefined) {
+      results = ontologyQuery(ontologies, subQuery, from);
+    } else {
+      results = difference(results, ontologyQuery(ontologies, subQuery, from));
     }
   }
   return results ?? new Set();
@@ -354,8 +395,6 @@ function doJoinTree(
   query: JoinTreeQuery
 ): Set<OntologyId> {
   const { $joinTreeOn, $where } = query;
-  // const ontology = ontologies[from];
-  // if (!ontology || !$joinTreeOn || !$where) return new Set();
   if (!$joinTreeOn || !$where) return new Set();
 
   const results = new Set<OntologyId>();
@@ -366,13 +405,43 @@ function doJoinTree(
     for (const id of subQueryresults) {
       if (!results.has(id)) subQuery.push(id);
     }
-    merge(results, subQueryresults);
+    union(results, subQueryresults);
   } while (subQuery.length > 0);
   return results;
 }
 
 /**
- * Set ops
+ * Search for UBERON and CL terms associated with a compartment.
+ */
+export function createCompartmentQuery(baseQuery: OntologyQuery): OntologyQuery {
+  const compartmentQuery: OntologyQuery = {
+    $union: [
+      { $joinTreeOn: "part_of", $where: baseQuery },
+      { $walk: baseQuery, $on: "have_part" },
+    ],
+    $from: "UBERON",
+  };
+  return {
+    $union: [
+      { $walk: compartmentQuery, $on: "have_part" },
+      { $joinOn: "part_of", $where: compartmentQuery },
+    ],
+    $from: "CL",
+  };
+}
+
+/**
+ * Perform compartment query.
+ */
+export function compartmentQuery(
+  ontologies: Record<OntologyPrefix, Ontology>,
+  baseQuery: OntologyQuery
+): Set<OntologyId> {
+  return ontologyQuery(ontologies, createCompartmentQuery(baseQuery));
+}
+
+/**
+ * Set ops primitives
  */
 
 /**
@@ -389,9 +458,9 @@ function intersect<T extends any>(A: Set<T>, B: Set<T>): Set<T> {
 }
 
 /**
- * Merge sets - source into target. Mutates target.
+ * Union/merge sets - source into target. NOTE: mutates target.
  */
-function merge<T extends any>(target: Set<T>, source: Set<T>): Set<T> {
+function union<T extends any>(target: Set<T>, source: Set<T>): Set<T> {
   for (const elem of source) {
     target.add(elem);
   }
@@ -399,29 +468,12 @@ function merge<T extends any>(target: Set<T>, source: Set<T>): Set<T> {
 }
 
 /**
- * Search for UBERON and CL terms associated with a compartment.
+ * Set difference
  */
-
-export function createCompartmentQuery(baseQuery: OntologyQuery): OntologyQuery {
-  const compartmentQuery: OntologyQuery = {
-    $merge: [
-      { $joinTreeOn: "part_of", $where: baseQuery },
-      { $walk: baseQuery, $on: "have_part" },
-    ],
-    $from: "UBERON",
-  };
-  return {
-    $merge: [
-      { $walk: compartmentQuery, $on: "have_part" },
-      { $joinOn: "part_of", $where: compartmentQuery },
-    ],
-    $from: "CL",
-  };
-}
-
-export function compartmentQuery(
-  ontologies: Record<OntologyPrefix, Ontology>,
-  baseQuery: OntologyQuery
-): Set<OntologyId> {
-  return ontologyQuery(ontologies, createCompartmentQuery(baseQuery));
+function difference<T extends any>(left: Set<T>, right: Set<T>): Set<T> {
+  const _difference = new Set<T>(left);
+  for (const elem of right) {
+    _difference.delete(elem);
+  }
+  return _difference;
 }

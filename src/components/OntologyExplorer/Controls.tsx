@@ -9,11 +9,8 @@ interface OntrologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
   simulationRunning: boolean;
   menubarHeight: number;
-  isSubset: boolean;
   outdegreeCutoffNodes: number;
   deselectPinnedNode: any;
-  subsetToNode: any;
-  resetSubset: any;
   handleHullChange: any;
   hullsEnabled: boolean;
   highlightAncestors: boolean;
@@ -32,10 +29,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
   const {
     pinnedVertex,
     menubarHeight,
-    // isSubset,
     deselectPinnedNode,
-    // subsetToNode,
-    // resetSubset,
     hullsEnabled,
     handleHullChange,
     highlightAncestors,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button, RadioGroup, Radio, Icon, ButtonGroup, InputGroup, ControlGroup, HTMLSelect } from "@blueprintjs/core";
 import { Classes, Popover2 } from "@blueprintjs/popover2";
+import memoizeOne from "memoize-one";
 
 export type FilterMode = "none" | "keep" | "remove";
 export type SearchMode = "compartment" | "celltype";
@@ -146,28 +147,28 @@ const SearchTermView = (props: SearchTermProps) => {
   );
 };
 
-export function searchTermToSearchQuery(term: SearchTerm): string {
+export function searchTermToUrlSearchParam(term: SearchTerm): string {
   const { highlight, searchString, searchMode, filterMode } = term;
-  const highlightFlag = highlight ? "T" : "F";
+  const highlightFlag = highlight ? "1" : "0";
   const searchFlag = searchMode === "celltype" ? "C" : "U";
   const filterFlag = filterMode === "none" ? "I" : filterMode === "keep" ? "K" : "R";
   return `${highlightFlag}${searchFlag}${filterFlag}${searchString}`;
 }
 
-export function searchQueryToSearchTerm(qstr: string): SearchTerm {
-  const highlight: boolean = qstr[0] === "T";
+export function urlSearchParamToSearchTerm(qstr: string): SearchTerm {
+  const highlight: boolean = qstr[0] === "1";
   const searchMode: SearchMode = qstr[1] === "C" ? "celltype" : "compartment";
   const filterMode: FilterMode = qstr[2] === "I" ? "none" : qstr[2] === "K" ? "keep" : "remove";
   const searchString = qstr.slice(3);
   return { highlight, searchMode, filterMode, searchString };
 }
 
-export function searchQueriesToSearchTerms(queryStrings: string[]): SearchTerm[] {
-  return queryStrings.map(searchQueryToSearchTerm);
-}
+export const urlSearchParamsToSearchTerms = memoizeOne(
+  (paramStrings: string[]): SearchTerm[] => paramStrings.map(urlSearchParamToSearchTerm), 
+  (first: [string[]], second: [string[]]) => first[0].join(';') === second[0].join(';'))
 
 export function searchTermsToSearchQueries(terms: SearchTerm[]): string[] {
-  return terms.map(searchTermToSearchQuery);
+  return terms.map(searchTermToUrlSearchParam);
 }
 
 export default SearchSidebar;
