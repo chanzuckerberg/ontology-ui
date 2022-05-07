@@ -58,7 +58,9 @@ const SearchSidebar = (props: SearchSidebarProps) => {
   return (
     <div>
       <div style={{ marginBottom: marginUnit * 2 }}>
-        <h2>Search &amp; filter</h2>
+        <h2>
+          <Icon icon={"search"} style={{ position: "relative", top: -4, marginRight: 5 }} /> Search &amp; filter
+        </h2>
         <p style={{ fontStyle: "italic" }}>
           Search &amp; add terms: a search might be a compartment (e.g., eye, lung, UBERON:0002048) or cell type (e.g.,
           T cell, neuron, CL:0000057).
