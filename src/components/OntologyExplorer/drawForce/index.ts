@@ -197,7 +197,7 @@ export const drawForceDag = (
 
     const canvasMinDimension = width < height ? width : height;
     const canvasScale = (window.devicePixelRatio * canvasMinDimension) / graphDiameter / 2;
-    context.translate(width / 2, height / 2); // move origin to middle of canvas
+    context.translate((window.devicePixelRatio * width) / 2, (window.devicePixelRatio * height) / 2); // move origin to middle of canvas
     context.scale(canvasScale, canvasScale);
     canvasInvTransformMatrix = context.getTransform().inverse();
 
