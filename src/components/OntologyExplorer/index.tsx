@@ -407,10 +407,11 @@ function _buildFilterQueries(searchTerms: SearchTerm[]): OntologyQuery | null {
 
   let [cellTypeQueries, compartmentQueries] = buildBaseQueries(searchTerms);
   compartmentQueries = compartmentQueries.map((q) => createCompartmentQuery(q));
-  const searchQueries = cellTypeQueries.concat(compartmentQueries);
+  const searchQueries = cellTypeQueries
+    .concat(compartmentQueries)
+    .map<OntologyQuery>((q) => ({ $walk: q, $on: "children" }));
 
   // filterMode is "none", "keep", "remove".  Ignore "none"
-  // const searchQueries = buildQueries(searchTerms).map<OntologyQuery>(q => ({$walk: q, $on: "children"}));
   let query: OntologyQuery = searchTerms[0].filterMode === "keep" ? { $: "none" } : { $: "all" };
   for (let idx = 0; idx < searchTerms.length; idx += 1) {
     query =
