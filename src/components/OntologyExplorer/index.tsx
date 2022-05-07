@@ -386,10 +386,13 @@ function useSearchParamsRef() {
  * Create an ontology query for term highlight from the current search state.
  */
 function _buildHighlightQueries(searchTerms: SearchTerm[]): OntologyQuery | null {
-  const [cellTypeQueries, compartmentQueries] = buildBaseQueries(searchTerms.filter((term) => term.highlight));
+  // ignore terms without a highlight value of 'true'
+  searchTerms = searchTerms.filter((term) => term.highlight);
+  if (searchTerms.length === 0) return null;
+  const cellTypeQueries = buildBaseQueries(searchTerms.filter((t) => t.searchMode === "celltype"));
+  const compartmentQueries = buildBaseQueries(searchTerms.filter((t) => t.searchMode === "compartment"));
   const queries = cellTypeQueries;
   if (compartmentQueries.length > 0) queries.push(createCompartmentQuery({ $union: compartmentQueries }));
-  if (queries.length === 0) return null;
   return {
     $union: queries,
   };
@@ -404,14 +407,14 @@ function _buildFilterQueries(searchTerms: SearchTerm[]): OntologyQuery | null {
   // filterMode is "none", "keep", "remove".  Ignore "none"
   searchTerms = searchTerms.filter((term) => term.filterMode !== "none");
   if (searchTerms.length === 0) return null;
+  const baseQueries = buildBaseQueries(searchTerms);
+  const searchQueries = baseQueries.map<OntologyQuery>((q, idx) => {
+    if (searchTerms[idx].searchMode === "compartment") {
+      q = createCompartmentQuery(q);
+    }
+    return { $walk: q, $on: "children" };
+  });
 
-  let [cellTypeQueries, compartmentQueries] = buildBaseQueries(searchTerms);
-  compartmentQueries = compartmentQueries.map((q) => createCompartmentQuery(q));
-  const searchQueries = cellTypeQueries
-    .concat(compartmentQueries)
-    .map<OntologyQuery>((q) => ({ $walk: q, $on: "children" }));
-
-  // filterMode is "none", "keep", "remove".  Ignore "none"
   let query: OntologyQuery = searchTerms[0].filterMode === "keep" ? { $: "none" } : { $: "all" };
   for (let idx = 0; idx < searchTerms.length; idx += 1) {
     query =
@@ -425,23 +428,24 @@ function _buildFilterQueries(searchTerms: SearchTerm[]): OntologyQuery | null {
 const buildFilterQueries = memoizeOne(_buildFilterQueries);
 
 /**
- * Map each search item to a query, returning an array of queries.
+ * Map each search item to a query, picking between a text search and a
+ * specificy node identity search (based upon duck-typed OBO identifiers)
+ *
+ * Return an array of queries with 1:1 correspondence & order of the original search terms.
  */
-function buildBaseQueries(searchTerms: SearchTerm[]): [OntologyQuery[], OntologyQuery[]] {
-  const compartmentTerms = searchTerms.filter((term) => term.searchMode === "compartment");
-  const cellTypeTerms = searchTerms.filter((term) => term.searchMode === "celltype");
-
-  const cellTypeQueries: OntologyQuery[] = cellTypeTerms.map((term) => {
-    const { searchString } = term;
-    if (/^CL:[0-9]{7}$/.test(searchString)) return searchString;
-    else return { $match: searchString, $from: "CL" };
+function buildBaseQueries(searchTerms: SearchTerm[]): OntologyQuery[] {
+  return searchTerms.map((term) => {
+    const { searchString, searchMode } = term;
+    if (searchMode === "celltype") {
+      if (/^CL:[0-9]{7}$/.test(searchString)) {
+        return searchString;
+      }
+      return { $match: searchString, $from: "CL" };
+    } else {
+      if (/^UBERON:[0-9]{7}$/.test(searchString)) {
+        return searchString;
+      }
+      return { $match: searchString, $from: "UBERON" };
+    }
   });
-
-  const compartmentQueries: OntologyQuery[] = compartmentTerms.map((term) => {
-    const { searchString } = term;
-    if (/^UBERON:[0-9]{7}$/.test(searchString)) return searchString;
-    else return { $match: searchString, $from: "UBERON" };
-  });
-
-  return [cellTypeQueries, compartmentQueries];
 }
