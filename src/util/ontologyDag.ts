@@ -448,6 +448,7 @@ export function compartmentQuery(
  * Return the intersection of the sets
  */
 function intersect<T extends any>(A: Set<T>, B: Set<T>): Set<T> {
+  if (A.size < B.size) [A, B] = [B, A];
   let _intersection = new Set<T>();
   for (const elem of B) {
     if (A.has(elem)) {
@@ -460,11 +461,12 @@ function intersect<T extends any>(A: Set<T>, B: Set<T>): Set<T> {
 /**
  * Union/merge sets - source into target. NOTE: mutates target.
  */
-function union<T extends any>(target: Set<T>, source: Set<T>): Set<T> {
+function union<T extends any>(target: Set<T>, source: Set<T>, inplace: boolean = false): Set<T> {
+  const _union = inplace ? target : new Set(target);
   for (const elem of source) {
-    target.add(elem);
+    _union.add(elem);
   }
-  return target;
+  return _union;
 }
 
 /**
