@@ -25,12 +25,19 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
   const [olsTerm, setOlsTerm] = useState<EBIOlsTerm | null>();
 
   useEffect(() => {
+    let cancelled = false;
     olsLookupTermByOboId(vertexID)
-      .then((terms) => setOlsTerm(terms[0] ?? null))
+      .then((terms) => !cancelled && setOlsTerm(terms[0] ?? null))
       .catch(() => {
-        setOlsTerm(null);
+        if (!cancelled) setOlsTerm(null);
         console.log("EBI OLS request failed");
       });
+
+    return () => {
+      // we don't want to fully cancel the fetch, as we will cache the
+      // result for future use.
+      cancelled = true;
+    };
   }, [vertexID]);
 
   /* A mechanoreceptor cell located in the inner ear that is sensitive to auditory stimuli. The ... */
