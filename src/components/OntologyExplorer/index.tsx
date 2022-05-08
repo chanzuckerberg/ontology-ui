@@ -361,6 +361,8 @@ function _createDag(
     const ids = ontologyQuery(graph.ontologies, filterQuery, ontoID);
     if (ids.size > 0) {
       ontology = ontologySubset(ontology, ids);
+    } else {
+      console.log("Error - filters returned empty set - displaying entire graph.");
     }
   }
 
@@ -429,11 +431,11 @@ function _buildFilterQueries(searchTerms: SearchTerm[]): OntologyQuery | null {
     return { $walk: q, $on: "children" };
   });
 
-  let query: OntologyQuery = searchTerms[0].filterMode === "keep" ? { $: "none" } : { $: "all" };
+  let query: OntologyQuery = { $: "all" };
   for (let idx = 0; idx < searchTerms.length; idx += 1) {
     query =
       searchTerms[idx].filterMode === "keep"
-        ? { $union: [query, searchQueries[idx]] }
+        ? { $intersect: [query, searchQueries[idx]] }
         : { $difference: [query, searchQueries[idx]] };
   }
   return query;
