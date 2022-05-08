@@ -270,10 +270,24 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
              * Render cards
              */}
             {!pinnedVertex && hoverVertex && (
-              <Vertex graph={graph} vertex={hoverVertex} query={query} makeTo={(id: OntologyId) => makeLsbTo(id)} />
+              <Vertex
+                searchTerms={searchTerms}
+                setSearchTerms={handleSetSearchTerms}
+                graph={graph}
+                vertex={hoverVertex}
+                query={query}
+                makeTo={(id: OntologyId) => makeLsbTo(id)}
+              />
             )}
             {pinnedVertex && (
-              <Vertex graph={graph} vertex={pinnedVertex} query={query} makeTo={(id: OntologyId) => makeLsbTo(id)} />
+              <Vertex
+                searchTerms={searchTerms}
+                setSearchTerms={handleSetSearchTerms}
+                graph={graph}
+                vertex={pinnedVertex}
+                query={query}
+                makeTo={(id: OntologyId) => makeLsbTo(id)}
+              />
             )}
           </div>
         </div>
