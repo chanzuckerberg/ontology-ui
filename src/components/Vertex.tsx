@@ -12,8 +12,8 @@ export interface VertexProps {
   vertex: OntologyTerm;
   query?: string;
   makeTo: (to: OntologyId) => string;
-  searchTerms: SearchTerm[];
-  setSearchTerms: (searches: SearchTerm[]) => void;
+  searchTerms?: SearchTerm[];
+  setSearchTerms?: (searches: SearchTerm[]) => void;
 }
 
 export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setSearchTerms }: VertexProps) {
@@ -38,15 +38,55 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
 
   return (
     <div>
-      <h1>{vertex && vertex.label}</h1>
+      <h1>
+        {vertex && vertex.label}{" "}
+        {searchTerms && setSearchTerms && (
+          <Button
+            minimal
+            icon={<Icon icon={"search"} iconSize={16} />}
+            style={{ position: "relative", top: -1.5, left: -2 }}
+            onClick={() => {
+              setSearchTerms([
+                ...searchTerms,
+                { highlight: true, searchString: vertex.label, searchMode: "celltype", filterMode: "none" },
+              ]);
+            }}
+          />
+        )}
+      </h1>
       <h5>Count: {vertex && vertex.n_cells ? vertex.n_cells : "0"}</h5>
-
       <p>{!olsTerm && "Loading..."}</p>
       <p>{olsTerm && definition}</p>
-      <pre>{vertexID}</pre>
+      <pre>
+        {vertexID}{" "}
+        {searchTerms && setSearchTerms && (
+          <Button
+            small
+            minimal
+            icon={<Icon icon={"search"} iconSize={10} />}
+            style={{ position: "relative", top: -1.5, left: -2 }}
+            onClick={() => {
+              setSearchTerms([
+                ...searchTerms,
+                { highlight: true, searchString: vertexID, searchMode: "celltype", filterMode: "none" },
+              ]);
+            }}
+          />
+        )}
+      </pre>
+
+      {vertex.synonyms.length > 1 && (
+        <p style={{ fontStyle: "italic", color: "grey", fontSize: 10 }}>
+          Synonyms:{" "}
+          <span>
+            {vertex.synonyms.map((s) => {
+              return s;
+            })}
+          </span>
+        </p>
+      )}
 
       <h3> Parents </h3>
-
       <ul>
         {vertex &&
           vertex.parents.map((ancestor: string) => {
@@ -64,7 +104,6 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
             );
           })}
       </ul>
-
       <h3> Children </h3>
       <ul>
         {vertex &&
@@ -83,8 +122,7 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
             );
           })}
       </ul>
-
-      <h3> Part-of (compartment)</h3>
+      <h3>🫁 Part-of (compartment)</h3>
       <ul>
         {vertex &&
           allUniqueAncestors(graph, ontoID, vertex, "part_of").map((id: string, i: number) => {
@@ -92,23 +130,24 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
             return (
               <li key={id}>
                 <Link to={makeTo(id)}>{term!.label}</Link>
-                <Button
-                  small
-                  minimal
-                  icon={<Icon icon={"search"} iconSize={10} />}
-                  style={{ marginLeft: 4 }}
-                  onClick={() => {
-                    setSearchTerms([
-                      ...searchTerms,
-                      { highlight: true, searchString: term!.label, searchMode: "compartment", filterMode: "none" },
-                    ]);
-                  }}
-                />
+                {searchTerms && setSearchTerms && (
+                  <Button
+                    small
+                    minimal
+                    icon={<Icon icon={"search"} iconSize={10} />}
+                    style={{ marginLeft: 4 }}
+                    onClick={() => {
+                      setSearchTerms([
+                        ...searchTerms,
+                        { highlight: true, searchString: term!.label, searchMode: "compartment", filterMode: "none" },
+                      ]);
+                    }}
+                  />
+                )}
               </li>
             );
           })}
       </ul>
-
       <h3> Derived-from</h3>
       <ul>
         {vertex &&
@@ -121,7 +160,6 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
             );
           })}
       </ul>
-
       <h3> Develops-from</h3>
       <ul>
         {vertex &&
