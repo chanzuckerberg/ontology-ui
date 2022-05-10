@@ -66,8 +66,8 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
       >
         cellxgene-ontology{params.ontoID && `: ${params.ontoID}`}
       </p>
-      {params.ontoID === "CL" && <Link to={"/ontology/UBERON"}> Switch to UBERON</Link>}
-      {params.ontoID === "UBERON" && <Link to={"/ontology/CL"}> Switch to CL</Link>}
+      {params.ontoID === "CL" && <Link to={"/a/ontology/UBERON"}> Switch to UBERON</Link>}
+      {params.ontoID === "UBERON" && <Link to={"/a/ontology/CL"}> Switch to CL</Link>}
       <Button onClick={deselectPinnedNode} style={{ marginRight: 20, marginLeft: 20 }} disabled={!pinnedVertex}>
         Deselect
       </Button>
