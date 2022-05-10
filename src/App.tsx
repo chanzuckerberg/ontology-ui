@@ -43,14 +43,14 @@ function App() {
         {graph && lattice && (
           <Routes>
             <Route path="/">
-              <Route index element={<Navigate to="ontology/CL" replace />} />
-              <Route path="ontology">
+              <Route index element={<Navigate to="/a/ontology/CL" replace />} />
+              <Route path="a/ontology">
                 <Route path=":ontoID">
                   <Route index element={<DagView graph={graph} />} />
                   <Route path=":vertexID" element={<DagView graph={graph} />} />
                 </Route>
               </Route>
-              <Route path="term">
+              <Route path="a/term">
                 <Route path=":vertexID" element={<VertexView graph={graph} />} />
               </Route>
             </Route>
