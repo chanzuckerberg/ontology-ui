@@ -54,6 +54,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
+  const [sugiyamaIsOpen, setSugiyamaIsOpen] = useState<boolean>(true);
 
   const [windowWidth, windowHeight] = useWindowSize();
   const menubarHeight = 50;
@@ -240,10 +241,15 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     }
   };
 
+  const handleSugiyamaOpen = () => setSugiyamaIsOpen(true);
+  const handleSugiyamaClose = () => setSugiyamaIsOpen(false);
+
   return (
     <div id="ontologyExplorerContainer">
       <Controls
         pinnedVertex={pinnedVertex}
+        sugiyamaIsOpen={sugiyamaIsOpen}
+        handleSugiyamaOpen={handleSugiyamaOpen}
         simulationRunning={simulationRunning}
         menubarHeight={menubarHeight}
         outdegreeCutoffNodes={minimumOutdegree}
@@ -321,40 +327,25 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
          */}
         <Drawer
           icon="layout-hierarchy"
-          onClose={() => {
-            console.log("handle close");
-          }}
+          onClose={handleSugiyamaClose}
           title="Hierarchical sub-dag view"
           position={"bottom"}
-          isOpen={false}
+          isOpen={sugiyamaIsOpen}
           canOutsideClickClose={true}
           canEscapeKeyClose={true}
         >
           <div className={Classes.DRAWER_BODY}>
-            <div className={Classes.DIALOG_BODY}>
-              <p>
-                <strong>foo</strong>
-              </p>
-              <p>interesting details</p>
-              <p>cell types</p>
-              <p>background</p>
-            </div>
-          </div>
-          <div className={Classes.DRAWER_FOOTER}>
-            Perhaps some buttons <Button>Like this one</Button>
+            {dagState?.sugiyamaStratifyData && dagState?.sugiyamaStratifyData.length < sugiyamaRenderThreshold ? (
+              <div style={{ marginLeft: 20, marginTop: 20 }}>
+                <Sugiyama sugiyamaStratifyData={dagState.sugiyamaStratifyData} ontology={ontology} />
+              </div>
+            ) : (
+              <div className={Classes.DIALOG_BODY}>
+                <p>Select {sugiyamaRenderThreshold} or less cells to display hierarchical layout detail view</p>
+              </div>
+            )}
           </div>
         </Drawer>
-        {dagState?.sugiyamaStratifyData && dagState?.sugiyamaStratifyData.length < sugiyamaRenderThreshold && (
-          <div
-            style={{
-              position: "absolute",
-              top: menubarHeight,
-              left: cardWidth + forceCanvasWidth,
-            }}
-          >
-            <Sugiyama sugiyamaStratifyData={dagState.sugiyamaStratifyData} ontology={ontology} />
-          </div>
-        )}
       </div>
     </div>
   );

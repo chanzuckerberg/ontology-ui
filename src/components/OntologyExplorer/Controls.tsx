@@ -15,7 +15,8 @@ interface OntrologyExplorerControlDrawerProps {
   hullsEnabled: boolean;
   highlightAncestors: boolean;
   handleHighlightAncestorChange: any;
-
+  sugiyamaIsOpen: boolean;
+  handleSugiyamaOpen: any;
   minimumOutdegree: string;
   maximumOutdegree: string;
   handleMinOutdegreeChange: any;
@@ -37,6 +38,8 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     minimumOutdegree,
     maximumOutdegree,
     handleMinOutdegreeChange,
+    sugiyamaIsOpen,
+    handleSugiyamaOpen,
   } = props;
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
@@ -68,9 +71,23 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
       </p>
       {params.ontoID === "CL" && <Link to={"/ontology/UBERON"}> Switch to UBERON</Link>}
       {params.ontoID === "UBERON" && <Link to={"/ontology/CL"}> Switch to CL</Link>}
-      <Button onClick={deselectPinnedNode} style={{ marginRight: 20, marginLeft: 20 }} disabled={!pinnedVertex}>
-        Deselect
+      <Button
+        icon="unpin"
+        onClick={deselectPinnedNode}
+        style={{ marginRight: 20, marginLeft: 20 }}
+        disabled={!pinnedVertex}
+      >
+        Unpin
       </Button>
+      <Button
+        icon="layout-hierarchy"
+        onClick={handleSugiyamaOpen}
+        style={{ marginRight: 20 }}
+        disabled={sugiyamaIsOpen}
+      >
+        Hierarchy layout
+      </Button>
+
       <Drawer
         isOpen={settingsIsOpen}
         size={560}
