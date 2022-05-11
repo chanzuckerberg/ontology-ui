@@ -23,7 +23,7 @@ import {
 } from "../../util/ontologyDag";
 
 import { useNavigateRef } from "../useNavigateRef";
-import { Drawer, Classes, Button, DrawerSize } from "@blueprintjs/core";
+import { Drawer, Classes, DrawerSize } from "@blueprintjs/core";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,

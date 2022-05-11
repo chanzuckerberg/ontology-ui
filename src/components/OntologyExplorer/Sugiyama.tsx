@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { sugiyama, Dag, dagStratify } from "d3-dag/dist";
 import { line, curveCatmullRom } from "d3-shape";
 
+import { scaleLinear } from "d3-scale";
+
 import { Ontology } from "../../d";
 
 interface SugiyamaNode {
@@ -78,6 +80,21 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
     .x((d: any) => d.x * scaleMultiplier)
     .y((d: any) => d.y * scaleMultiplier + Math.random());
 
+  /**
+   * Sizes
+   */
+  let nodeSize: number = 5;
+  let deemphasizeNodeSize: number = 2.5;
+
+  /* scales */
+
+  const minNodeRadius = 5;
+  const maxNodeRadius = 25;
+
+  const cellCountWhale: number = 1000000;
+  const cellCountShrimp: number = 1;
+  const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
+
   return (
     <svg
       width={sugiyamaWidthAspectRatio * scaleMultiplier}
@@ -100,12 +117,20 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
           const vertex: any = ontology.get(d.data.id);
           return (
             <g key={d.data.id} transform={`translate(${d.x * scaleMultiplier},${d.y * scaleMultiplier})`}>
-              <circle r={nodeRadius} fill="rgb(200,0,200)"></circle>
+              <circle
+                r={vertex.n_cells === 0 ? deemphasizeNodeSize : nCellsScale(vertex.n_cells)}
+                fill="rgb(220,220,220)"
+              ></circle>
               <text x="-30" y={-20}>
                 {vertex.label.substring(0, 10)}
                 {vertex.label.length > 10 ? "..." : null}
                 <title>{vertex.label}</title>
               </text>
+              {vertex.n_cells > 0 && (
+                <text fontFamily="monospace" fontSize={10} x={0} y={4} textAnchor="middle">
+                  {vertex.n_cells}
+                </text>
+              )}
             </g>
           );
         })}
