@@ -29,7 +29,7 @@ const defaultLayoutState: LayoutState = {
   layeringChoice: "Simplex (slow)",
   decrossingsChoice: "Optimal (slow)",
   coordsChoice: "Quad (slow)",
-  scaleMultiplier: 150,
+  scaleMultiplier: 110,
   sugiyamaWidthAspectRatio: null,
   sugiyamaHeightAspectRatio: null,
 };
@@ -100,10 +100,10 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
           const vertex: any = ontology.get(d.data.id);
           return (
             <g key={d.data.id} transform={`translate(${d.x * scaleMultiplier},${d.y * scaleMultiplier})`}>
-              <circle r={nodeRadius} fill="rgb(200,200,200)"></circle>
+              <circle r={nodeRadius} fill="rgb(200,0,200)"></circle>
               <text x="-30" y={-20}>
-                {vertex.label.substring(0, 15)}
-                {vertex.label.length > 16 ? "..." : null}
+                {vertex.label.substring(0, 10)}
+                {vertex.label.length > 10 ? "..." : null}
                 <title>{vertex.label}</title>
               </text>
             </g>

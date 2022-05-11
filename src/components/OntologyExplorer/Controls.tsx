@@ -16,6 +16,7 @@ interface OntrologyExplorerControlDrawerProps {
   highlightAncestors: boolean;
   handleHighlightAncestorChange: any;
   sugiyamaIsOpen: boolean;
+  sugiyamaIsEnabled: boolean;
   handleSugiyamaOpen: any;
   minimumOutdegree: string;
   maximumOutdegree: string;
@@ -40,6 +41,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     handleMinOutdegreeChange,
     sugiyamaIsOpen,
     handleSugiyamaOpen,
+    sugiyamaIsEnabled,
   } = props;
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
@@ -83,7 +85,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
         icon="layout-hierarchy"
         onClick={handleSugiyamaOpen}
         style={{ marginRight: 20 }}
-        disabled={sugiyamaIsOpen}
+        disabled={!sugiyamaIsEnabled}
       >
         Hierarchy layout
       </Button>
