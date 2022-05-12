@@ -72,7 +72,7 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
     }
   }, [dag]);
 
-  const { sugiyamaWidthAspectRatio, sugiyamaHeightAspectRatio, scaleMultiplier, nodeRadius } = layout;
+  const { sugiyamaWidthAspectRatio, sugiyamaHeightAspectRatio, scaleMultiplier } = layout;
   if (!dag || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
 
   const createLine = line()
@@ -83,7 +83,6 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
   /**
    * Sizes
    */
-  let nodeSize: number = 5;
   let deemphasizeNodeSize: number = 2.5;
 
   /* scales */

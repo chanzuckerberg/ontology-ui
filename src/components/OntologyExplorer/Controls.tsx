@@ -39,7 +39,6 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     minimumOutdegree,
     maximumOutdegree,
     handleMinOutdegreeChange,
-    sugiyamaIsOpen,
     handleSugiyamaOpen,
     sugiyamaIsEnabled,
   } = props;
