@@ -8,7 +8,7 @@ import { DatasetGraph, Ontology, OntologyId, OntologyPrefix, OntologyTerm } from
  * @returns [graph: DatasetGraph, lattice: Ontology]
  */
 export default async function loadDatasetGraph(url: string): Promise<[DatasetGraph, Ontology]> {
-  const rawGraph = await load("/dataset_graph.json");
+  const rawGraph = await load(url);
   const datasetGraph: DatasetGraph = createDatasetGraph(rawGraph);
   const lattice: Ontology = createLattice(datasetGraph);
   return [datasetGraph, lattice];
