@@ -12,20 +12,20 @@ interface AppState {
   lattice?: Ontology;
 }
 
-function App() {
+function App({ basename }: { basename: string }) {
   const [state, setState] = useState<AppState>({});
   const { graph, lattice } = state;
 
   useEffect(() => {
     const initState = async () => {
-      const [graph, lattice] = await loadDatasetGraph("/dataset_graph.json");
+      const [graph, lattice] = await loadDatasetGraph("./dataset_graph.json");
       setState({ graph, lattice });
     };
     initState();
   }, [setState]);
 
   return (
-    <Router>
+    <Router basename={basename}>
       <div
         id="container"
         style={{
@@ -44,13 +44,13 @@ function App() {
           <Routes>
             <Route path="/">
               <Route index element={<Navigate to="/a/ontology/CL" replace />} />
-              <Route path="a/ontology">
+              <Route path="/a/ontology">
                 <Route path=":ontoID">
                   <Route index element={<DagView graph={graph} />} />
                   <Route path=":vertexID" element={<DagView graph={graph} />} />
                 </Route>
               </Route>
-              <Route path="a/term">
+              <Route path="/a/term">
                 <Route path=":vertexID" element={<VertexView graph={graph} />} />
               </Route>
             </Route>
