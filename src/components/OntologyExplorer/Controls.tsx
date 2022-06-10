@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox } from "@blueprintjs/core";
+import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox, HotkeysTarget2, Icon, Tag } from "@blueprintjs/core";
+
 import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../../d";
 import { Link } from "react-router-dom";
+import { ICON } from "@blueprintjs/core/lib/esm/common/classes";
 
 interface OntrologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
@@ -70,16 +72,41 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
       >
         cellxgene-ontology{params.ontoID && `: ${params.ontoID}`}
       </p>
-      {params.ontoID === "CL" && <Link to={"/ontology/UBERON"}> Switch to UBERON</Link>}
-      {params.ontoID === "UBERON" && <Link to={"/ontology/CL"}> Switch to CL</Link>}
-      <Button
-        icon="unpin"
-        onClick={deselectPinnedNode}
-        style={{ marginRight: 20, marginLeft: 20 }}
-        disabled={!pinnedVertex}
+      {params.ontoID === "CL" && <Link to={"/a/ontology/UBERON"}> Switch to UBERON</Link>}
+      {params.ontoID === "UBERON" && <Link to={"/a/ontology/CL"}> Switch to CL</Link>}
+
+      <HotkeysTarget2
+        hotkeys={[
+          {
+            combo: "ESC",
+            global: true,
+            label: "Deselect pinned node",
+            onKeyDown: () => {
+              deselectPinnedNode();
+            },
+          },
+          {
+            combo: "A",
+            global: true,
+            label: "Highlight node ancestors",
+            onKeyDown: () => {
+              handleHighlightAncestorChange();
+            },
+          },
+        ]}
       >
-        Unpin
-      </Button>
+        {({ handleKeyDown, handleKeyUp }) => (
+          <Button
+            icon="unpin"
+            tabIndex={0}
+            onClick={deselectPinnedNode}
+            style={{ marginRight: 20, marginLeft: 20 }}
+            disabled={!pinnedVertex}
+          >
+            Deselect <Tag minimal>Esc</Tag>
+          </Button>
+        )}
+      </HotkeysTarget2>
       <Button
         icon="layout-hierarchy"
         onClick={handleSugiyamaOpen}
@@ -88,7 +115,6 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
       >
         Hierarchy layout
       </Button>
-
       <Drawer
         isOpen={settingsIsOpen}
         size={560}
@@ -107,11 +133,13 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
             <p>
               Change the behavior of interactions with the graph, such as hovering and hiding parts of the interface
             </p>
+
             <Checkbox
               checked={highlightAncestors}
-              label={"Highlight ancestors of hovered cell (a)"}
+              label={"Highlight ancestors of hovered cell (hotkey a)"}
               onChange={handleHighlightAncestorChange}
             />
+
             <Checkbox checked={true} label="Show cell type force graph" onChange={() => {}} disabled />
             <Checkbox checked={true} label="Show sugiyama directed cyclic graph" onChange={() => {}} disabled />
             <h2> Interpretive overlays </h2>

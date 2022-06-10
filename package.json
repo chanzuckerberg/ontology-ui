@@ -3,6 +3,7 @@
   "version": "0.0.0-alpha.2",
   "license": "MIT",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "@blueprintjs/core": "^4.2.0",
     "@blueprintjs/popover2": "^1.1.4",
@@ -78,7 +79,8 @@
     "@types/react-dom": "^17.0.15",
     "@types/react-helmet": "^6.1.5",
     "@types/react-router-dom": "^5.3.3",
-    "@types/three": "^0.139.0"
+    "@types/three": "^0.139.0",
+    "env-cmd": "^10.1.0"
   },
   "prettier": {
     "printWidth": 120
