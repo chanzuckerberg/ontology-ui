@@ -118,12 +118,11 @@ export const drawForceDag = (
 
   /* scales */
 
-  const cellCountWhale: number = 1000000;
-  const cellCountShrimp: number = 1;
-
   const minNodeRadius = 5;
   const maxNodeRadius = 25;
 
+  const cellCountWhale: number = 1000000;
+  const cellCountShrimp: number = 1;
   const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
 
   /**

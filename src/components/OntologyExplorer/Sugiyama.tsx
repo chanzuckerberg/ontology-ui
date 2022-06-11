@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { sugiyama, Dag, dagStratify } from "d3-dag/dist";
 import { line, curveCatmullRom } from "d3-shape";
 
+import { scaleLinear } from "d3-scale";
+
 import { Ontology } from "../../d";
 
 interface SugiyamaNode {
@@ -29,7 +31,7 @@ const defaultLayoutState: LayoutState = {
   layeringChoice: "Simplex (slow)",
   decrossingsChoice: "Optimal (slow)",
   coordsChoice: "Quad (slow)",
-  scaleMultiplier: 150,
+  scaleMultiplier: 110,
   sugiyamaWidthAspectRatio: null,
   sugiyamaHeightAspectRatio: null,
 };
@@ -70,13 +72,27 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
     }
   }, [dag]);
 
-  const { sugiyamaWidthAspectRatio, sugiyamaHeightAspectRatio, scaleMultiplier, nodeRadius } = layout;
+  const { sugiyamaWidthAspectRatio, sugiyamaHeightAspectRatio, scaleMultiplier } = layout;
   if (!dag || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
 
   const createLine = line()
     .curve(curveCatmullRom)
     .x((d: any) => d.x * scaleMultiplier)
     .y((d: any) => d.y * scaleMultiplier + Math.random());
+
+  /**
+   * Sizes
+   */
+  let deemphasizeNodeSize: number = 2.5;
+
+  /* scales */
+
+  const minNodeRadius = 5;
+  const maxNodeRadius = 25;
+
+  const cellCountWhale: number = 1000000;
+  const cellCountShrimp: number = 1;
+  const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
 
   return (
     <svg
@@ -100,12 +116,20 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
           const vertex: any = ontology.get(d.data.id);
           return (
             <g key={d.data.id} transform={`translate(${d.x * scaleMultiplier},${d.y * scaleMultiplier})`}>
-              <circle r={nodeRadius} fill="rgb(200,200,200)"></circle>
+              <circle
+                r={vertex.n_cells === 0 ? deemphasizeNodeSize : nCellsScale(vertex.n_cells)}
+                fill="rgb(220,220,220)"
+              ></circle>
               <text x="-30" y={-20}>
-                {vertex.label.substring(0, 15)}
-                {vertex.label.length > 16 ? "..." : null}
+                {vertex.label.substring(0, 10)}
+                {vertex.label.length > 10 ? "..." : null}
                 <title>{vertex.label}</title>
               </text>
+              {vertex.n_cells > 0 && (
+                <text fontFamily="monospace" fontSize={10} x={0} y={4} textAnchor="middle">
+                  {vertex.n_cells}
+                </text>
+              )}
             </g>
           );
         })}

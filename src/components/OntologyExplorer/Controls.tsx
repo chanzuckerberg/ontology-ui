@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox, HotkeysTarget2, Icon, Tag } from "@blueprintjs/core";
+import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox, HotkeysTarget2, Tag } from "@blueprintjs/core";
 
 import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../../d";
 import { Link } from "react-router-dom";
-import { ICON } from "@blueprintjs/core/lib/esm/common/classes";
 
 interface OntrologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
@@ -17,7 +16,9 @@ interface OntrologyExplorerControlDrawerProps {
   hullsEnabled: boolean;
   highlightAncestors: boolean;
   handleHighlightAncestorChange: any;
-
+  sugiyamaIsOpen: boolean;
+  sugiyamaIsEnabled: boolean;
+  handleSugiyamaOpen: any;
   minimumOutdegree: string;
   maximumOutdegree: string;
   handleMinOutdegreeChange: any;
@@ -39,6 +40,8 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     minimumOutdegree,
     maximumOutdegree,
     handleMinOutdegreeChange,
+    handleSugiyamaOpen,
+    sugiyamaIsEnabled,
   } = props;
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
@@ -89,10 +92,19 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
               handleHighlightAncestorChange();
             },
           },
+          {
+            combo: "L",
+            global: true,
+            label: "Activate hierarchy layout",
+            onKeyDown: () => {
+              handleSugiyamaOpen();
+            },
+          },
         ]}
       >
         {({ handleKeyDown, handleKeyUp }) => (
           <Button
+            icon="unpin"
             tabIndex={0}
             onClick={deselectPinnedNode}
             style={{ marginRight: 20, marginLeft: 20 }}
@@ -102,7 +114,14 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
           </Button>
         )}
       </HotkeysTarget2>
-
+      <Button
+        icon="layout-hierarchy"
+        onClick={handleSugiyamaOpen}
+        style={{ marginRight: 20 }}
+        disabled={!sugiyamaIsEnabled}
+      >
+        Hierarchy layout
+      </Button>
       <Drawer
         isOpen={settingsIsOpen}
         size={560}
