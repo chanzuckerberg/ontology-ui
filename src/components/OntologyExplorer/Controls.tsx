@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox, HotkeysTarget2, Icon, Tag } from "@blueprintjs/core";
+import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox, HotkeysTarget2, Tag } from "@blueprintjs/core";
 
 import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../../d";
 import { Link } from "react-router-dom";
-import { ICON } from "@blueprintjs/core/lib/esm/common/classes";
 
 interface OntrologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
@@ -91,6 +90,14 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
             label: "Highlight node ancestors",
             onKeyDown: () => {
               handleHighlightAncestorChange();
+            },
+          },
+          {
+            combo: "L",
+            global: true,
+            label: "Activate hierarchy layout",
+            onKeyDown: () => {
+              handleSugiyamaOpen();
             },
           },
         ]}
