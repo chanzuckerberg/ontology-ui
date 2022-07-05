@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { Button, RadioGroup, Radio, Icon, ButtonGroup, InputGroup, ControlGroup, HTMLSelect } from "@blueprintjs/core";
+import {
+  Button,
+  RadioGroup,
+  Radio,
+  Icon,
+  ButtonGroup,
+  InputGroup,
+  ControlGroup,
+  HTMLSelect,
+  Colors,
+} from "@blueprintjs/core";
 import { Classes, Popover2 } from "@blueprintjs/popover2";
 import memoizeOne from "memoize-one";
 import { spawn } from "child_process";
@@ -104,6 +114,10 @@ const SearchSidebar = (props: SearchSidebarProps) => {
         />
       </form>
 
+      <p style={{ fontStyle: "italic", color: Colors.ORANGE4 }}>
+        <Icon icon="warning-sign" /> Filters returned 0 matching cell types
+      </p>
+
       {searchTerms.map((term, i) => {
         return (
           <SearchTermView
@@ -158,6 +172,7 @@ const SearchTermView = (props: SearchTermProps) => {
             placement={"bottom-end"}
           >
             <Button
+              intent="warning"
               rightIcon={<Icon icon="caret-down" iconSize={16} />}
               icon={<Icon icon={filterIcon} iconSize={16} />}
             />
