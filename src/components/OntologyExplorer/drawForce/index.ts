@@ -117,7 +117,45 @@ export const drawForceDag = (
       nodeToHullRoot.set(n,item); // (alec): does each node uniquely map to one root?
     })
   })
-  
+  /*
+  const nodeToHullRoot = new Map();
+  hullRoots.forEach((item)=>{
+    const hullNodes = getHullNodes(item, ontology, nodes);
+    hullNodes.forEach((n: any)=>{
+      if (nodeToHullRoot.has(n)) {
+        nodeToHullRoot.get(n).push(item)
+      } else {
+        nodeToHullRoot.set(n,[item]);
+      }
+    })
+  })
+  const simulation = forceSimulation(nodes)
+     .force(
+      "link",
+      forceLink(links)
+      .id((d: any) => d.id)
+      .strength (function (d) {
+        const atLeastOneInHull = nodeToHullRoot.has(d.source) || nodeToHullRoot.has(d.target);
+        
+        const src = nodeToHullRoot.get(d.source);
+        const tgt = nodeToHullRoot.get(d.target);
+        const inSameHull = src && src.filter((value: any) => tgt.includes(value)).length > 0;
+        return highlightProps.hullsEnabled && atLeastOneInHull && inSameHull ? 1.0 : 0.1;
+      })
+    )
+    .force("charge", forceManyBody())
+    .force(
+      "collision",
+      forceCollide().radius((d: any) => {
+        return d.n_cells ? nCellsScale(d.n_cells) : deemphasizeNodeSize;
+      })
+    )
+    // Graph is potentially disjoint, so use separate forces,
+    // https://observablehq.com/@d3/disjoint-force-directed-graph
+    .force("x", forceX())
+    .force("y", forceY());
+
+  */
 
   /**
    * Sizes
