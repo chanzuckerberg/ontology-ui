@@ -61,8 +61,9 @@ const drawHull = (
    * Filter the simulation's nodes that are descendants of the given vertex
    * Create the hull
    */
+   const descendants = [...vertex.descendants];
   const filteredNodes = nodes.filter((node: any) => {
-    return vertex.children.includes(node.id) || node.id === vertex_id; // include self
+    return descendants.includes(node.id) || node.id === vertex_id; // include self
   });
 
   let points: any = [];
