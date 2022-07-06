@@ -5,9 +5,9 @@ import { select } from "d3-selection";
 import { OntologyVertexDatum } from "../types";
 import { Ontology } from "../../../d";
 
-import { drawHulls } from "./hulls";
+import { drawHulls, getHullNodes } from "./hulls";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { scaleLinear } from "d3-scale";
 
 /**
@@ -109,6 +109,15 @@ export const drawForceDag = (
     "CL:0000235",
     "CL:0000210",
   ];
+  // this will eventually not be so repetitive and should be defined in parent components
+  const nodeToHullRoot = new Map();
+  hullRoots.forEach((item)=>{
+    const hullNodes = getHullNodes(item, ontology, nodes);
+    hullNodes.forEach((n: any)=>{
+      nodeToHullRoot.set(n,item); // (alec): does each node uniquely map to one root?
+    })
+  })
+  
 
   /**
    * Sizes
@@ -155,13 +164,21 @@ export const drawForceDag = (
   /**
    * Set up d3 force simulation
    */
+    
   const simulation = forceSimulation(nodes)
     /**
      * circular layout, if xyz nodes included
      */
     .force(
       "link",
-      forceLink(links).id((d: any) => d.id)
+      forceLink()
+      .links(links)
+      .id((d: any) => d.id)
+      .strength (function (d) {
+        const atLeastOneInHull = nodeToHullRoot.has(d.source) || nodeToHullRoot.has(d.target);
+        const inSameHull = nodeToHullRoot.get(d.source) === nodeToHullRoot.get(d.target);
+        return highlightProps.hullsEnabled && (atLeastOneInHull && inSameHull) ? 0.8 : 0.1;
+      })
     )
     .force("charge", forceManyBody())
     .force(

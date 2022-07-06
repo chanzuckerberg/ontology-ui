@@ -45,7 +45,6 @@ const drawHull = (
   /**
    * Retreive the vertex for its name and descendants
    */
-  const vertex: any = ontology.get(vertex_id);
 
   /**
    * Pick a color, and fade it
@@ -61,9 +60,7 @@ const drawHull = (
    * Filter the simulation's nodes that are descendants of the given vertex
    * Create the hull
    */
-  const filteredNodes = nodes.filter((node: any) => {
-    return vertex.children.includes(node.id) || node.id === vertex_id; // include self
-  });
+  const filteredNodes = getHullNodes(vertex_id,ontology,nodes);
 
   let points: any = [];
 
@@ -94,3 +91,18 @@ const drawHull = (
     context.stroke();
   }
 };
+
+export const getHullNodes = (
+  vertex_id: string,
+  ontology: Ontology,
+  nodes: any,
+) => {
+  /**
+   * Get nodes belonging to a hull
+   */
+  const vertex: any = ontology.get(vertex_id);
+
+  return nodes.filter((node: any) => {
+    return vertex.children.includes(node.id) || node.id === vertex_id; // include self
+  });
+}

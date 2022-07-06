@@ -131,6 +131,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
     Side effect: sets the render & simulation state.
     */
+   
     if (dagState) {
       const { nodes, links } = dagState;
       const _redrawCanvas = drawForceDag(
@@ -141,12 +142,12 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         (node?: OntologyVertexDatum) => setHoverNode(node),
         (node?: OntologyVertexDatum) => go(`../${node?.id ?? ""}`),
         () => setSimulationRunning(false),
-        defaultForceHightlightProps
+        {...defaultForceHightlightProps, hullsEnabled}
       );
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagState, dagCanvasRef, go]);
+  }, [ontology, dagState, dagCanvasRef, go, hullsEnabled]);
 
   useEffect(() => {
     /*
