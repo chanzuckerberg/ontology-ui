@@ -19,6 +19,7 @@ interface OntrologyExplorerControlDrawerProps {
   sugiyamaIsOpen: boolean;
   sugiyamaIsEnabled: boolean;
   handleSugiyamaOpen: any;
+  handleDisplayHulls: any;
   minimumOutdegree: string;
   maximumOutdegree: string;
   handleMinOutdegreeChange: any;
@@ -42,6 +43,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     handleMinOutdegreeChange,
     handleSugiyamaOpen,
     sugiyamaIsEnabled,
+    handleDisplayHulls
   } = props;
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
@@ -100,6 +102,14 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
               handleSugiyamaOpen();
             },
           },
+          {
+            combo: "H",
+            global: true,
+            label: "Display hulls",
+            onKeyDown: () => {
+              handleDisplayHulls();
+            },
+          },          
         ]}
       >
         {({ handleKeyDown, handleKeyUp }) => (

@@ -12,6 +12,7 @@ import SearchSidebar, { SearchTerm, urlSearchParamsToSearchTerms, searchTermToUr
 import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d";
 import { OntologyExplorerState, OntologyExplorerProps, OntologyVertexDatum, DagState, CreateDagProps } from "./types";
 import lruMemoize from "../../util/lruMemo";
+import { getHullNodes } from "./drawForce/hulls";
 import {
   ontologySubset,
   ontologyFilter,
@@ -99,7 +100,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
-
+  
   /*
    * memoized callback to navigate.
    */
@@ -134,6 +135,51 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
    
     if (dagState) {
       const { nodes, links } = dagState;
+
+      
+      const hullRoots: string[] = [
+        // hardcoded for the alpha, to be inferred with a heuristic
+        "CL:0002086",
+        "CL:0000542",
+        // "CL:0000540",
+        "CL:0000084",
+        "CL:0000236",
+        "CL:1000497",
+        "CL:0000039",
+        "CL:0000125",
+        "CL:0000101",
+        "CL:0000099",
+        "CL:0002563",
+        // "CL:0000988",
+        "CL:0000451",
+        "CL:0008007",
+        "CL:0002368",
+        // "CL:0000763",
+        "CL:0000163",
+        "CL:0000147",
+        "CL:0011026",
+        "CL:0000094",
+        "CL:0000100",
+        "CL:0001035",
+        "CL:0001065",
+        "CL:0000786",
+        "CL:1000854",
+        "CL:0000235",
+        "CL:0000210",
+      ];
+      // (alec): the problem with using depths to select roots is that you can have a ton of sister nodes at the same depth...
+      // hulls will overlap a ton and you'll also have too many displayed.
+      //const depthMap = graph.depthMaps[ontoID];
+      //const hullRoots = [...depthMap].filter(([_, v]) => v === 4 ).map(([k,_])=>k)
+      //console.log(hullRoots);
+      const nodeToHullRoot = new Map();
+      hullRoots.forEach((item)=>{
+        const hullNodes = getHullNodes(item, ontology, nodes);
+        hullNodes.forEach((n: any)=>{
+          nodeToHullRoot.set(n,item); // (alec): does each node uniquely map to one root?
+        })
+      })
+
       const _redrawCanvas = drawForceDag(
         nodes,
         links,
@@ -142,7 +188,9 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         (node?: OntologyVertexDatum) => setHoverNode(node),
         (node?: OntologyVertexDatum) => go(`../${node?.id ?? ""}`),
         () => setSimulationRunning(false),
-        {...defaultForceHightlightProps, hullsEnabled}
+        {...defaultForceHightlightProps, hullsEnabled},
+        hullRoots,
+        nodeToHullRoot
       );
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
@@ -254,6 +302,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
           dagState?.sugiyamaStratifyData && dagState?.sugiyamaStratifyData.length < sugiyamaRenderThreshold
         }
         handleSugiyamaOpen={handleSugiyamaOpen}
+        handleDisplayHulls={()=>setForceCanvasHighlightProps({...forceCanvasHighlightProps, hullsEnabled: !hullsEnabled})}
         simulationRunning={simulationRunning}
         menubarHeight={menubarHeight}
         outdegreeCutoffNodes={minimumOutdegree}

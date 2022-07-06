@@ -48,6 +48,12 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
         new Map(Object.entries(rawGraph.ontologies[key])),
       ])
     ),
+    depthMaps: Object.fromEntries(
+      Object.keys(rawGraph.ontologies).map((key: OntologyPrefix) => [
+        key,
+        new Map<string,number>(),
+      ])
+    )
   };
 
   // Add ID, children, ancestors, descendants and xref
@@ -55,7 +61,8 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
   // CAUTION: relations (eg, children) are accumulated incrementally, and only
   // the `parent` is correct prior to the completion of this loop.
   //
-  for (const ontology of Object.values(datasetGraph.ontologies)) {
+  for (const [prefix,ontology] of Object.entries(datasetGraph.ontologies)) {
+
     for (const [termId, term] of ontology.entries()) {
       // set all defaults
       term.id = termId;
@@ -68,6 +75,7 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
       term.have_part = term.have_part || [];
       term.develops_from = term.develops_from || [];
       term.derives_from = term.derives_from || [];
+      if (term.depth === undefined) term.depth = 0;
       if (term.n_cells === undefined) term.n_cells = 0;
     }
 
@@ -85,11 +93,41 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
     for (const term of ontology.values()) {
       term.in_use = !!term.n_cells || [...term.descendants].some((id) => ontology.get(id)!.n_cells > 0);
     }
+    const rootKeys = [...ontology].filter(([_,v])=>v.parents?.length===0).map(([k,_])=>k);    
+    rootKeys.forEach((key)=>{
+      const rootTerm = ontology.get(key);  
+      if (rootTerm) calcDepthBFS(ontology, rootTerm, datasetGraph.depthMaps[prefix])
+    })
   }
-
   return datasetGraph;
 }
+/**
+ * Calculate depth of a node in the ontology
+ *
+ * @param ontology
+ * @param term
+ */
+function calcDepthBFS(ontology: Ontology, term: OntologyTerm, depthMap: Map<string,number>): void {
+  const stack = term.children;
+  const depthStack: number[] = new Array(stack.length);
+  depthStack.fill(1);
+  depthMap.set(term.id,0);
+  while ( stack.length > 0 ) {
+    const id = stack.pop();
+    const depth = depthStack.pop();
+    if (id && depth) {
+      const newTerm = ontology.get(id);
+      if (newTerm) {
+        const newDepths = new Array(newTerm.children.length);
+        newDepths.fill(depth+1);
 
+        stack.push(...newTerm.children);        
+        depthStack.push(...newDepths);
+        if (!depthMap.has(newTerm.id)) depthMap.set(newTerm.id, depth)
+      }
+    }
+  }
+}
 /**
  * Add our ID to our immediate parent's children[].
  *

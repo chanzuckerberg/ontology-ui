@@ -5,9 +5,9 @@ import { select } from "d3-selection";
 import { OntologyVertexDatum } from "../types";
 import { Ontology } from "../../../d";
 
-import { drawHulls, getHullNodes } from "./hulls";
+import { drawHulls } from "./hulls";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { scaleLinear } from "d3-scale";
 
 /**
@@ -54,7 +54,9 @@ export const drawForceDag = (
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
   setPinnedNode: (node: OntologyVertexDatum | undefined) => void,
   onForceSimulationEnd: any,
-  defaultHighlightProps: DrawForceDagHighlightProps = {}
+  defaultHighlightProps: DrawForceDagHighlightProps = {},
+  hullRoots: string[],
+  nodeToHullRoot: Map<string,string>
 ) => {
   if (!dagCanvasRef || !dagCanvasRef.current) return null;
 
@@ -76,47 +78,6 @@ export const drawForceDag = (
     ...defaultHighlightProps,
   };
 
-  /**
-   * Hull root vertices
-   */
-  const hullRoots: string[] = [
-    // hardcoded for the alpha, to be inferred with a heuristic
-    "CL:0002086",
-    "CL:0000542",
-    // "CL:0000540",
-    "CL:0000084",
-    "CL:0000236",
-    "CL:1000497",
-    "CL:0000039",
-    "CL:0000125",
-    "CL:0000101",
-    "CL:0000099",
-    "CL:0002563",
-    // "CL:0000988",
-    "CL:0000451",
-    "CL:0008007",
-    "CL:0002368",
-    // "CL:0000763",
-    "CL:0000163",
-    "CL:0000147",
-    "CL:0011026",
-    "CL:0000094",
-    "CL:0000100",
-    "CL:0001035",
-    "CL:0001065",
-    "CL:0000786",
-    "CL:1000854",
-    "CL:0000235",
-    "CL:0000210",
-  ];
-  // this will eventually not be so repetitive and should be defined in parent components
-  const nodeToHullRoot = new Map();
-  hullRoots.forEach((item)=>{
-    const hullNodes = getHullNodes(item, ontology, nodes);
-    hullNodes.forEach((n: any)=>{
-      nodeToHullRoot.set(n,item); // (alec): does each node uniquely map to one root?
-    })
-  })
   /*
   const nodeToHullRoot = new Map();
   hullRoots.forEach((item)=>{

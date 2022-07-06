@@ -16,6 +16,7 @@ export interface OntologyTerm {
   have_part: OntologyId[];
   xref: OntologyId[]; // cross-ref & related terms - in this and other ontologies
   synonyms: string[];
+  depth: number; // for a slider to see hulls at different resolutions
 
   // Statistics & information from the dataset
   n_cells: number; // number of cells labelled with this term
@@ -33,6 +34,7 @@ export interface DatasetGraph {
   master_ontology_uri: string; // source of master (full) ontology
   lattice_uri: string; // source of xref lattice data
   ontologies: Record<OntologyPrefix, Ontology>;
+  depthMaps: Record<OntologyPrefix, Map<string,number>>;
 }
 
 export interface EBIOlsTerm {
