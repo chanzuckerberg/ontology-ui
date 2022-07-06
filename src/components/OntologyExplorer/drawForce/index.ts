@@ -171,13 +171,12 @@ export const drawForceDag = (
      */
     .force(
       "link",
-      forceLink()
-      .links(links)
+      forceLink(links)
       .id((d: any) => d.id)
       .strength (function (d) {
         const atLeastOneInHull = nodeToHullRoot.has(d.source) || nodeToHullRoot.has(d.target);
         const inSameHull = nodeToHullRoot.get(d.source) === nodeToHullRoot.get(d.target);
-        return highlightProps.hullsEnabled && (atLeastOneInHull && inSameHull) ? 0.8 : 0.1;
+        return highlightProps.hullsEnabled && (atLeastOneInHull && inSameHull) ? 1.0 : 0.1;
       })
     )
     .force("charge", forceManyBody())

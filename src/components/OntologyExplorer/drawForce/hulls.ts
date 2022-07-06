@@ -101,8 +101,8 @@ export const getHullNodes = (
    * Get nodes belonging to a hull
    */
   const vertex: any = ontology.get(vertex_id);
-
+  const descendants = [...vertex.descendants];
   return nodes.filter((node: any) => {
-    return vertex.children.includes(node.id) || node.id === vertex_id; // include self
+    return descendants.includes(node.id) || node.id === vertex_id; // include self
   });
 }
