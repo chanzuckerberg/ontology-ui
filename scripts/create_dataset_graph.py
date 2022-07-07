@@ -18,6 +18,8 @@ import pandas as pd
 import psutil
 import yaml
 import owlready2
+import scipy as sp
+import scipy.sparse
 
 """
 Given reference ontologies (CL, UBERON, etc) and a baseline dataset,
@@ -117,7 +119,7 @@ def main():
         var_df = load_var.result()
 
         # identify terms in use by the dataset
-        master_ontology = load_ontology.result()
+        master_ontology, link_tables = load_ontology.result()
         terms_directly_in_use, terms_in_use = get_terms_in_use(args, master_ontology, obs_df)
         if args.output != sys.stdout:
             print(
@@ -140,6 +142,7 @@ def main():
         "created_on": datetime.datetime.now().astimezone().isoformat(),
         "owl_info": {name: info["urls"][info["latest"]] for name, info in owl_info.items()},
         "ontologies": in_use_ontologies,
+        "link_tables": link_tables
     }
     json.dump(result, args.output)
 
@@ -395,6 +398,7 @@ def build_ontology(owl_info, onto_prefix, onto):
     ontology = {}
     iri_onto_prefix = f"{onto_prefix}_"
     whitelist = LINK_WHITELIST.get(onto_prefix, [onto_prefix])
+    edges = []
     for onto_class in onto.classes():
         name = onto_class.name
 
@@ -417,16 +421,56 @@ def build_ontology(owl_info, onto_prefix, onto):
             term["derives_from"] = get_links(onto_class.is_a, DERIVES_FROM, whitelist)
             term["develops_from"] = get_links(onto_class.is_a, DEVELOPS_FROM, whitelist)
 
+            edges.extend(
+                list(
+                    zip(
+                        [term_id]*len(term["parents"]),
+                        term["parents"]
+                        )
+                )
+            )
+
             ontology[term_id] = term
 
         except Exception as e:
             print(f"Error handling {name}: {e}")
+    edges.sort()
+    X,Y = np.array(edges).T
+    nodes = np.unique(np.append(X,Y))
+    indexer = pd.Series(index=nodes,data=np.arange(nodes.size))
+    r_indexer = pd.Series(data=nodes,index=np.arange(nodes.size))
+    adj = sp.sparse.coo_matrix((np.ones(X.size),(indexer[X].values,indexer[Y].values)),shape=(nodes.size,)*2).tocsr()
+    snn = adj.dot(adj.T)
+    snn.data[:] = snn.data/snn.data.max()
+    snn = (snn+snn.T)/2
+    X,Y = np.vstack(snn.nonzero())
+    Xn,Yn = r_indexer[X].values,r_indexer[Y].values
+    D = snn.data
+    htable = _to_dict(Xn, Yn, D)
+    return ontology, htable
 
-    return ontology
-
+def _to_dict(a, b, v):
+    """
+    convert a flat key array (a) and a target array (b) with values (v) into a dictionary of arrays of tuples
+    """
+    a = np.array(a)
+    b = np.array(b)
+    v = np.array(v) 
+    idx = np.argsort(a)
+    a = a[idx]
+    b = b[idx]
+    v = v[idx]
+    bounds = np.where(a[:-1] != a[1:])[0] + 1
+    bounds = np.append(np.append(0, bounds), a.size)
+    bounds_left = bounds[:-1]
+    bounds_right = bounds[1:]
+    slists = [list(zip(b[bounds_left[i] : bounds_right[i]], v[bounds_left[i] : bounds_right[i]] )) for i in range(bounds_left.size)]
+    d = dict(zip(np.unique(a), slists))
+    return d
 
 def load_ontologies(owl_info):
     ontologies = {}
+    link_tables = {}
     with ThreadPoolExecutor() as tp:
         download_futures = {
             tp.submit(download, info["urls"][info["latest"]]): prefix for prefix, info in owl_info.items()
@@ -439,9 +483,10 @@ def load_ontologies(owl_info):
             print(f"Loading {onto_prefix}")
             onto = owlready2.get_ontology(fname).load()
             os.unlink(fname)
-            ontologies[onto_prefix] = build_ontology(owl_info, onto_prefix, onto)
-
-    return ontologies
+            ontology, htable = build_ontology(owl_info, onto_prefix, onto)
+            ontologies[onto_prefix] = ontology
+            link_tables[onto_prefix] = htable
+    return ontologies, link_tables
 
 
 def load_obs_dataframe(args):

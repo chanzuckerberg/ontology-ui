@@ -2,9 +2,10 @@ import { OntologyVertexDatum } from "../components/OntologyExplorer/types";
 
 import { Ontology, OntologyTerm } from "../d";
 
-export const createNodesLinksHulls = (ontology: Ontology, doCreateSugiyamaDatastructure: boolean) => {
+export const createNodesLinksHulls = (ontology: Ontology, link_tables: any, doCreateSugiyamaDatastructure: boolean) => {
   const nodes: OntologyVertexDatum[] = [];
   const links: { source: string; target: string }[] = [];
+  const tetherLinks: { source: string; target: string; strength: number; }[] = [];
   const sugiyamaStratifyData: { id: string; parentIds: string[] }[] = [];
 
   ontology.forEach((vertex: OntologyTerm, vertexID: string) => {
@@ -31,10 +32,22 @@ export const createNodesLinksHulls = (ontology: Ontology, doCreateSugiyamaDatast
       });
     }
   });
-
+  const nodeIDs = nodes.map((item)=>item.id);
+  nodes.forEach((node)=>{
+    link_tables[node.id]?.forEach((neighbor: any)=>{
+      if (nodeIDs.includes(neighbor[0])) {
+        tetherLinks.push({
+          source: node.id,
+          target: neighbor[0],
+          strength: neighbor[1]
+        })
+      }
+    })
+  });
   return {
     nodes: nodes,
     links: links,
+    tetherLinks: tetherLinks,
     sugiyamaStratifyData: sugiyamaStratifyData,
   };
 };

@@ -134,8 +134,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     */
    
     if (dagState) {
-      const { nodes, links } = dagState;
-
+      const { nodes, links, tetherLinks } = dagState;
       
       const hullRoots: string[] = [
         // hardcoded for the alpha, to be inferred with a heuristic
@@ -183,6 +182,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       const _redrawCanvas = drawForceDag(
         nodes,
         links,
+        tetherLinks,
         dagCanvasRef,
         ontology,
         (node?: OntologyVertexDatum) => setHoverNode(node),
@@ -428,6 +428,7 @@ function _createDag(
   const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure } = options;
 
   let ontology = graph.ontologies[ontoID];
+  let link_tables = graph.link_tables[ontoID];
   if (filterQuery !== null) {
     const ids = ontologyQuery(graph.ontologies, filterQuery, ontoID);
     if (ids.size > 0) {
@@ -451,7 +452,7 @@ function _createDag(
       return OntologyFilterAction.Retain;
     });
   }
-  const result = createNodesLinksHulls(ontology, doCreateSugiyamaDatastructure);
+  const result = createNodesLinksHulls(ontology, link_tables, doCreateSugiyamaDatastructure);
   return result;
 }
 

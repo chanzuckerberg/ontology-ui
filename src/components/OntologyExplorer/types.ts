@@ -34,6 +34,7 @@ export interface CreateDagProps {
 export interface DagState {
   nodes: OntologyVertexDatum[];
   links: SimulationLinkDatum<any>[];
+  tetherLinks: SimulationLinkDatum<any>[];
   sugiyamaStratifyData: any;
 }
 

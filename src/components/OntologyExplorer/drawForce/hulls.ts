@@ -96,13 +96,17 @@ export const getHullNodes = (
   vertex_id: string,
   ontology: Ontology,
   nodes: any,
-) => {
+): string[] => {
   /**
    * Get nodes belonging to a hull
    */
   const vertex: any = ontology.get(vertex_id);
-  const descendants = [...vertex.descendants];
-  return nodes.filter((node: any) => {
-    return descendants.includes(node.id) || node.id === vertex_id; // include self
-  });
+  if (vertex) {
+    const descendants = [...vertex.descendants];
+    return nodes.filter((node: any) => {
+      return descendants.includes(node.id) || node.id === vertex_id; // include self
+    });
+  } else {
+    return [];
+  }
 }

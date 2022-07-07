@@ -49,6 +49,7 @@ export interface DrawForceDagHighlightProps {
 export const drawForceDag = (
   nodes: OntologyVertexDatum[],
   links: SimulationLinkDatum<any>[],
+  tetherLinks: SimulationLinkDatum<any>[],
   dagCanvasRef: React.RefObject<HTMLCanvasElement>,
   ontology: Ontology,
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
@@ -163,19 +164,19 @@ export const drawForceDag = (
   /**
    * Set up d3 force simulation
    */
-    
   const simulation = forceSimulation(nodes)
     /**
      * circular layout, if xyz nodes included
      */
     .force(
       "link",
-      forceLink(links)
+      forceLink(tetherLinks)
       .id((d: any) => d.id)
       .strength (function (d) {
+        const copy = d as any;
         const atLeastOneInHull = nodeToHullRoot.has(d.source) || nodeToHullRoot.has(d.target);
         const inSameHull = nodeToHullRoot.get(d.source) === nodeToHullRoot.get(d.target);
-        return highlightProps.hullsEnabled && (atLeastOneInHull && inSameHull) ? 1.0 : 0.1;
+        return highlightProps.hullsEnabled && (atLeastOneInHull && inSameHull) ? 1.0 : copy.strength;
       })
     )
     .force("charge", forceManyBody())
