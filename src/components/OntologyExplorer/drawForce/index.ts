@@ -50,6 +50,7 @@ export const drawForceDag = (
   nodes: OntologyVertexDatum[],
   links: SimulationLinkDatum<any>[],
   tetherLinks: SimulationLinkDatum<any>[],
+  hullToNodes: Map<string,string[]>,
   dagCanvasRef: React.RefObject<HTMLCanvasElement>,
   ontology: Ontology,
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
@@ -160,7 +161,6 @@ export const drawForceDag = (
   const initialRadius = 10;
   const graphDiameter = 2 * (initialRadius * Math.sqrt(0.5 + nodes.length));
   let canvasInvTransformMatrix: DOMMatrixReadOnly = dagCanvasRef.current.getContext("2d")!.getTransform().inverse();
-
   /**
    * Set up d3 force simulation
    */
@@ -170,13 +170,18 @@ export const drawForceDag = (
      */
     .force(
       "link",
-      forceLink(tetherLinks)
+      forceLink(links)
       .id((d: any) => d.id)
       .strength (function (d) {
-        const copy = d as any;
-        const atLeastOneInHull = nodeToHullRoot.has(d.source) || nodeToHullRoot.has(d.target);
-        const inSameHull = nodeToHullRoot.get(d.source) === nodeToHullRoot.get(d.target);
-        return highlightProps.hullsEnabled && (atLeastOneInHull && inSameHull) ? 1.0 : copy.strength;
+        const atLeastOneInHull = nodeToHullRoot.has(d.source.id) || nodeToHullRoot.has(d.target.id);
+        const inSameHull = nodeToHullRoot.get(d.source.id) === nodeToHullRoot.get(d.target.id);
+        const inNoHull = !(atLeastOneInHull || inSameHull);
+        let val;
+        if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) val=1.0;
+        else if(highlightProps.hullsEnabled && inNoHull) val=1.0;
+        else if(highlightProps.hullsEnabled) val=0.1;
+        else val=0.1;
+        return val;
       })
     )
     .force("charge", forceManyBody())
@@ -272,7 +277,7 @@ export const drawForceDag = (
       /**
        * Draw hulls
        */
-      drawHulls(ontology, nodes, context, hullBorderColor, hullLabelColor, hullRoots);
+      drawHulls(ontology, nodes, hullToNodes, context, hullBorderColor, hullLabelColor, hullRoots);
 
       /**
        * Draw text on hull nodes

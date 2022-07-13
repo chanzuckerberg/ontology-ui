@@ -136,7 +136,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     if (dagState) {
       const { nodes, links, tetherLinks } = dagState;
       
-      const hullRoots: string[] = [
+      const hullRoots2: string[] = [
         // hardcoded for the alpha, to be inferred with a heuristic
         "CL:0002086",
         "CL:0000542",
@@ -168,28 +168,59 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       ];
       // (alec): the problem with using depths to select roots is that you can have a ton of sister nodes at the same depth...
       // hulls will overlap a ton and you'll also have too many displayed.
-      //const depthMap = graph.depthMaps[ontoID];
-      //const hullRoots = [...depthMap].filter(([_, v]) => v === 4 ).map(([k,_])=>k)
-      //console.log(hullRoots);
-      const nodeToHullRoot = new Map();
-      hullRoots.forEach((item)=>{
-        const hullNodes = getHullNodes(item, ontology, nodes);
-        hullNodes.forEach((n: any)=>{
-          nodeToHullRoot.set(n,item); // (alec): does each node uniquely map to one root?
-        })
-      })
+      const depthMap = graph.depthMaps[ontoID];
 
+
+      const nodeToHullRoot = new Map();
+      let flag = true;
+      let height = 7;
+      const allHullRoots: string[] = [];
+      while (flag && height >= 2) {
+        flag=false;
+        const hullRoots = [...depthMap].filter(([_, v]) => v === height ).map(([k,_])=>k) // get all hullRoots of a certain height
+        hullRoots.forEach((item)=>{ // for each root
+          const hullNodes = getHullNodes(item, ontology, nodes);
+          hullNodes.forEach((n: any)=>{ // for each node in root
+            if (!nodeToHullRoot.has(n.id)) { // if not already assigned a root
+              if (!allHullRoots.includes(item)) {
+                allHullRoots.push(item); // add root
+              }
+              nodeToHullRoot.set(n.id,item); // set the root.
+            }
+          })
+        })
+        try{
+          nodes.forEach((node)=>{ // for each node,
+            const id = node.id;
+            if (!nodeToHullRoot.has(id)) { // check if node doesn't have a root
+              flag=true; // set true
+              throw(Error);
+            }
+          })
+        } catch {}
+        height-=1;
+      }
+      const hullToNodes = new Map();
+      [...nodeToHullRoot].forEach((kv)=>{
+        const [k,v] = kv;
+        if (hullToNodes.has(v)) {
+          hullToNodes.get(v).push(k);
+        } else {
+          hullToNodes.set(v,[k]);
+        }
+      })
       const _redrawCanvas = drawForceDag(
         nodes,
         links,
         tetherLinks,
+        hullToNodes,
         dagCanvasRef,
         ontology,
         (node?: OntologyVertexDatum) => setHoverNode(node),
         (node?: OntologyVertexDatum) => go(`../${node?.id ?? ""}`),
         () => setSimulationRunning(false),
         {...defaultForceHightlightProps, hullsEnabled},
-        hullRoots,
+        allHullRoots,
         nodeToHullRoot
       );
       setRedrawCanvas(() => _redrawCanvas);

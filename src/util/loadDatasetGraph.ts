@@ -96,9 +96,10 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
     const rootKeys = [...ontology].filter(([_,v])=>v.parents?.length===0).map(([k,_])=>k);    
     rootKeys.forEach((key)=>{
       const rootTerm = ontology.get(key);  
-      if (rootTerm) calcDepthBFS(ontology, rootTerm, datasetGraph.depthMaps[prefix])
+      if (rootTerm) calcDepthDFS(ontology, rootTerm, datasetGraph.depthMaps[prefix])
     })
   }
+  
   return datasetGraph;
 }
 /**
@@ -127,6 +128,23 @@ function calcDepthBFS(ontology: Ontology, term: OntologyTerm, depthMap: Map<stri
       }
     }
   }
+}
+
+function calcDepthDFS(ontology: Ontology, term: OntologyTerm, depthMap: Map<string,number>): number {
+  const depths = [];
+  for (const child of term.children) {
+    const childTerm = ontology.get(child);
+    if (childTerm) depths.push(calcDepthDFS(ontology, childTerm, depthMap)+1);
+  }
+  const val = depths.length > 0 ? Math.max(...depths) : 0;
+  if (depthMap.has(term.id)) {
+    depthMap.set(term.id, Math.max(depthMap.get(term.id) ?? 0,val))
+  } else {
+    depthMap.set(term.id, val)
+  }
+  
+  return val;
+  
 }
 /**
  * Add our ID to our immediate parent's children[].
