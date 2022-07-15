@@ -67,7 +67,6 @@ function deleteId(ontology: Ontology, id: OntologyId): void {
   if (!term) return;
 
   ontology.delete(id);
-
   // Remove our ID from all ancestor/descendant terms
   const { ancestors, descendants } = term;
   for (const ancestorId of ancestors) {

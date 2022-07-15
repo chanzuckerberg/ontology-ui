@@ -125,7 +125,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     */
     setDagState(createDag(graph, ontoID, filterQuery, dagCreateProps));
   }, [filterQuery, graph, ontoID, dagCreateProps]);
-
+  
+  const heightMap = graph.heightMaps[ontoID];
   useEffect(() => {
     /*
     Rebuild the renderer and simulation-driven layout whenever inputs to the sim change.
@@ -168,8 +169,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       ];
       // (alec): the problem with using depths to select roots is that you can have a ton of sister nodes at the same depth...
       // hulls will overlap a ton and you'll also have too many displayed.
-      const depthMap = graph.depthMaps[ontoID];
-
+      
 
       const nodeToHullRoot = new Map();
       let flag = true;
@@ -177,7 +177,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       const allHullRoots: string[] = [];
       while (flag && height >= 2) {
         flag=false;
-        const hullRoots = [...depthMap].filter(([_, v]) => v === height ).map(([k,_])=>k) // get all hullRoots of a certain height
+        const hullRoots = [...heightMap].filter(([_, v]) => v === height ).map(([k,_])=>k) // get all hullRoots of a certain height
         hullRoots.forEach((item)=>{ // for each root
           const hullNodes = getHullNodes(item, ontology, nodes);
           hullNodes.forEach((n: any)=>{ // for each node in root
@@ -226,7 +226,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagState, dagCanvasRef, go, hullsEnabled]);
+  }, [ontology, dagState, dagCanvasRef, go, hullsEnabled, heightMap]);
 
   useEffect(() => {
     /*

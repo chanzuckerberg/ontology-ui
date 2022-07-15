@@ -35,6 +35,7 @@ export interface DatasetGraph {
   lattice_uri: string; // source of xref lattice data
   ontologies: Record<OntologyPrefix, Ontology>;
   depthMaps: Record<OntologyPrefix, Map<string,number>>;
+  heightMaps: Record<OntologyPrefix, Map<string,number>>;
   link_tables: any;
 }
 

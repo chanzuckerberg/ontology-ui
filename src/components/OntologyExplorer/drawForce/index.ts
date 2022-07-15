@@ -80,46 +80,6 @@ export const drawForceDag = (
     ...defaultHighlightProps,
   };
 
-  /*
-  const nodeToHullRoot = new Map();
-  hullRoots.forEach((item)=>{
-    const hullNodes = getHullNodes(item, ontology, nodes);
-    hullNodes.forEach((n: any)=>{
-      if (nodeToHullRoot.has(n)) {
-        nodeToHullRoot.get(n).push(item)
-      } else {
-        nodeToHullRoot.set(n,[item]);
-      }
-    })
-  })
-  const simulation = forceSimulation(nodes)
-     .force(
-      "link",
-      forceLink(links)
-      .id((d: any) => d.id)
-      .strength (function (d) {
-        const atLeastOneInHull = nodeToHullRoot.has(d.source) || nodeToHullRoot.has(d.target);
-        
-        const src = nodeToHullRoot.get(d.source);
-        const tgt = nodeToHullRoot.get(d.target);
-        const inSameHull = src && src.filter((value: any) => tgt.includes(value)).length > 0;
-        return highlightProps.hullsEnabled && atLeastOneInHull && inSameHull ? 1.0 : 0.1;
-      })
-    )
-    .force("charge", forceManyBody())
-    .force(
-      "collision",
-      forceCollide().radius((d: any) => {
-        return d.n_cells ? nCellsScale(d.n_cells) : deemphasizeNodeSize;
-      })
-    )
-    // Graph is potentially disjoint, so use separate forces,
-    // https://observablehq.com/@d3/disjoint-force-directed-graph
-    .force("x", forceX())
-    .force("y", forceY());
-
-  */
-
   /**
    * Sizes
    */
@@ -178,13 +138,13 @@ export const drawForceDag = (
         const inNoHull = !(atLeastOneInHull || inSameHull);
         let val;
         if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) val=1.0;
-        else if(highlightProps.hullsEnabled && inNoHull) val=1.0;
-        else if(highlightProps.hullsEnabled) val=0.1;
+        //else if(highlightProps.hullsEnabled && inNoHull) val=0.1;
+        //else if(highlightProps.hullsEnabled) val=0.1;
         else val=0.1;
         return val;
       })
     )
-    .force("charge", forceManyBody())
+    .force("charge", forceManyBody()) 
     .force(
       "collision",
       forceCollide().radius((d: any) => {
