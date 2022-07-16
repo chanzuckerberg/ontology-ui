@@ -264,6 +264,9 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         handleHighlightAncestorChange={onHighlightToggle("highlightAncestors")}
         minimumOutdegree={minimumOutdegree + ""}
         maximumOutdegree={maximumOutdegree + ""}
+        maxDepth={maxDepth}
+        currentPruningDepth={currentPruningDepth}
+        setCurrentPruningDepth={setCurrentPruningDepth}
       />
       <div id="horizontalScroll" style={{ display: "flex", justifyContent: "space-between" }}>
         <div
