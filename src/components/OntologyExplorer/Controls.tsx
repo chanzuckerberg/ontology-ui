@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox, HotkeysTarget2, Tag } from "@blueprintjs/core";
+import { Button, Classes, Drawer, RadioGroup, Radio, Slider, Checkbox, HotkeysTarget2, Tag } from "@blueprintjs/core";
 
 import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../../d";
 import { Link } from "react-router-dom";
 
-interface OntrologyExplorerControlDrawerProps {
+interface OntologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
   simulationRunning: boolean;
   menubarHeight: number;
@@ -23,9 +23,12 @@ interface OntrologyExplorerControlDrawerProps {
   minimumOutdegree: string;
   maximumOutdegree: string;
   handleMinOutdegreeChange: any;
+  setCurrentPruningDepth: any;
+  maxDepth: number;
+  currentPruningDepth: number;
 }
 
-export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerControlDrawerProps): JSX.Element {
+export default function OntologyExplorerControlDrawer(props: OntologyExplorerControlDrawerProps): JSX.Element {
   const [settingsIsOpen, setSettingsIsOpen] = useState<boolean>(false);
 
   const params = useParams();
@@ -42,6 +45,9 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     maximumOutdegree,
     handleMinOutdegreeChange,
     handleSugiyamaOpen,
+    setCurrentPruningDepth,
+    maxDepth,
+    currentPruningDepth,
     sugiyamaIsEnabled,
     handleDisplayHulls
   } = props;
@@ -202,20 +208,17 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
             </RadioGroup>
             <Checkbox checked={false} label="Show aggregator nodes for max" onChange={() => {}} disabled />
             <h4>Link pruning</h4>
-
-            <RadioGroup
-              label="Sometimes, links from parents to subchildren are helpful for tightening up highly related areas of the graph, in the case of x-->y-->z, this would be links between x and z. Other times, like from animal cell to thousands of descendants, this is undesireable and these nodes should be pruned. Setting this as a threshold facilitates both."
-              onChange={() => {}}
-              selectedValue={12345}
-              disabled
-            >
-              <Radio label="10" value={10} />
-              <Radio label="50" value={50} />
-              <Radio label="100" value={250} />
-              <Radio label="250" value={250} />
-              <Radio label="1000" value={1000} />
-              <Radio label="off" value={12345} />
-            </RadioGroup>
+            <Slider
+              min={0}
+              max={maxDepth}
+              initialValue={maxDepth}
+              stepSize={1}
+              labelStepSize={maxDepth}
+              showTrackFill={false}
+              onChange={(value)=>setCurrentPruningDepth(value)
+              }
+              value={currentPruningDepth}
+            />
             <h2>Force layout</h2>
             <RadioGroup label="" onChange={() => {}} selectedValue={"tree"} disabled>
               <Radio label="Radial" value="radial" />
