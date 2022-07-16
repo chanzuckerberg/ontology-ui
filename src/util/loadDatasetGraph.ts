@@ -80,7 +80,7 @@ function createDatasetGraph(rawGraph: any): DatasetGraph {
       term.have_part = term.have_part || [];
       term.develops_from = term.develops_from || [];
       term.derives_from = term.derives_from || [];
-      if (term.depth === undefined) term.depth = 0;
+      if (term.depth === undefined) term.depth = -1;
       if (term.n_cells === undefined) term.n_cells = 0;
     }
 
@@ -120,15 +120,16 @@ function calcDepthBFS(ontology: Ontology, term: OntologyTerm, depthMap: Map<stri
   const depthStack: number[] = new Array(stack.length);
   depthStack.fill(1);
   depthMap.set(term.id,0);
+  if (term.depth===-1) term.depth=0;
   while ( stack.length > 0 ) {
     const id = stack.pop();
     const depth = depthStack.pop();
     if (id && depth) {
       const newTerm = ontology.get(id);
       if (newTerm) {
+        if (newTerm.depth === -1) newTerm.depth = depth;
         const newDepths = new Array(newTerm.children.length);
         newDepths.fill(depth+1);
-
         stack.push(...newTerm.children);        
         depthStack.push(...newDepths);
         if (!depthMap.has(newTerm.id)) depthMap.set(newTerm.id, depth)

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Classes, Drawer, RadioGroup, Radio, Slider, Checkbox, HotkeysTarget2, Tag } from "@blueprintjs/core";
+import { Button, Classes, Drawer, RadioGroup, Radio, Slider, Checkbox, NumericInput, HotkeysTarget2, Tag } from "@blueprintjs/core";
 
 import { useParams } from "react-router-dom";
 
@@ -23,7 +23,8 @@ interface OntologyExplorerControlDrawerProps {
   minimumOutdegree: string;
   maximumOutdegree: string;
   handleMinOutdegreeChange: any;
-  setCurrentPruningDepth: any;
+  handlePruningDepthChange: any;
+  minDepth: number;
   maxDepth: number;
   currentPruningDepth: number;
 }
@@ -45,7 +46,8 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
     maximumOutdegree,
     handleMinOutdegreeChange,
     handleSugiyamaOpen,
-    setCurrentPruningDepth,
+    handlePruningDepthChange,
+    minDepth,
     maxDepth,
     currentPruningDepth,
     sugiyamaIsEnabled,
@@ -207,18 +209,15 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
               <Radio label="off" value={"12345"} />
             </RadioGroup>
             <Checkbox checked={false} label="Show aggregator nodes for max" onChange={() => {}} disabled />
-            <h4>Link pruning</h4>
-            <Slider
-              min={0}
+            <h4>Depth pruning</h4>
+            <NumericInput
+              min={Math.max(minDepth,1)}
               max={maxDepth}
-              initialValue={maxDepth}
               stepSize={1}
-              labelStepSize={maxDepth}
-              showTrackFill={false}
-              onChange={(value)=>setCurrentPruningDepth(value)
-              }
+              placeholder={currentPruningDepth+ ""}
               value={currentPruningDepth}
-            />
+              onValueChange={(value)=>handlePruningDepthChange(value)}
+              />            
             <h2>Force layout</h2>
             <RadioGroup label="" onChange={() => {}} selectedValue={"tree"} disabled>
               <Radio label="Radial" value="radial" />

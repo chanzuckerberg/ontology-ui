@@ -38,6 +38,7 @@ const defaultState: OntologyExplorerState = {
     maximumOutdegree: 12345,
     outdegreeCutoffXYZ: 0,
     doCreateSugiyamaDatastructure: true,
+    pruningDepth: -1
   },
   sugiyamaRenderThreshold: 200,
   cardWidth: 400,
@@ -101,6 +102,29 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
   
+  const heightMap = graph.heightMaps[ontoID];
+  const depthMap = graph.depthMaps[ontoID];
+  const maxDepth = Math.max(...depthMap.values())
+  const minDepth = Math.max(...searchTerms.map((sT)=> {
+    const term = ontology.get(sT.searchString);
+    const depth = term?.depth ?? 1;
+    return sT.filterMode==="keep" ? depth : 1;
+  }))+1;
+  const [currentPruningDepth, setCurrentPruningDepth] = useState<number>(maxDepth);
+  const handlePruningDepthChange = (e: number) => {
+    setCurrentPruningDepth(e);
+    setState((s) => ({
+      ...s,
+      dagCreateProps: {
+        ...s.dagCreateProps,
+        pruningDepth: e,
+      },
+    }));    
+  }
+  if (state.dagCreateProps.pruningDepth === -1) {
+    handlePruningDepthChange(maxDepth);
+  }
+    
   /*
    * memoized callback to navigate.
    */
@@ -114,6 +138,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     [searchParamsRef]
   );
   const go = useCallback((path: string) => navigate(makeLink(path)), [navigate, makeLink]);
+  
 
   useEffect(() => {
     /*
@@ -125,8 +150,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     */
     setDagState(createDag(graph, ontoID, filterQuery, dagCreateProps));
   }, [filterQuery, graph, ontoID, dagCreateProps]);
-  
-  const heightMap = graph.heightMaps[ontoID];
+
   useEffect(() => {
     /*
     Rebuild the renderer and simulation-driven layout whenever inputs to the sim change.
@@ -135,41 +159,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     */
    
     if (dagState) {
-      const { nodes, links, tetherLinks } = dagState;
-      
-      const hullRoots2: string[] = [
-        // hardcoded for the alpha, to be inferred with a heuristic
-        "CL:0002086",
-        "CL:0000542",
-        // "CL:0000540",
-        "CL:0000084",
-        "CL:0000236",
-        "CL:1000497",
-        "CL:0000039",
-        "CL:0000125",
-        "CL:0000101",
-        "CL:0000099",
-        "CL:0002563",
-        // "CL:0000988",
-        "CL:0000451",
-        "CL:0008007",
-        "CL:0002368",
-        // "CL:0000763",
-        "CL:0000163",
-        "CL:0000147",
-        "CL:0011026",
-        "CL:0000094",
-        "CL:0000100",
-        "CL:0001035",
-        "CL:0001065",
-        "CL:0000786",
-        "CL:1000854",
-        "CL:0000235",
-        "CL:0000210",
-      ];
-      // (alec): the problem with using depths to select roots is that you can have a ton of sister nodes at the same depth...
-      // hulls will overlap a ton and you'll also have too many displayed.
-      
+      const { nodes, links, tetherLinks } = dagState;      
 
       const nodeToHullRoot = new Map();
       let flag = true;
@@ -323,7 +313,6 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const handleSugiyamaOpen = () => setSugiyamaIsOpen(true);
   const handleSugiyamaClose = () => setSugiyamaIsOpen(false);
-
   return (
     <div id="ontologyExplorerContainer">
       <Controls
@@ -345,9 +334,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         handleHighlightAncestorChange={onHighlightToggle("highlightAncestors")}
         minimumOutdegree={minimumOutdegree + ""}
         maximumOutdegree={maximumOutdegree + ""}
+        minDepth={minDepth}
         maxDepth={maxDepth}
         currentPruningDepth={currentPruningDepth}
-        setCurrentPruningDepth={setCurrentPruningDepth}
+        handlePruningDepthChange={handlePruningDepthChange}
       />
       <div id="horizontalScroll" style={{ display: "flex", justifyContent: "space-between" }}>
         <div
@@ -457,15 +447,15 @@ function _createDag(
   graph: DatasetGraph,
   ontoID: OntologyPrefix,
   filterQuery: OntologyQuery | null,
-  options: CreateDagProps
+  options: CreateDagProps,
 ): DagState {
-  const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure } = options;
+  const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure, pruningDepth } = options;
 
   let ontology = graph.ontologies[ontoID];
   let link_tables = graph.link_tables[ontoID];
   if (filterQuery !== null) {
     const ids = ontologyQuery(graph.ontologies, filterQuery, ontoID);
-    if (ids.size > 0) {
+    if (ids.size > -1) {
       ontology = ontologySubset(ontology, ids);
     } else {
       console.log("Error - filters returned empty set - displaying entire graph.");
@@ -476,11 +466,11 @@ function _createDag(
   // with missing nodes, etc.
   if (ontology.size > 1) {
     ontology = ontologyFilter(ontology, (term: OntologyTerm) => {
-      const { in_use, n_cells } = term;
-      if (in_use || n_cells > 0) return OntologyFilterAction.Retain;
+      const { n_cells } = term;
+      //if (in_use || n_cells > 0) return OntologyFilterAction.Retain;
       const orphanTerm = !n_cells && term.descendants.size === 0 && term.ancestors.size === 0;
       const nChildren = term.children.length;
-      if (orphanTerm || nChildren < minimumOutdegree || nChildren > maximumOutdegree) {
+      if (orphanTerm || nChildren < minimumOutdegree || nChildren > maximumOutdegree || term.depth > pruningDepth) {
         return OntologyFilterAction.RemoveFamily;
       }
       return OntologyFilterAction.Retain;

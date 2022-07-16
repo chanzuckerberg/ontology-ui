@@ -92,7 +92,8 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
           </span>
         </p>
       )}
-
+      <h6> Depth </h6>
+      {vertex.depth}
       <h3> Parents </h3>
       <ul>
         {vertex &&

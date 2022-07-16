@@ -47,10 +47,10 @@ export function ontologyFilter(ontology: Ontology, filterFn: OntologyFilter): On
   // iterate over the original as we are mutating the copy
   for (const [id, term] of ontology.entries()) {
     const action = filterFn(term);
-
     if (action === OntologyFilterAction.Retain) continue;
 
     deleteId(onto, id);
+
     if (action === OntologyFilterAction.RemoveFamily) {
       // remove all children.
       for (const descendantId in term.descendants.values()) {
