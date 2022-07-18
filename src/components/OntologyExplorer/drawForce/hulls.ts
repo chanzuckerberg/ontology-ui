@@ -12,6 +12,7 @@ import { scaleLinear } from "d3-scale";
 export const drawHulls = (
   ontology: Ontology,
   nodes: any,
+  hullToNodes: Map<string,string[]>,  
   context: any,
   hullBorderColor: string,
   hullLabelColor: string,
@@ -25,7 +26,7 @@ export const drawHulls = (
    */
   //  ["CL:0002086", "CL:0002031", "CL:1000504"]
   hullRoots.forEach((vertex_id: string, i, arr) => {
-    drawHull(vertex_id, ontology, nodes, context, hullBorderColor, hullLabelColor, i, arr);
+    drawHull(vertex_id, ontology, nodes, hullToNodes, context, hullBorderColor, hullLabelColor, i, arr);
   });
 };
 
@@ -36,6 +37,7 @@ const drawHull = (
   vertex_id: string,
   ontology: Ontology,
   nodes: any,
+  hullToNodes: Map<string,string[]>,  
   context: any,
   hullBorderColor: string,
   hullLabelColor: string,
@@ -45,7 +47,6 @@ const drawHull = (
   /**
    * Retreive the vertex for its name and descendants
    */
-  const vertex: any = ontology.get(vertex_id);
 
   /**
    * Pick a color, and fade it
@@ -61,10 +62,7 @@ const drawHull = (
    * Filter the simulation's nodes that are descendants of the given vertex
    * Create the hull
    */
-  const filteredNodes = nodes.filter((node: any) => {
-    return vertex.children.includes(node.id) || node.id === vertex_id; // include self
-  });
-
+  const filteredNodes = nodes.filter((n: any)=> hullToNodes.get(vertex_id)?.includes(n.id) || n.id === vertex_id);
   let points: any = [];
 
   filteredNodes.forEach((node: any) => {
@@ -94,3 +92,22 @@ const drawHull = (
     context.stroke();
   }
 };
+
+export const getHullNodes = (
+  vertex_id: string,
+  ontology: Ontology,
+  nodes: any,
+): string[] => {
+  /**
+   * Get nodes belonging to a hull
+   */
+  const vertex: any = ontology.get(vertex_id);
+  if (vertex) {
+    const descendants = [...vertex.descendants];
+    return nodes.filter((node: any) => {
+      return descendants.includes(node.id) || node.id === vertex_id; // include self
+    });
+  } else {
+    return [];
+  }
+}
