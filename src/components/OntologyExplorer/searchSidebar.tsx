@@ -26,6 +26,7 @@ export interface SearchTerm {
 interface SearchSidebarProps {
   searchTerms: SearchTerm[];
   setSearchTerms: (searches: SearchTerm[]) => void;
+  emptyFilterResult: boolean;
 }
 
 interface SearchTermProps {
@@ -34,6 +35,7 @@ interface SearchTermProps {
   marginUnit: number;
   onChange: (term: SearchTerm, key: number) => void;
   onDelete: (key: number) => void;
+  emptyFilterResult: boolean;
 }
 
 const SearchModes: { label: string; value: SearchMode }[] = [
@@ -48,7 +50,7 @@ const SearchModes: { label: string; value: SearchMode }[] = [
 ];
 
 const SearchSidebar = (props: SearchSidebarProps) => {
-  const { searchTerms, setSearchTerms } = props;
+  const { searchTerms, setSearchTerms, emptyFilterResult } = props;
   const marginUnit = 15;
   const [searchString, setSearchString] = useState<string>("");
   const [searchMode, setSearchMode] = useState<SearchMode>("compartment");
@@ -114,9 +116,9 @@ const SearchSidebar = (props: SearchSidebarProps) => {
         />
       </form>
 
-      <p style={{ fontStyle: "italic", color: Colors.ORANGE4 }}>
-        <Icon icon="warning-sign" /> Filters returned 0 matching cell types
-      </p>
+      {emptyFilterResult && <p style={{ fontStyle: "italic", color: Colors.ORANGE4 }}>
+        <Icon icon="warning-sign" /> Filters returned 0 or 1 matching cell type(s)
+      </p>}
 
       {searchTerms.map((term, i) => {
         return (
@@ -127,6 +129,7 @@ const SearchSidebar = (props: SearchSidebarProps) => {
             marginUnit={marginUnit}
             onChange={handleSearchTermChange}
             onDelete={handleSearchTermDelete}
+            emptyFilterResult={emptyFilterResult}
           />
         );
       })}
@@ -136,7 +139,7 @@ const SearchSidebar = (props: SearchSidebarProps) => {
 };
 
 const SearchTermView = (props: SearchTermProps) => {
-  const { id, term, marginUnit, onDelete, onChange } = props;
+  const { id, term, marginUnit, onDelete, onChange, emptyFilterResult } = props;
 
   let filterIcon: "filter" | "filter-keep" | "filter-remove" = "filter";
 
@@ -145,7 +148,6 @@ const SearchTermView = (props: SearchTermProps) => {
   } else if (term.filterMode === "remove") {
     filterIcon = "filter-remove";
   }
-
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 15 }}>
       <div style={{ width: 290, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
@@ -172,7 +174,7 @@ const SearchTermView = (props: SearchTermProps) => {
             placement={"bottom-end"}
           >
             <Button
-              intent="warning"
+              intent={!emptyFilterResult ? "none" : "warning"}
               rightIcon={<Icon icon="caret-down" iconSize={16} />}
               icon={<Icon icon={filterIcon} iconSize={16} />}
             />

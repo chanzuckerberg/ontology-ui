@@ -210,6 +210,12 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             </RadioGroup>
             <Checkbox checked={false} label="Show aggregator nodes for max" onChange={() => {}} disabled />
             <h4>Depth pruning</h4>
+            <p>Hide cell types with depth greater than N. 
+            Node depths are their shortest path distance from the root node in the ontology.
+            For instance, neuron (CL:0000540) has an absolute node depth of 5. This control is limited
+            to the absolute available range of depths for the current subset.</p>
+
+
             <NumericInput
               min={Math.max(minDepth,1)}
               max={maxDepth}

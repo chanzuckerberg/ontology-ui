@@ -104,7 +104,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   
   const heightMap = graph.heightMaps[ontoID];
   const depthMap = graph.depthMaps[ontoID];
-  const maxDepth = Math.max(...depthMap.values())
+  const maxDepth = Math.max(...depthMap.values()) // (alec) replace this with iterator through nodes in dagState
   const minDepth = Math.max(...searchTerms.map((sT)=> {
     const term = ontology.get(sT.searchString);
     const depth = term?.depth ?? 1;
@@ -310,9 +310,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       go("../");
     }
   };
-
+  
   const handleSugiyamaOpen = () => setSugiyamaIsOpen(true);
   const handleSugiyamaClose = () => setSugiyamaIsOpen(false);
+
   return (
     <div id="ontologyExplorerContainer">
       <Controls
@@ -397,7 +398,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
             padding: cardPadding,
           }}
         >
-          <SearchSidebar searchTerms={searchTerms} setSearchTerms={handleSetSearchTerms} />
+          <SearchSidebar emptyFilterResult={(dagState?.nodes?.length ?? 0) <= 1} searchTerms={searchTerms} setSearchTerms={handleSetSearchTerms} />
         </div>
         {/**
          * Render sugiyama
