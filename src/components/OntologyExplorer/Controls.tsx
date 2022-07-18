@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Button, Classes, Drawer, RadioGroup, Radio, Checkbox, HotkeysTarget2, Tag } from "@blueprintjs/core";
+import { Button, Classes, Drawer, RadioGroup, Radio, Slider, Checkbox, NumericInput, HotkeysTarget2, Tag } from "@blueprintjs/core";
 
 import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../../d";
 import { Link } from "react-router-dom";
 
-interface OntrologyExplorerControlDrawerProps {
+interface OntologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
   simulationRunning: boolean;
   menubarHeight: number;
@@ -22,9 +22,13 @@ interface OntrologyExplorerControlDrawerProps {
   minimumOutdegree: string;
   maximumOutdegree: string;
   handleMinOutdegreeChange: any;
+  handlePruningDepthChange: any;
+  minDepth: number;
+  maxDepth: number;
+  currentPruningDepth: number;
 }
 
-export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerControlDrawerProps): JSX.Element {
+export default function OntologyExplorerControlDrawer(props: OntologyExplorerControlDrawerProps): JSX.Element {
   const [settingsIsOpen, setSettingsIsOpen] = useState<boolean>(false);
 
   const params = useParams();
@@ -41,7 +45,11 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     maximumOutdegree,
     handleMinOutdegreeChange,
     handleSugiyamaOpen,
-    sugiyamaIsEnabled,
+    handlePruningDepthChange,
+    minDepth,
+    maxDepth,
+    currentPruningDepth,
+    sugiyamaIsEnabled
   } = props;
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
@@ -99,7 +107,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
             onKeyDown: () => {
               handleSugiyamaOpen();
             },
-          },
+          },         
         ]}
       >
         {({ handleKeyDown, handleKeyUp }) => (
@@ -191,21 +199,21 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
               <Radio label="off" value={"12345"} />
             </RadioGroup>
             <Checkbox checked={false} label="Show aggregator nodes for max" onChange={() => {}} disabled />
-            <h4>Link pruning</h4>
+            <h4>Depth pruning</h4>
+            <p>Hide cell types with depth greater than N. 
+            Node depths are their shortest path distance from the root node in the ontology.
+            For instance, neuron (CL:0000540) has an absolute node depth of 5. This control is limited
+            to the absolute available range of depths for the current subset.</p>
 
-            <RadioGroup
-              label="Sometimes, links from parents to subchildren are helpful for tightening up highly related areas of the graph, in the case of x-->y-->z, this would be links between x and z. Other times, like from animal cell to thousands of descendants, this is undesireable and these nodes should be pruned. Setting this as a threshold facilitates both."
-              onChange={() => {}}
-              selectedValue={12345}
-              disabled
-            >
-              <Radio label="10" value={10} />
-              <Radio label="50" value={50} />
-              <Radio label="100" value={250} />
-              <Radio label="250" value={250} />
-              <Radio label="1000" value={1000} />
-              <Radio label="off" value={12345} />
-            </RadioGroup>
+
+            <NumericInput
+              min={Math.max(minDepth,1)}
+              max={maxDepth}
+              stepSize={1}
+              placeholder={currentPruningDepth+ ""}
+              value={currentPruningDepth}
+              onValueChange={(value)=>handlePruningDepthChange(value)}
+              />            
             <h2>Force layout</h2>
             <RadioGroup label="" onChange={() => {}} selectedValue={"tree"} disabled>
               <Radio label="Radial" value="radial" />
