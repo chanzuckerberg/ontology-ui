@@ -28,6 +28,7 @@ export interface CreateDagProps {
   maximumOutdegree: number;
   outdegreeCutoffXYZ: number /* max descendants */;
   doCreateSugiyamaDatastructure: boolean;
+  pruningDepth: number;
 }
 
 // state related to the current DAG
