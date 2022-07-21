@@ -49,7 +49,7 @@ export interface DrawForceDagHighlightProps {
 export const drawForceDag = (
   nodes: OntologyVertexDatum[],
   links: SimulationLinkDatum<any>[],
-  hullToNodes: Map<string,string[]>,
+  hullToNodes: Map<string, string[]>,
   dagCanvasRef: React.RefObject<HTMLCanvasElement>,
   ontology: Ontology,
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
@@ -57,7 +57,7 @@ export const drawForceDag = (
   onForceSimulationEnd: any,
   defaultHighlightProps: DrawForceDagHighlightProps = {},
   hullRoots: string[],
-  nodeToHullRoot: Map<string,string>
+  nodeToHullRoot: Map<string, string>
 ) => {
   if (!dagCanvasRef || !dagCanvasRef.current) return null;
 
@@ -130,20 +130,20 @@ export const drawForceDag = (
     .force(
       "link",
       forceLink(links)
-      .id((d: any) => d.id)
-      .strength (function (d) {
-        const atLeastOneInHull = nodeToHullRoot.has(d.source.id) || nodeToHullRoot.has(d.target.id);
-        const inSameHull = nodeToHullRoot.get(d.source.id) === nodeToHullRoot.get(d.target.id);
-        const inNoHull = !(atLeastOneInHull || inSameHull);
-        let val;
-        if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) val=1.0;
-        //else if(highlightProps.hullsEnabled && inNoHull) val=0.1;
-        //else if(highlightProps.hullsEnabled) val=0.1;
-        else val=0.1;
-        return val;
-      })
+        .id((d: any) => d.id)
+        .strength(function (d) {
+          const atLeastOneInHull = nodeToHullRoot.has(d.source.id) || nodeToHullRoot.has(d.target.id);
+          const inSameHull = nodeToHullRoot.get(d.source.id) === nodeToHullRoot.get(d.target.id);
+          const inNoHull = !(atLeastOneInHull || inSameHull);
+          let val;
+          if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) val = 1.0;
+          //else if(highlightProps.hullsEnabled && inNoHull) val=0.1;
+          //else if(highlightProps.hullsEnabled) val=0.1;
+          else val = 0.1;
+          return val;
+        })
     )
-    .force("charge", forceManyBody()) 
+    .force("charge", forceManyBody())
     .force(
       "collision",
       forceCollide().radius((d: any) => {

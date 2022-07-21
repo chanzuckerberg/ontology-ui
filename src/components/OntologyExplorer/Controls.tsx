@@ -43,7 +43,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
     handleMinOutdegreeChange,
     handleSugiyamaOpen,
     sugiyamaIsEnabled,
-    handleDisplayHulls
+    handleDisplayHulls,
   } = props;
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
@@ -109,7 +109,7 @@ export default function OntrologyExplorerControlDrawer(props: OntrologyExplorerC
             onKeyDown: () => {
               handleDisplayHulls();
             },
-          },              
+          },
         ]}
       >
         {({ handleKeyDown, handleKeyUp }) => (

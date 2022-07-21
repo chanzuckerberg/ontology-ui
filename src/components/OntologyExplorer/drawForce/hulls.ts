@@ -12,7 +12,7 @@ import { scaleLinear } from "d3-scale";
 export const drawHulls = (
   ontology: Ontology,
   nodes: any,
-  hullToNodes: Map<string,string[]>,  
+  hullToNodes: Map<string, string[]>,
   context: any,
   hullBorderColor: string,
   hullLabelColor: string,
@@ -37,7 +37,7 @@ const drawHull = (
   vertex_id: string,
   ontology: Ontology,
   nodes: any,
-  hullToNodes: Map<string,string[]>,  
+  hullToNodes: Map<string, string[]>,
   context: any,
   hullBorderColor: string,
   hullLabelColor: string,
@@ -62,7 +62,7 @@ const drawHull = (
    * Filter the simulation's nodes that are descendants of the given vertex
    * Create the hull
    */
-  const filteredNodes = nodes.filter((n: any)=> hullToNodes.get(vertex_id)?.includes(n.id) || n.id === vertex_id);
+  const filteredNodes = nodes.filter((n: any) => hullToNodes.get(vertex_id)?.includes(n.id) || n.id === vertex_id);
   let points: any = [];
 
   filteredNodes.forEach((node: any) => {
@@ -93,11 +93,7 @@ const drawHull = (
   }
 };
 
-export const getHullNodes = (
-  vertex_id: string,
-  ontology: Ontology,
-  nodes: any,
-): string[] => {
+export const getHullNodes = (vertex_id: string, ontology: Ontology, nodes: any): string[] => {
   /**
    * Get nodes belonging to a hull
    */
@@ -110,4 +106,4 @@ export const getHullNodes = (
   } else {
     return [];
   }
-}
+};
