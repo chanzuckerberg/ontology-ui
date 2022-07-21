@@ -37,7 +37,7 @@ const defaultState: OntologyExplorerState = {
     maximumOutdegree: 12345,
     outdegreeCutoffXYZ: 0,
     doCreateSugiyamaDatastructure: true,
-    pruningDepth: -1
+    pruningDepth: -1,
   },
   sugiyamaRenderThreshold: 200,
   cardWidth: 400,
@@ -101,14 +101,16 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
 
-
   const depthMap = graph.depthMaps[ontoID];
-  const maxDepth = Math.max(...depthMap.values()) // (alec) replace this with iterator through nodes in dagState
-  const minDepth = Math.max(...searchTerms.map((sT)=> {
-    const term = ontology.get(sT.searchString);
-    const depth = term?.depth ?? 1;
-    return sT.filterMode==="keep" ? depth : 1;
-  }))+1;
+  const maxDepth = Math.max(...depthMap.values()); // (alec) replace this with iterator through nodes in dagState
+  const minDepth =
+    Math.max(
+      ...searchTerms.map((sT) => {
+        const term = ontology.get(sT.searchString);
+        const depth = term?.depth ?? 1;
+        return sT.filterMode === "keep" ? depth : 1;
+      })
+    ) + 1;
   const [currentPruningDepth, setCurrentPruningDepth] = useState<number>(maxDepth);
   const handlePruningDepthChange = (e: number) => {
     setCurrentPruningDepth(e);
@@ -118,8 +120,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         ...s.dagCreateProps,
         pruningDepth: e,
       },
-    }));    
-  }
+    }));
+  };
   if (state.dagCreateProps.pruningDepth === -1) {
     handlePruningDepthChange(maxDepth);
   }
@@ -291,7 +293,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         minDepth={minDepth}
         maxDepth={maxDepth}
         currentPruningDepth={currentPruningDepth}
-        handlePruningDepthChange={handlePruningDepthChange}        
+        handlePruningDepthChange={handlePruningDepthChange}
       />
       <div id="horizontalScroll" style={{ display: "flex", justifyContent: "space-between" }}>
         <div
@@ -351,7 +353,11 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
             padding: cardPadding,
           }}
         >
-          <SearchSidebar emptyFilterResult={(dagState?.nodes?.length ?? 0) <= 1} searchTerms={searchTerms} setSearchTerms={handleSetSearchTerms} />
+          <SearchSidebar
+            emptyFilterResult={(dagState?.nodes?.length ?? 0) <= 1}
+            searchTerms={searchTerms}
+            setSearchTerms={handleSetSearchTerms}
+          />
         </div>
         {/**
          * Render sugiyama

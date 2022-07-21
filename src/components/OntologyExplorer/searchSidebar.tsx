@@ -116,9 +116,11 @@ const SearchSidebar = (props: SearchSidebarProps) => {
         />
       </form>
 
-      {emptyFilterResult && <p style={{ fontStyle: "italic", color: Colors.ORANGE4 }}>
-        <Icon icon="warning-sign" /> Filters returned 0 or 1 matching cell type(s)
-      </p>}
+      {emptyFilterResult && (
+        <p style={{ fontStyle: "italic", color: Colors.ORANGE4 }}>
+          <Icon icon="warning-sign" /> Filters returned 0 or 1 matching cell type(s)
+        </p>
+      )}
 
       {searchTerms.map((term, i) => {
         return (

@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { Button, Classes, Drawer, RadioGroup, Radio, Slider, Checkbox, NumericInput, HotkeysTarget2, Tag } from "@blueprintjs/core";
+import {
+  Button,
+  Classes,
+  Drawer,
+  RadioGroup,
+  Radio,
+  Slider,
+  Checkbox,
+  NumericInput,
+  HotkeysTarget2,
+  Tag,
+} from "@blueprintjs/core";
 
 import { useParams } from "react-router-dom";
 
@@ -49,7 +60,7 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
     minDepth,
     maxDepth,
     currentPruningDepth,
-    sugiyamaIsEnabled
+    sugiyamaIsEnabled,
   } = props;
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
@@ -107,7 +118,7 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             onKeyDown: () => {
               handleSugiyamaOpen();
             },
-          },         
+          },
         ]}
       >
         {({ handleKeyDown, handleKeyUp }) => (
@@ -200,20 +211,20 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             </RadioGroup>
             <Checkbox checked={false} label="Show aggregator nodes for max" onChange={() => {}} disabled />
             <h4>Depth pruning</h4>
-            <p>Hide cell types with depth greater than N. 
-            Node depths are their shortest path distance from the root node in the ontology.
-            For instance, neuron (CL:0000540) has an absolute node depth of 5. This control is limited
-            to the absolute available range of depths for the current subset.</p>
-
+            <p>
+              Hide cell types with depth greater than N. Node depths are their shortest path distance from the root node
+              in the ontology. For instance, neuron (CL:0000540) has an absolute node depth of 5. This control is
+              limited to the absolute available range of depths for the current subset.
+            </p>
 
             <NumericInput
-              min={Math.max(minDepth,1)}
+              min={Math.max(minDepth, 1)}
               max={maxDepth}
               stepSize={1}
-              placeholder={currentPruningDepth+ ""}
+              placeholder={currentPruningDepth + ""}
               value={currentPruningDepth}
-              onValueChange={(value)=>handlePruningDepthChange(value)}
-              />            
+              onValueChange={(value) => handlePruningDepthChange(value)}
+            />
             <h2>Force layout</h2>
             <RadioGroup label="" onChange={() => {}} selectedValue={"tree"} disabled>
               <Radio label="Radial" value="radial" />
