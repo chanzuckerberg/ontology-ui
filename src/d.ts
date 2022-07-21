@@ -35,8 +35,8 @@ export interface DatasetGraph {
   master_ontology_uri: string; // source of master (full) ontology
   lattice_uri: string; // source of xref lattice data
   ontologies: Record<OntologyPrefix, Ontology>;
-  depthMaps: Record<OntologyPrefix, Map<string,number>>;
-  heightMaps: Record<OntologyPrefix, Map<string,number>>;  
+  depthMaps: Record<OntologyPrefix, Map<string, number>>;
+  heightMaps: Record<OntologyPrefix, Map<string, number>>;
 }
 
 export interface EBIOlsTerm {
