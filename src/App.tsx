@@ -7,6 +7,10 @@ import DagView from "./routes/DagExplorerView";
 import loadDatasetGraph from "./util/loadDatasetGraph";
 import { DatasetGraph, Ontology } from "./d";
 
+import { useRecoilState } from "recoil";
+import { selectedGeneState, selectedGeneExpressionDataState } from "./recoil";
+import apod from "./recoil/apod";
+
 interface AppState {
   graph?: DatasetGraph;
   lattice?: Ontology;
@@ -14,7 +18,11 @@ interface AppState {
 
 function App({ basename }: { basename: string }) {
   const [state, setState] = useState<AppState>({});
+  // const [ensemble, setEnsemble] = useState(null);
   const { graph, lattice } = state;
+
+  const [selectedGene] = useRecoilState(selectedGeneState);
+  const [selectedGeneExpressionData, setSelectedGeneExpressionData] = useRecoilState(selectedGeneExpressionDataState);
 
   useEffect(() => {
     const initState = async () => {
@@ -23,6 +31,38 @@ function App({ basename }: { basename: string }) {
     };
     initState();
   }, [setState]);
+
+  // useEffect(() => {
+  //   const getEnsemble = async () => {
+  //     const response = await
+  //   };
+
+  // }, [setState]); // we only need to load this once... same as dataset graph, so copying above pattern perhaps is the correct path?
+
+  useEffect(() => {
+    const getGene = async () => {
+      console.log("trying to get gene from api...");
+
+      const response = await fetch("https://api.cellxgene.cziscience.com/wmg/v1/query", {
+        method: "POST",
+        mode: "no-cors",
+        body: JSON.stringify(apod),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "*/*",
+        },
+      });
+
+      const content = await response.json();
+      setSelectedGeneExpressionData(content);
+    };
+
+    getGene().catch((err) => {
+      throw new Error(err.message);
+    });
+  }, [selectedGene, setSelectedGeneExpressionData]);
+
+  console.log("selectedGeneExpressionData recoil: ", selectedGeneExpressionData);
 
   return (
     <Router basename={basename}>

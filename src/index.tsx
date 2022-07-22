@@ -7,6 +7,7 @@ import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/popover2/lib/css/blueprint-popover2.css";
 import "@blueprintjs/select/lib/css/blueprint-select.css";
 import { HotkeysProvider } from "@blueprintjs/core";
+import { RecoilRoot } from "recoil";
 
 const baseurl = document.querySelector("base")?.getAttribute("href") ?? "/";
 const basename = baseurl?.startsWith("/") ? baseurl : new URL(baseurl).pathname;
@@ -15,7 +16,9 @@ ReactDOM.render(
   <React.StrictMode>
     <HelmetProvider>
       <HotkeysProvider>
-        <App basename={basename} />
+        <RecoilRoot>
+          <App basename={basename} />
+        </RecoilRoot>
       </HotkeysProvider>
     </HelmetProvider>
   </React.StrictMode>,
