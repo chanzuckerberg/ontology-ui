@@ -43,9 +43,11 @@ function App({ basename }: { basename: string }) {
     const getGene = async () => {
       console.log("trying to get gene from api...");
 
-      const response = await fetch("https://api.cellxgene.cziscience.com/wmg/v1/query", {
+      const url1 = "https://api.cellxgene.cziscience.com/wmg/v1/query"; // cors and other errors
+      const url2 = "https://api.cellxgene.staging.single-cell.czi.technology/wmg/v1/query";
+
+      const response = await fetch(url2, {
         method: "POST",
-        mode: "no-cors",
         body: JSON.stringify(apod),
         headers: {
           "Content-Type": "application/json",

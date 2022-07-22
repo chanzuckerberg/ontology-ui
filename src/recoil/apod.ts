@@ -129,6 +129,7 @@ const apod = {
     disease_ontology_term_ids: [],
     development_stage_ontology_term_ids: [],
   },
+  include_filter_dims: false,
 };
 
 export default apod;
