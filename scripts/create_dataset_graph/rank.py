@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 
 import tiledb
@@ -9,66 +10,6 @@ from scipy import stats
 from statsmodels.stats.multitest import multipletests
 
 from .common import chunker, OBS_TERM_COLUMNS
-
-
-def rank_cells_OLD(*, uri: str, tdb_config: dict, verbose: bool = False, **other):
-    """
-    For each gene, rank by normalized raw X value
-    """
-    ctx = tiledb.Ctx(tdb_config)
-    tiledb.stats_enable()
-
-    def do_ranking(raw_X_normed, raw_X_ranked, chunk_index, var_ids, verbose):
-        if verbose:
-            print(f"chunk {chunk_index} starting...")
-        var_ids = var_ids.to_list()
-        genes = raw_X_normed.query(order="U").df[var_ids]
-        if verbose:
-            print(f"chunk {chunk_index} read...")
-        genes.drop_duplicates(subset=["obs_id", "var_id"], inplace=True)
-        if len(genes) > 0:
-            genes["ranking"] = genes.groupby(by="var_id")["value"].rank()
-            raw_X_ranked[genes.var_id] = {"obs_id": genes.obs_id, "value": genes.ranking}
-        return chunk_index
-
-    with tiledb.open(f"{uri}/var", ctx=ctx) as var:
-        var_df = var.query(attrs=[]).df[:]
-        n_var = len(var_df)
-
-    with tiledb.open(f"{uri}/obs", ctx=ctx) as obs:
-        n_obs = len(obs.query(attrs=[]).df[:])
-
-    sparsity_guess = 0.9
-    row_size_guess = 64  # obs_id average length + 2 * float32
-    init_buffer_bytes = 8 * 1024 ** 3
-    config = ctx.config().dict() | {"py.init_buffer_bytes": init_buffer_bytes}
-    chunk_size = max(1, init_buffer_bytes // int(n_obs * sparsity_guess * row_size_guess))
-    if verbose:
-        print(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
-
-    with tiledb.open(f"{uri}/raw_X_normed", config=config) as raw_X_normed:
-        with tiledb.open(f"{uri}/raw_X_ranked", mode="w", ctx=ctx) as raw_X_ranked:
-            with ThreadPoolExecutor(max(2, os.cpu_count() // 16)) as tp:
-                count = 0
-                result_futures = [
-                    tp.submit(do_ranking, raw_X_normed, raw_X_ranked, chunk[0], chunk[1], verbose)
-                    for chunk in enumerate(chunker(var_df.index, chunk_size))
-                ]
-                for future in as_completed(result_futures):
-                    try:
-                        future.result()
-                    except Exception as e:
-                        print("Error", e)
-
-                    count += 1
-                    if verbose:
-                        print(f"chunk {count} of {len(result_futures)} complete.")
-
-    if verbose:
-        tiledb.stats_dump()
-    tiledb.stats_disable()
-
-    return 0
 
 
 def do_ranking(uri, chunk_index, var_ids, tdb_config, init_buffer_bytes, verbose):
@@ -101,10 +42,10 @@ def rank_cells(*, uri: str, tdb_config: dict, verbose: bool = False, **other):
     with tiledb.open(f"{uri}/obs", ctx=ctx) as obs:
         n_obs = len(obs.query(attrs=[]).df[:])
 
+    # rather than doing this, we could use return_incomplete
     sparsity_guess = 0.9
-    row_size_guess = 64  # obs_id average length + 2 * float32
-    init_buffer_bytes = 8 * 1024 ** 3
-    # config = tdb_config | {"py.init_buffer_bytes": init_buffer_bytes}
+    row_size_guess = 32  # obs_id average length SWAG
+    init_buffer_bytes = 16 * 1024 ** 3
     chunk_size = max(1, init_buffer_bytes // int(n_obs * sparsity_guess * row_size_guess))
     if verbose:
         print(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
@@ -207,7 +148,7 @@ def _rank_genes_groups(
             chunk_size = 100
             for chunk_idx, var_ids in enumerate(chunker(var_df.index, chunk_size)):
                 if verbose:
-                    print(f"value sum {chunk_idx * chunk_size} of {n_var}")
+                    print(f"{datetime.now()}: value sum {chunk_idx * chunk_size} of {n_var}")
                 all_values = raw_X_normed.df[var_ids.to_list()].set_index("obs_id")
                 S = all_values.join(obs_df).groupby(by=["var_id", groupby_key]).value.sum()
                 gene_groups.loc[S.index, "S"] = S.to_list()
@@ -220,7 +161,7 @@ def _rank_genes_groups(
             chunk_size = 100
             for chunk_idx, var_ids in enumerate(chunker(var_df.index, chunk_size)):
                 if verbose:
-                    print(f"rank sum {chunk_idx * chunk_size} of {n_var}")
+                    print(f"{datetime.now()}: rank sum {chunk_idx * chunk_size} of {n_var}")
                 all_values = raw_X_ranked.df[var_ids.to_list()].set_index("obs_id")
                 labelled_values = (
                     all_values.join(obs_df[groupby_key]).reset_index().set_index("var_id").astype({"value": "float64"})
@@ -241,17 +182,20 @@ def _rank_genes_groups(
         return gene_groups.R
 
     if verbose:
-        print("rank_genes_groups - start calculation of S and R")
-    with ThreadPoolExecutor() as tp:
-        # start
-        value_sum = tp.submit(sum_raw_X_normed)
-        rank_sum = tp.submit(sum_raw_X_ranked)
-        # and wait
-        value_sum.result()
-        rank_sum.result()
+        print(f"{datetime.now()}: rank_genes_groups - start calculation of S and R")
+    # with ThreadPoolExecutor() as tp:
+    #     # start
+    #     value_sum = tp.submit(sum_raw_X_normed)
+    #     rank_sum = tp.submit(sum_raw_X_ranked)
+    #     # and wait
+    #     value_sum.result()
+    #     rank_sum.result()
+
+    sum_raw_X_normed()
+    sum_raw_X_ranked()
 
     if verbose:
-        print("rank_genes_groups - finished calculation of S and R")
+        print(f"{datetime.now()}: rank_genes_groups - finished calculation of S and R")
 
     # now calculate U statistic, corrected for normal dist.
     # https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test
