@@ -43,4 +43,4 @@ def chunker(listlike, chunk_size):
 
 
 def log(*args):
-    print(f"[datetime.now()]", *args)
+    print(f"[{datetime.now()}]", *args)
