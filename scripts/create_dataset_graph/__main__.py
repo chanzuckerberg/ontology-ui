@@ -21,25 +21,22 @@ def main():
         return 1
 
     try:
-        ctx = create_tiledb_ctx(args)
-        return args.func(args, ctx)
+        tdb_config = create_tiledb_config(args)
+        return args.func(args, tdb_config)
     except Exception as e:
         print("Error", e)
         return 1
 
 
-def create_tiledb_ctx(args: argparse.ArgumentParser) -> tiledb.Ctx:
+def create_tiledb_config(args: argparse.ArgumentParser) -> dict:
     requested_tile_cache_size = int(args.tile_cache_fraction * psutil.virtual_memory().total) >> 20 << 20
     tile_cache_size = max(10 * 1024 ** 2, requested_tile_cache_size)
-    ctx = tiledb.Ctx(
-        {
-            "vfs.s3.region": os.environ.get("AWS_DEFAULT_REGION", "us-west-2"),
-            "py.init_buffer_bytes": 4 * 1024 ** 3,  # per-column buffer size
-            "sm.tile_cache_size": tile_cache_size,
-            "sm.consolidation.buffer_size": 4 * 1024 ** 3,  # consolidation attribute buffer size
-        }
-    )
-    return ctx
+    return {
+        "vfs.s3.region": os.environ.get("AWS_DEFAULT_REGION", "us-west-2"),
+        "py.init_buffer_bytes": 4 * 1024 ** 3,  # per-column buffer size
+        "sm.tile_cache_size": tile_cache_size,
+        "sm.consolidation.buffer_size": 4 * 1024 ** 3,  # consolidation attribute buffer size
+    }
 
 
 def create_args_parser() -> argparse.ArgumentParser:
@@ -49,13 +46,13 @@ def create_args_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--tile-cache-fraction",
         type=float_range(0.0, 1.0),
-        default=0.33,
+        default=0.1,
         help=argparse.SUPPRESS,
     )
     subparsers = parser.add_subparsers()
 
     sp = subparsers.add_parser("create", help="Create empty aggregation.")
-    sp.set_defaults(func=lambda args, ctx: create(args.uri, ctx))
+    sp.set_defaults(func=lambda args, tdb_config: create(args.uri, tdb_config))
 
     sp = subparsers.add_parser("add", help="Add a H5AD to the aggregation")
     sp.add_argument("h5ad", type=str, help="H5AD URI")
@@ -66,17 +63,17 @@ def create_args_parser() -> argparse.ArgumentParser:
         help="Ignore any data not encoded with current (2.0.0) schema",
         default=True,
     )
-    sp.set_defaults(func=lambda args, ctx: add_h5ad(**vars(args), ctx=ctx))
+    sp.set_defaults(func=lambda args, tdb_config: add_h5ad(**vars(args), tdb_config=tdb_config))
 
     sp = subparsers.add_parser("rank-cells", help="Rank all cells in the consolidation.")
-    sp.set_defaults(func=lambda args, ctx: rank_cells(**vars(args), ctx=ctx))
+    sp.set_defaults(func=lambda args, tdb_config: rank_cells(**vars(args), tdb_config=tdb_config))
 
     sp = subparsers.add_parser("consolidate", help="Consolidate aggregation")
     sp.add_argument("--obs", action=argparse.BooleanOptionalAction, default=True, help="consolidate obs")
     sp.add_argument("--var", action=argparse.BooleanOptionalAction, default=True, help="consolidate var")
     sp.add_argument("--raw-X-normed", action=argparse.BooleanOptionalAction, default=False, help="consolidate X-normed")
     sp.add_argument("--raw-X-ranked", action=argparse.BooleanOptionalAction, default=False, help="consolidate X-ranked")
-    sp.set_defaults(func=lambda args, ctx: consolidate(**vars(args), ctx=ctx))
+    sp.set_defaults(func=lambda args, tdb_config: consolidate(**vars(args), tdb_config=tdb_config))
 
     sp = subparsers.add_parser("rank-genes-groups", help="Consolidate aggregation")
     sp.add_argument("--groupby", type=str, action="append", help="obs key to group by")
@@ -89,7 +86,7 @@ def create_args_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="Output file (default: standard output)",
     )
-    sp.set_defaults(func=lambda args, ctx: rank_genes_groups(**vars(args), ctx=ctx))
+    sp.set_defaults(func=lambda args, tdb_config: rank_genes_groups(**vars(args), tdb_config=tdb_config))
 
     sp = subparsers.add_parser("create-graph", help="Create dataset graph")
     sp.add_argument("--owl-info", type=str, help="cellxgene schema owl_info.yml URI", default=OWL_INFO_URI)
@@ -101,7 +98,7 @@ def create_args_parser() -> argparse.ArgumentParser:
         help="Remove (do not include) unreferenced non-human terms",
     )
     sp.add_argument("-o", "--output", type=argparse.FileType("w"), default=sys.stdout)
-    sp.set_defaults(func=lambda args, ctx: create_graph(**vars(args), ctx=ctx))
+    sp.set_defaults(func=lambda args, tdb_config: create_graph(**vars(args), tdb_config=tdb_config))
 
     return parser
 

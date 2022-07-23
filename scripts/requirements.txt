@@ -6,6 +6,7 @@ psutil
 black
 flake8
 numba
+cython # used by Owlready2
 owlready2
 pyyaml
 anndata

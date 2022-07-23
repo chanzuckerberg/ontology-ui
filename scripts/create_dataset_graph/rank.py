@@ -1,6 +1,6 @@
 import os
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 
 import tiledb
 import pandas as pd
@@ -11,17 +11,18 @@ from statsmodels.stats.multitest import multipletests
 from .common import chunker, OBS_TERM_COLUMNS
 
 
-def rank_cells(*, uri: str, ctx: tiledb.Ctx, verbose: bool = False, **other):
+def rank_cells_OLD(*, uri: str, tdb_config: dict, verbose: bool = False, **other):
     """
     For each gene, rank by normalized raw X value
     """
+    ctx = tiledb.Ctx(tdb_config)
     tiledb.stats_enable()
 
     def do_ranking(raw_X_normed, raw_X_ranked, chunk_index, var_ids, verbose):
         if verbose:
             print(f"chunk {chunk_index} starting...")
         var_ids = var_ids.to_list()
-        genes = raw_X_normed.df[var_ids]
+        genes = raw_X_normed.query(order="U").df[var_ids]
         if verbose:
             print(f"chunk {chunk_index} read...")
         genes.drop_duplicates(subset=["obs_id", "var_id"], inplace=True)
@@ -70,6 +71,61 @@ def rank_cells(*, uri: str, ctx: tiledb.Ctx, verbose: bool = False, **other):
     return 0
 
 
+def do_ranking(uri, chunk_index, var_ids, tdb_config, init_buffer_bytes, verbose):
+    with tiledb.open(
+        f"{uri}/raw_X_normed", config=tdb_config | {"py.init_buffer_bytes": init_buffer_bytes}
+    ) as raw_X_normed:
+        with tiledb.open(f"{uri}/raw_X_ranked", mode="w", config=tdb_config) as raw_X_ranked:
+            if verbose:
+                print(f"chunk {chunk_index} starting...")
+            var_ids = var_ids.to_list()
+            genes = raw_X_normed.df[var_ids]
+            if verbose:
+                print(f"chunk {chunk_index} read...")
+            genes.drop_duplicates(subset=["obs_id", "var_id"], inplace=True)
+            if len(genes) > 0:
+                genes["ranking"] = genes.groupby(by="var_id")["value"].rank()
+                raw_X_ranked[genes.var_id] = {"obs_id": genes.obs_id, "value": genes.ranking}
+
+
+def rank_cells(*, uri: str, tdb_config: dict, verbose: bool = False, **other):
+    """
+    For each gene, rank by normalized raw X value
+    """
+    ctx = tiledb.Ctx(tdb_config)
+
+    with tiledb.open(f"{uri}/var", ctx=ctx) as var:
+        var_df = var.query(attrs=[]).df[:]
+        n_var = len(var_df)
+
+    with tiledb.open(f"{uri}/obs", ctx=ctx) as obs:
+        n_obs = len(obs.query(attrs=[]).df[:])
+
+    sparsity_guess = 0.9
+    row_size_guess = 64  # obs_id average length + 2 * float32
+    init_buffer_bytes = 8 * 1024 ** 3
+    # config = tdb_config | {"py.init_buffer_bytes": init_buffer_bytes}
+    chunk_size = max(1, init_buffer_bytes // int(n_obs * sparsity_guess * row_size_guess))
+    if verbose:
+        print(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
+
+    with ProcessPoolExecutor(max(4, os.cpu_count() // 8)) as tp:
+        count = 0
+        result_futures = [
+            tp.submit(do_ranking, uri, chunk[0], chunk[1], tdb_config, init_buffer_bytes, verbose)
+            for chunk in enumerate(chunker(var_df.index, chunk_size))
+        ]
+        for future in as_completed(result_futures):
+            try:
+                future.result()
+            except Exception as e:
+                print("Error", e)
+
+            count += 1
+            if verbose:
+                print(f"chunk {count} of {len(result_futures)} complete.")
+
+
 def rank_genes_groups(
     *,
     uri: str,
@@ -78,10 +134,11 @@ def rank_genes_groups(
     groupby,
     top_n: int,
     verbose: bool,
-    ctx: tiledb.Ctx,
+    tdb_config: dict,
     output,
     **other,
 ):
+    ctx = tiledb.Ctx(tdb_config)
 
     if groupby is None:
         groupby = ["cell_type_ontology_term_id", "tissue_ontology_term_id"]

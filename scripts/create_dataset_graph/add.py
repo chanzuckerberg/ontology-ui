@@ -15,12 +15,13 @@ def add_h5ad(
     uri: str,
     h5ad: str,
     dataset_id: str = None,
-    ctx: tiledb.Ctx,
+    tdb_config: dict,
     verbose: bool = False,
     current_schema_only: bool = True,
     **other,
 ):
     """Open the SOMA, and incrementally merge obs/var and raw into aggregation."""
+    ctx = tiledb.Ctx(tdb_config)
 
     # dataset_id is the H5AD URI by default, or user can override (usually to use a more compact dataset_id)
     dataset_id = dataset_id or h5ad

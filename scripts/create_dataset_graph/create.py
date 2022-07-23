@@ -75,7 +75,7 @@ def create_dataframe_array(
         )
 
 
-def create(uri: str, ctx: tiledb.Ctx):
+def create(uri: str, tdb_config: dict):
     """
     Create the empty aggregation.
     """
@@ -83,6 +83,7 @@ def create(uri: str, ctx: tiledb.Ctx):
         print("Aggregation ALREADY exists")
         return 1
 
+    ctx = tiledb.Ctx(tdb_config)
     tiledb.group_create(uri, ctx=ctx)
     agg = tiledb.Group(uri, mode="w", ctx=ctx)
 

@@ -4,7 +4,7 @@ import tiledb
 def consolidate(
     *,
     uri: str,
-    ctx: tiledb.Ctx,
+    tdb_config: dict,
     obs: bool,
     var: bool,
     raw_X_normed: bool,
@@ -12,6 +12,8 @@ def consolidate(
     verbose: bool = False,
     **other,
 ):
+    ctx = tiledb.Ctx(tdb_config)
+
     if obs:
         if verbose:
             print("Consolidating obs...")
