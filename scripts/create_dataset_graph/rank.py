@@ -1,6 +1,5 @@
 import os
 import json
-from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 
 import tiledb
@@ -9,7 +8,7 @@ import numpy as np
 from scipy import stats
 from statsmodels.stats.multitest import multipletests
 
-from .common import chunker, OBS_TERM_COLUMNS
+from .common import chunker, OBS_TERM_COLUMNS, log
 
 
 def do_ranking(uri, chunk_index, var_ids, tdb_config, init_buffer_bytes, verbose):
@@ -18,11 +17,11 @@ def do_ranking(uri, chunk_index, var_ids, tdb_config, init_buffer_bytes, verbose
     ) as raw_X_normed:
         with tiledb.open(f"{uri}/raw_X_ranked", mode="w", config=tdb_config) as raw_X_ranked:
             if verbose:
-                print(f"chunk {chunk_index} starting...")
+                log(f"chunk {chunk_index} starting...")
             var_ids = var_ids.to_list()
             genes = raw_X_normed.df[var_ids]
             if verbose:
-                print(f"chunk {chunk_index} read...")
+                log(f"chunk {chunk_index} read...")
             genes.drop_duplicates(subset=["obs_id", "var_id"], inplace=True)
             if len(genes) > 0:
                 genes["ranking"] = genes.groupby(by="var_id")["value"].rank()
@@ -48,7 +47,7 @@ def rank_cells(*, uri: str, tdb_config: dict, verbose: bool = False, **other):
     init_buffer_bytes = 16 * 1024 ** 3
     chunk_size = max(1, init_buffer_bytes // int(n_obs * sparsity_guess * row_size_guess))
     if verbose:
-        print(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
+        log(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
 
     with ProcessPoolExecutor(max(4, os.cpu_count() // 8)) as tp:
         count = 0
@@ -64,7 +63,7 @@ def rank_cells(*, uri: str, tdb_config: dict, verbose: bool = False, **other):
 
             count += 1
             if verbose:
-                print(f"chunk {count} of {len(result_futures)} complete.")
+                log(f"chunk {count} of {len(result_futures)} complete.")
 
 
 def rank_genes_groups(
@@ -123,7 +122,7 @@ def _rank_genes_groups(
     ctx: tiledb.Ctx,
 ):
     if verbose:
-        print(f"rank_genes_groups starting {groupby_key}....")
+        log(f"rank_genes_groups starting {groupby_key}....")
 
     """
     For each gene, calculate:
@@ -141,14 +140,14 @@ def _rank_genes_groups(
 
     n_gene_groups = len(gene_groups)
     if verbose:
-        print(f"rank_genes_groups: {len(groups)} types, {len(var_df)} genes, {n_gene_groups} groups")
+        log(f"rank_genes_groups: {len(groups)} types, {len(var_df)} genes, {n_gene_groups} groups")
 
     def sum_raw_X_normed() -> pd.Series:
         with tiledb.open(f"{uri}/raw_X_normed", ctx=ctx) as raw_X_normed:
             chunk_size = 100
             for chunk_idx, var_ids in enumerate(chunker(var_df.index, chunk_size)):
                 if verbose:
-                    print(f"{datetime.now()}: value sum {chunk_idx * chunk_size} of {n_var}")
+                    log(f"value sum {chunk_idx * chunk_size} of {n_var}")
                 all_values = raw_X_normed.df[var_ids.to_list()].set_index("obs_id")
                 S = all_values.join(obs_df).groupby(by=["var_id", groupby_key]).value.sum()
                 gene_groups.loc[S.index, "S"] = S.to_list()
@@ -161,7 +160,7 @@ def _rank_genes_groups(
             chunk_size = 100
             for chunk_idx, var_ids in enumerate(chunker(var_df.index, chunk_size)):
                 if verbose:
-                    print(f"{datetime.now()}: rank sum {chunk_idx * chunk_size} of {n_var}")
+                    log(f"rank sum {chunk_idx * chunk_size} of {n_var}")
                 all_values = raw_X_ranked.df[var_ids.to_list()].set_index("obs_id")
                 labelled_values = (
                     all_values.join(obs_df[groupby_key]).reset_index().set_index("var_id").astype({"value": "float64"})
@@ -182,7 +181,7 @@ def _rank_genes_groups(
         return gene_groups.R
 
     if verbose:
-        print(f"{datetime.now()}: rank_genes_groups - start calculation of S and R")
+        log("rank_genes_groups - start calculation of S and R")
     # with ThreadPoolExecutor() as tp:
     #     # start
     #     value_sum = tp.submit(sum_raw_X_normed)
@@ -195,7 +194,7 @@ def _rank_genes_groups(
     sum_raw_X_ranked()
 
     if verbose:
-        print(f"{datetime.now()}: rank_genes_groups - finished calculation of S and R")
+        log("rank_genes_groups - finished calculation of S and R")
 
     # now calculate U statistic, corrected for normal dist.
     # https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test

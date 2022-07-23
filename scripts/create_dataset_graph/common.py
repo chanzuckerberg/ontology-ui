@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 
 # columns we preserve in our mini-atlas, on the assumption all data comes
@@ -39,3 +40,7 @@ def get_ctypes(df: pd.DataFrame):
 def chunker(listlike, chunk_size):
     for i in range(0, len(listlike), chunk_size):
         yield listlike[i : i + chunk_size]
+
+
+def log(*args):
+    print(f"[datetime.now()]", *args)
