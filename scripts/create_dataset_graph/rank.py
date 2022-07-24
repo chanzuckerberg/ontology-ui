@@ -223,7 +223,7 @@ def do_compute_S(
     verbose: bool,
 ) -> dict:
     if verbose:
-        log(f"value sum starting partition {partition_index}")
+        log(f"value sum, starting partition {partition_index}")
 
     init_buffer_bytes = 1 * 1024 ** 3
     tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
@@ -243,7 +243,7 @@ def do_compute_S(
         for chunk_index, chunk_var_ids in enumerate(chunker(var_ids, chunk_size)):
             gc.collect()
             if verbose:
-                log(f"value sum partition, partition {partition_index}, chunk {chunk_index+1} of {n_chunks}")
+                log(f"value sum, partition {partition_index}, chunk {chunk_index+1} of {n_chunks}")
             all_values = raw_X_normed.df[chunk_var_ids].set_index("obs_id")
             S = all_values.join(obs_df).groupby(by=["var_id", groupby_key]).value.sum()
             gene_groups.loc[S.index, "S"] = S.to_list()
@@ -260,7 +260,7 @@ def do_compute_R(
     verbose: bool,
 ) -> dict:
     if verbose:
-        log(f"value rank starting partition {partition_index}")
+        log(f"value rank, starting partition {partition_index}")
 
     init_buffer_bytes = 1 * 1024 ** 3
     tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
