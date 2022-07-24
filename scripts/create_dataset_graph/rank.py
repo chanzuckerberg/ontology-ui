@@ -1,6 +1,7 @@
 import os
 import json
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+import gc
 
 import tiledb
 import pandas as pd
@@ -135,16 +136,24 @@ def _rank_genes_groups(
         log(f"rank_genes_groups: {len(groups)} types, {len(var_df)} genes, {n_gene_groups} groups")
 
     if verbose:
-        log("rank_genes_groups - start calculation of S and R")
+        log("rank_genes_groups: start calculation of S and R")
 
-    with ProcessPoolExecutor(max_workers=max(4, os.cpu_count() // 8)) as tp:
-        result_futures = [
-            tp.submit(do_compute_S, uri, groupby_key, chunk[0], chunk[1], tdb_config, n_var, verbose)
-            for chunk in enumerate(chunker(var_df.index, 1000))
-        ] + [
-            tp.submit(do_compute_R, uri, groupby_key, chunk[0], chunk[1], tdb_config, n_var, verbose)
-            for chunk in enumerate(chunker(var_df.index, 250))
-        ]
+    n_partitions = os.cpu_count()
+    chunk_size = max(1, n_var // n_partitions)
+    if verbose:
+        log(f"partitions: {n_partitions}, chunk_size: {chunk_size}")
+    with ProcessPoolExecutor(max_workers=n_partitions) as tp:
+        result_futures = []
+        for chunk in enumerate(chunker(var_df.index.to_list(), chunk_size)):
+            result_futures.append(tp.submit(do_compute_S, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose))
+            result_futures.append(tp.submit(do_compute_R, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose))
+        # result_futures = [
+        #     tp.submit(do_compute_S, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose)
+        #     for chunk in enumerate(chunker(var_df.index.to_list(), chunk_size))
+        # ] + [
+        #     tp.submit(do_compute_R, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose)
+        #     for chunk in enumerate(chunker(var_df.index.to_list(), chunk_size))
+        # ]
         completed_count = 0
         for future in as_completed(result_futures):
             try:
@@ -157,12 +166,11 @@ def _rank_genes_groups(
 
             completed_count += 1
             if verbose:
-                log(f"chunk {completed_count} of {len(result_futures)} complete.")
+                log(f"future {completed_count} of {len(result_futures)} complete.")
+            gc.collect()
 
     if verbose:
         log("rank_genes_groups - finished calculation of S and R")
-
-    print(gene_groups)
 
     # now calculate U statistic, corrected for normal dist.
     # https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test
@@ -179,7 +187,7 @@ def _rank_genes_groups(
     gene_groups["pvals"] = pvals
     gene_groups["pvals_adj"] = pvals_adj
 
-    # compute logfoldchange
+    # compute log foldchange
     mean = gene_groups.S / gene_groups.n
     S_all = gene_groups.groupby(level=0).S.sum()
     mean_rest = S_all / n_obs
@@ -215,27 +223,34 @@ def _rank_genes_groups(
 def do_compute_S(
     uri: str,
     groupby_key: str,
-    chunk_index: int,
+    partition_index: int,
     var_ids,
     tdb_config: dict,
-    n_var: int,
     verbose: bool,
 ) -> dict:
-    if verbose:
-        log(f"value sum {chunk_index * len(var_ids)} of {n_var}")
 
+    init_buffer_bytes = 2 * 1024 ** 3
+    tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
+    del tdb_config["sm.tile_cache_size"]
     ctx = tiledb.Ctx(tdb_config)
 
     with tiledb.open(f"{uri}/obs", ctx=ctx) as obs:
         obs_df = obs.query(attrs=[groupby_key]).df[:]
+    n_obs = len(obs_df)
 
     gene_groups = pd.DataFrame(index=pd.MultiIndex.from_product([var_ids, obs_df[groupby_key].unique()]))
     gene_groups["S"] = 0.0
 
     with tiledb.open(f"{uri}/raw_X_normed", ctx=ctx) as raw_X_normed:
-        all_values = raw_X_normed.df[var_ids.to_list()].set_index("obs_id")
-        S = all_values.join(obs_df).groupby(by=["var_id", groupby_key]).value.sum()
-        gene_groups.loc[S.index, "S"] = S.to_list()
+        chunk_size = guess_at_chunk_size(n_obs, init_buffer_bytes=init_buffer_bytes)
+        n_chunks = int(len(var_ids) / chunk_size + 1)
+        for chunk_index, chunk_var_ids in enumerate(chunker(var_ids, chunk_size)):
+            gc.collect()
+            if verbose:
+                log(f"value sum partition, partition {partition_index}, chunk {chunk_index+1} of {n_chunks}")
+            all_values = raw_X_normed.df[chunk_var_ids].set_index("obs_id")
+            S = all_values.join(obs_df).groupby(by=["var_id", groupby_key]).value.sum()
+            gene_groups.loc[S.index, "S"] = S.to_list()
 
     return ("S", gene_groups.S.to_dict())
 
@@ -243,15 +258,15 @@ def do_compute_S(
 def do_compute_R(
     uri: str,
     groupby_key: str,
-    chunk_index: int,
+    partition_index: int,
     var_ids,
     tdb_config: dict,
-    n_var: int,
     verbose: bool,
 ) -> dict:
-    if verbose:
-        log(f"value rank {chunk_index * len(var_ids)} of {n_var}")
 
+    init_buffer_bytes = 2 * 1024 ** 3
+    tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
+    del tdb_config["sm.tile_cache_size"]
     ctx = tiledb.Ctx(tdb_config)
 
     with tiledb.open(f"{uri}/obs", ctx=ctx) as obs:
@@ -263,21 +278,30 @@ def do_compute_R(
 
     total_count = obs_df.groupby(by=[groupby_key])[groupby_key].count().rename("total_count")
     with tiledb.open(f"{uri}/raw_X_ranked", ctx=ctx) as raw_X_ranked:
-        all_values = raw_X_ranked.df[var_ids.to_list()].set_index("obs_id")
-        labelled_values = (
-            all_values.join(obs_df[groupby_key]).reset_index().set_index("var_id").astype({"value": "float64"})
-        )
-        R = labelled_values.groupby(by=["var_id", groupby_key]).agg(
-            rank_sum=("value", "sum"), nnz_count=("value", "count")
-        )
-        R = R.join(total_count)
+        chunk_size = guess_at_chunk_size(n_obs, init_buffer_bytes=init_buffer_bytes)
+        n_chunks = int(len(var_ids) / chunk_size + 1)
+        for chunk_index, chunk_var_ids in enumerate(chunker(var_ids, chunk_size)):
+            if verbose:
+                log(f"value rank, partition {partition_index}, chunk {chunk_index+1} of {n_chunks}")
+            all_values = raw_X_ranked.df[chunk_var_ids].set_index("obs_id")
+            labelled_values = (
+                all_values.join(obs_df[groupby_key]).reset_index().set_index("var_id").astype({"value": "float64"})
+            )
+            R = labelled_values.groupby(by=["var_id", groupby_key]).agg(
+                rank_sum=("value", "sum"), nnz_count=("value", "count")
+            )
+            R = R.join(total_count)
 
-        # Rankings must be adjusted for the number of zeros as it is a sparse array.
-        # Where 'N' is the number of zeros for the entire var/feature, the zero filled (missing)
-        # values are filled with the average of the first N, ie, (N+1)/2. The remainder
-        # are increased by N.
-        R = R.join((n_obs - R.groupby("var_id").nnz_count.sum()).rename("N"))
-        R["value"] = (R.total_count - R.nnz_count) * (R.N + 1) / 2 + (R.N * R.nnz_count)
-        gene_groups.loc[R.index, "R"] = R.value.to_list()
+            # Rankings must be adjusted for the number of zeros as it is a sparse array.
+            # Where 'N' is the number of zeros for the entire var/feature, the zero filled (missing)
+            # values are filled with the average of the first N, ie, (N+1)/2. The remainder
+            # are increased by N.
+            R = R.join((n_obs - R.groupby("var_id").nnz_count.sum()).rename("N"))
+            R["value"] = (R.total_count - R.nnz_count) * (R.N + 1) / 2 + (R.N * R.nnz_count)
+            gene_groups.loc[R.index, "R"] = R.value.to_list()
 
     return ("R", gene_groups.R.to_dict())
+
+
+def guess_at_chunk_size(n_obs, row_size_guess=64, init_buffer_bytes=16 * 1024 ** 3, sparsity_guess=0.9):
+    return max(1, init_buffer_bytes // int(n_obs * sparsity_guess * row_size_guess))
