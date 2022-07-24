@@ -138,22 +138,16 @@ def _rank_genes_groups(
     if verbose:
         log("rank_genes_groups: start calculation of S and R")
 
-    n_partitions = os.cpu_count()
-    chunk_size = max(1, n_var // n_partitions)
+    n_partitions = os.cpu_count() // 3
+    partition_chunk_size = max(1, n_var // n_partitions)
     if verbose:
-        log(f"partitions: {n_partitions}, chunk_size: {chunk_size}")
+        log(f"partitions: {n_partitions}, partition_chunk_size: {partition_chunk_size}")
     with ProcessPoolExecutor(max_workers=n_partitions) as tp:
         result_futures = []
-        for chunk in enumerate(chunker(var_df.index.to_list(), chunk_size)):
+        for chunk in enumerate(chunker(var_df.index.to_list(), partition_chunk_size)):
             result_futures.append(tp.submit(do_compute_S, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose))
             result_futures.append(tp.submit(do_compute_R, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose))
-        # result_futures = [
-        #     tp.submit(do_compute_S, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose)
-        #     for chunk in enumerate(chunker(var_df.index.to_list(), chunk_size))
-        # ] + [
-        #     tp.submit(do_compute_R, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose)
-        #     for chunk in enumerate(chunker(var_df.index.to_list(), chunk_size))
-        # ]
+
         completed_count = 0
         for future in as_completed(result_futures):
             try:
@@ -228,8 +222,10 @@ def do_compute_S(
     tdb_config: dict,
     verbose: bool,
 ) -> dict:
+    if verbose:
+        log(f"value sum starting partition {partition_index}")
 
-    init_buffer_bytes = 2 * 1024 ** 3
+    init_buffer_bytes = 1 * 1024 ** 3
     tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
     del tdb_config["sm.tile_cache_size"]
     ctx = tiledb.Ctx(tdb_config)
@@ -263,8 +259,10 @@ def do_compute_R(
     tdb_config: dict,
     verbose: bool,
 ) -> dict:
+    if verbose:
+        log(f"value rank starting partition {partition_index}")
 
-    init_buffer_bytes = 2 * 1024 ** 3
+    init_buffer_bytes = 1 * 1024 ** 3
     tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
     del tdb_config["sm.tile_cache_size"]
     ctx = tiledb.Ctx(tdb_config)
@@ -281,6 +279,7 @@ def do_compute_R(
         chunk_size = guess_at_chunk_size(n_obs, init_buffer_bytes=init_buffer_bytes)
         n_chunks = int(len(var_ids) / chunk_size + 1)
         for chunk_index, chunk_var_ids in enumerate(chunker(var_ids, chunk_size)):
+            gc.collect()
             if verbose:
                 log(f"value rank, partition {partition_index}, chunk {chunk_index+1} of {n_chunks}")
             all_values = raw_X_ranked.df[chunk_var_ids].set_index("obs_id")
@@ -303,5 +302,5 @@ def do_compute_R(
     return ("R", gene_groups.R.to_dict())
 
 
-def guess_at_chunk_size(n_obs, row_size_guess=64, init_buffer_bytes=16 * 1024 ** 3, sparsity_guess=0.9):
-    return max(1, init_buffer_bytes // int(n_obs * sparsity_guess * row_size_guess))
+def guess_at_chunk_size(n_obs, row_size_guess=64, init_buffer_bytes=1 * 1024 ** 3, sparsity_guess=0.9):
+    return max(1, init_buffer_bytes // int(n_obs * (1.0 - sparsity_guess) * row_size_guess))
