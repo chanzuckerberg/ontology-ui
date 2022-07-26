@@ -1,6 +1,5 @@
 from datetime import datetime
 import pandas as pd
-import anndata
 
 # columns we preserve in our mini-atlas, on the assumption all data comes
 # from cellxgene corpus.  Schema:

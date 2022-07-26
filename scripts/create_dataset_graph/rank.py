@@ -1,6 +1,6 @@
 import os
 import json
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import gc
 
 import tiledb
@@ -225,7 +225,7 @@ def do_compute_S(
     if verbose:
         log(f"value sum, starting partition {partition_index}")
 
-    init_buffer_bytes = 1 * 1024 ** 3
+    init_buffer_bytes = 4 * 1024 ** 3
     tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
     del tdb_config["sm.tile_cache_size"]
     ctx = tiledb.Ctx(tdb_config)
@@ -262,7 +262,7 @@ def do_compute_R(
     if verbose:
         log(f"value rank, starting partition {partition_index}")
 
-    init_buffer_bytes = 1 * 1024 ** 3
+    init_buffer_bytes = 4 * 1024 ** 3
     tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
     del tdb_config["sm.tile_cache_size"]
     ctx = tiledb.Ctx(tdb_config)
