@@ -44,7 +44,7 @@ def rank_cells(*, uri: str, tdb_config: dict, max_workers: int, verbose: bool = 
         n_obs = len(obs.query(dims=["obs_id"], attrs=[]).df[:])
 
     # rather than doing this, we could use return_incomplete
-    init_buffer_bytes = 2 * 1024 ** 3
+    init_buffer_bytes = 4 * 1024 ** 3
     chunk_size = guess_at_chunk_size(n_obs, init_buffer_bytes=init_buffer_bytes)
     if verbose:
         log(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
