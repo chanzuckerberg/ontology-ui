@@ -99,25 +99,26 @@ def load_axes_dataframes(uri: str, datasets: list, ctx: tiledb.Ctx, current_sche
     )
 
 
-def load_raw_X_normed(uri: str, h5ad, tdb_config: dict, current_schema_only: bool, verbose: bool):
-
-    if not os.path.exists(h5ad.path):
-        log("H5AD path does not exist", h5ad.path)
+def load_raw_X_normed(
+    uri: str, h5ad_path: str, dataset_id: str, tdb_config: dict, current_schema_only: bool, verbose: bool
+):
+    if not os.path.exists(h5ad_path):
+        log("H5AD path does not exist", h5ad_path)
         return
 
     if verbose:
-        log("loading...", h5ad.path)
+        log("loading...", h5ad_path)
 
-    ad = anndata.read_h5ad(h5ad)
+    ad = anndata.read_h5ad(h5ad_path)
     cxg_version = get_cellxgene_schema_version(ad)
 
     if current_schema_only and cxg_version != "2.0.0":
-        log("H5AD has old schema version, skipping...", h5ad.path)
+        log("H5AD has old schema version, skipping...", h5ad_path)
         return
 
     raw_X, raw_var = get_raw(ad)
     if raw_X is None or raw_var is None:
-        log("H5AD does NOT contain required RAW data. Skipping...", h5ad.path)
+        log("H5AD does NOT contain required RAW data. Skipping...", h5ad_path)
         return
 
     # Create a copy of AnnData from which we slice primary data and genes ONLY.
@@ -125,7 +126,7 @@ def load_raw_X_normed(uri: str, h5ad, tdb_config: dict, current_schema_only: boo
     ad = ad[ad.obs.is_primary_data == True, ad.var.feature_biotype == "gene"]
     ad = anndata.AnnData(X=ad.X, obs=ad.obs, var=ad.var, dtype=np.float32)
     if ad.n_obs == 0:
-        log("H5AD has no primary data, skipping...", h5ad.path)
+        log("H5AD has no primary data, skipping...", h5ad_path)
         return
 
     ctx = tiledb.Ctx(tdb_config)
@@ -136,7 +137,7 @@ def load_raw_X_normed(uri: str, h5ad, tdb_config: dict, current_schema_only: boo
         # qc = tiledb.QueryCondition(f"dataset_id == '{dataset_id}'")
         # row_start_idx_groups = obs.query(attrs=["dataset_id"], attr_cond=qc).df[:].reset_index().groupby("dataset_id").min()
         row_start_idx_groups = obs.query(attrs=["dataset_id"]).df[:].reset_index().groupby("dataset_id").min()
-        row_start_idx = row_start_idx_groups.loc[bytes(h5ad.dataset_id, "utf-8"), "index"]
+        row_start_idx = row_start_idx_groups.loc[bytes(dataset_id, "utf-8"), "index"]
 
     # get the var_name map
     with tiledb.open(f"{uri}/var", ctx=ctx) as var:
@@ -144,10 +145,10 @@ def load_raw_X_normed(uri: str, h5ad, tdb_config: dict, current_schema_only: boo
     ad.var["var_name"] = ad.var.index.astype(bytes)
     var_id_map = ad.var[["var_name"]].join(global_var_ids, on="var_name").var_id.to_numpy()
 
-    save_raw_X_normed(uri, ad, ctx, row_start_idx, var_id_map, h5ad.path, verbose)
+    save_raw_X_normed(uri, ad, ctx, row_start_idx, var_id_map, h5ad_path, verbose)
 
     if verbose:
-        log("Save complete...", h5ad.path)
+        log("Save complete...", h5ad_path)
 
 
 def save_raw_X_normed(uri, ad, ctx, row_start_idx, var_id_map, h5ad, verbose):
@@ -192,7 +193,7 @@ def load_X(
 ):
     # datasets = [d for d in [d.strip() for d in manifest.readlines()] if d.endswith(".h5ad") and os.path.exists(d)]
     datasets = parse_manifest(manifest)
-    datasets = [d for d in datasets if d.path.endswith('.h5ad') and os.path.exists(d.path)]
+    datasets = [d for d in datasets if d.path.endswith(".h5ad") and os.path.exists(d.path)]
 
     if len(datasets) == 0:
         print("No H5AD files in the manifest")
@@ -201,10 +202,15 @@ def load_X(
     max_workers = max(1, os.cpu_count() // 12) if max_workers is None else max_workers
     with ProcessPoolExecutor(max_workers=max_workers) as tp:
         futures = [
-            tp.submit(load_raw_X_normed, uri, h5ad, tdb_config, current_schema_only, verbose) for h5ad in datasets
+            tp.submit(load_raw_X_normed, uri, h5ad.path, h5ad.dataset_id, tdb_config, current_schema_only, verbose)
+            for h5ad in datasets
         ]
         count = 0
         for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print("Error", e)
             count += 1
             if verbose:
                 log(f"loadX: dataset {count} of {len(futures)} complete")
