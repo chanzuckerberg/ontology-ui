@@ -152,7 +152,7 @@ def load_raw_X_normed(
 
 
 def save_raw_X_normed(uri, ad, ctx, row_start_idx, var_id_map, h5ad, verbose):
-    target = 500_000_000
+    target = 1_000_000_000
     if sparse.issparse(ad.X):
         num_samples = 16
         count = 0
