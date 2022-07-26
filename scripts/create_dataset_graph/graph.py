@@ -432,6 +432,7 @@ def build_ontology(owl_info, onto_prefix, onto):
 
         except Exception as e:
             print(f"Error handling {name}: {e}")
+            raise e
 
     return ontology
 

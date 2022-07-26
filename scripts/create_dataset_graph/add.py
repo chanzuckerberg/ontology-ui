@@ -211,6 +211,8 @@ def load_X(
                 future.result()
             except Exception as e:
                 print("Error", e)
+                raise e
+
             count += 1
             if verbose:
                 log(f"loadX: dataset {count} of {len(futures)} complete")

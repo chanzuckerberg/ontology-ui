@@ -61,6 +61,7 @@ def rank_cells(*, uri: str, tdb_config: dict, max_workers: int, verbose: bool = 
                 future.result()
             except Exception as e:
                 print("Error", e)
+                raise e
 
             count += 1
             if verbose:
@@ -161,6 +162,7 @@ def _rank_genes_groups(
 
             except Exception as e:
                 print("Error", e)
+                raise e
 
             completed_count += 1
             if verbose:
