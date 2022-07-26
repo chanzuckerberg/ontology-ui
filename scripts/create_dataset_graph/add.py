@@ -27,13 +27,13 @@ def load_axes_dataframes(uri: str, datasets: list, ctx: tiledb.Ctx, current_sche
     var_names = set()
     obs_row_start_idx = 0
 
-    for h5ad in datasets:
+    for h5ad_idx, h5ad in enumerate(datasets):
         if not os.path.exists(h5ad):
             log("H5AD path does not exist", h5ad)
             continue
 
         if verbose:
-            log(f"Adding {h5ad}")
+            log(f"Adding {h5ad_idx+1} of {len(datasets)}: {h5ad}")
 
         ad = anndata.read_h5ad(h5ad, backed="r")
         cxg_version = get_cellxgene_schema_version(ad)

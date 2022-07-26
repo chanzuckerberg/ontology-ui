@@ -4,7 +4,6 @@ import os.path
 import tiledb
 import numpy as np
 import pandas as pd
-import anndata
 
 from .common import OBS_TERM_COLUMNS, VAR_TERM_COLUMNS, get_ctypes, log
 from .add import load_axes_dataframes
