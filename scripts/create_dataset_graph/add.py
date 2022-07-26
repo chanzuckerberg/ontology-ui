@@ -151,13 +151,13 @@ def load_raw_X_normed(uri: str, h5ad: str, tdb_config: dict, current_schema_only
 
 
 def save_raw_X_normed(uri, ad, ctx, row_start_idx, var_id_map, h5ad, verbose):
+    target = 500_000_000
     if sparse.issparse(ad.X):
         num_samples = 16
         count = 0
         for _ in range(num_samples):
             obs_id = random.randrange(ad.n_obs)
             count = count + ad.X[obs_id, :].nnz
-        target = 100_000_000
         chunk_size = int(target // (count / num_samples))
     else:
         chunk_size = min(1, int(target // ad.X.shape[1]))
@@ -195,7 +195,7 @@ def load_X(
         print("No H5AD files in the manifest")
         return 1
 
-    max_workers = max(1, os.cpu_count() // 16) if max_workers is None else max_workers
+    max_workers = max(1, os.cpu_count() // 12) if max_workers is None else max_workers
     with ProcessPoolExecutor(max_workers=max_workers) as tp:
         futures = [
             tp.submit(load_raw_X_normed, uri, h5ad, tdb_config, current_schema_only, verbose) for h5ad in datasets
