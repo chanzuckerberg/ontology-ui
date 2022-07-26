@@ -1,10 +1,13 @@
+import io
 import os.path
 
 import tiledb
 import numpy as np
 import pandas as pd
+import anndata
 
-from .common import OBS_TERM_COLUMNS, VAR_TERM_COLUMNS, get_ctypes
+from .common import OBS_TERM_COLUMNS, VAR_TERM_COLUMNS, get_ctypes, log
+from .add import load_axes_dataframes
 
 
 def create_single_value_X_array(uri: str, ctx: tiledb.Ctx):
@@ -12,11 +15,16 @@ def create_single_value_X_array(uri: str, ctx: tiledb.Ctx):
         raise Exception(f"Oops, {uri} already exists")
 
     dom = tiledb.Domain(
-        tiledb.Dim(name="var_id", domain=(None, None), dtype="ascii", filters=[tiledb.ZstdFilter()]),
+        tiledb.Dim(
+            name="var_id",
+            domain=(np.iinfo("int64").min, np.iinfo("int64").max - 1),
+            dtype="int64",
+            filters=[tiledb.ZstdFilter()],
+        ),
         ctx=ctx,
     )
     attrs = (
-        tiledb.Attr(name="obs_id", dtype=np.dtype(np.str_), filters=[tiledb.ZstdFilter()], ctx=ctx),
+        tiledb.Attr(name="obs_id", dtype="int64", filters=[tiledb.ZstdFilter()], ctx=ctx),
         tiledb.Attr(name="value", dtype=np.float32, filters=[tiledb.ZstdFilter()], ctx=ctx),
     )
     schema = tiledb.ArraySchema(
@@ -53,7 +61,7 @@ def create_dataframe_array(
             offsets_filters=offsets_filters,
             attr_filters=attr_filters,
             dim_filters=dim_filters,
-            sparse=sparse,
+            sparse=True,
             allows_duplicates=False,
             column_types=column_types,
             varlen_types=varlen_types,
@@ -68,35 +76,31 @@ def create_dataframe_array(
             offsets_filters=offsets_filters,
             attr_filters=attr_filters,
             dim_filters=dim_filters,
-            sparse=sparse,
+            sparse=False,
             allows_duplicates=False,
             column_types=column_types,
             varlen_types=varlen_types,
         )
 
 
-def create(uri: str, tdb_config: dict):
+def create_empty_aggregation(uri: str, ctx: tiledb.Ctx, datasets: list):
     """
     Create the empty aggregation.
     """
-    if os.path.exists(uri):
-        print("Aggregation ALREADY exists")
-        return 1
-
-    ctx = tiledb.Ctx(tdb_config)
     tiledb.group_create(uri, ctx=ctx)
     agg = tiledb.Group(uri, mode="w", ctx=ctx)
 
     exemplar = pd.DataFrame(
-        index=pd.Index(data=["a"], name="obs_id"),
-        # data={"dataset_id": ["b"]} | {k: [""] for k in OBS_TERM_COLUMNS},
-        data={k: [""] for k in OBS_TERM_COLUMNS},
+        index=pd.RangeIndex(0, 1, name="obs_id"),
+        data={"obs_name": [""], "dataset_id": [""]} | {k: [""] for k in OBS_TERM_COLUMNS},
     )
-    create_dataframe_array(f"{uri}/obs", ctx, exemplar, ["obs_id"], sparse=True)
+    create_dataframe_array(f"{uri}/obs", ctx, exemplar, None, sparse=False)
     agg.add(uri=f"{uri}/obs", name="obs")
 
-    exemplar = pd.DataFrame(index=pd.Index(data=["a"], name="var_id"), data={k: [""] for k in VAR_TERM_COLUMNS})
-    create_dataframe_array(f"{uri}/var", ctx, exemplar, ["var_id"], sparse=True)
+    exemplar = pd.DataFrame(
+        index=pd.RangeIndex(0, 1, name="var_id"), data={"var_name": [""]} | {k: [""] for k in VAR_TERM_COLUMNS}
+    )
+    create_dataframe_array(f"{uri}/var", ctx, exemplar, ["var_id"], sparse=False)
     agg.add(uri=f"{uri}/var", name="var")
 
     create_single_value_X_array(f"{uri}/raw_X_normed", ctx)
@@ -106,5 +110,26 @@ def create(uri: str, tdb_config: dict):
     agg.add(uri=f"{uri}/raw_X_ranked", name="raw_X_ranked")
 
     agg.close()
+
+    return 0
+
+
+def create(*, uri: str, manifest: io.TextIOBase, tdb_config: dict, current_schema_only: bool, verbose: bool, **other):
+    datasets = [d for d in [d.strip() for d in manifest.readlines()] if d.endswith(".h5ad") and os.path.exists(d)]
+    if len(datasets) == 0:
+        print("No H5AD files in the manifest")
+        return 1
+
+    if os.path.exists(uri):
+        print("Aggregation ALREADY exists")
+        return 1
+
+    ctx = tiledb.Ctx(tdb_config)
+
+    if verbose:
+        log("Creating empty aggregation", uri)
+    create_empty_aggregation(uri, ctx, datasets)
+
+    load_axes_dataframes(uri, datasets, ctx, current_schema_only, verbose)
 
     return 0

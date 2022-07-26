@@ -2,14 +2,14 @@ import sys
 import os
 import argparse
 
-import tiledb
 import psutil
 
 from .create import create
-from .add import add_h5ad
+from .add import load_X
 from .rank import rank_cells, rank_genes_groups
 from .consolidate import consolidate
 from .graph import OWL_INFO_URI, create_graph
+from .common import log
 
 
 def main():
@@ -19,6 +19,9 @@ def main():
         print("Error: unknown sub-command.")
         parser.print_help()
         return 1
+
+    if args.verbose:
+        log(f"max_workers = {args.max_workers}")
 
     try:
         tdb_config = create_tiledb_config(args)
@@ -49,21 +52,28 @@ def create_args_parser() -> argparse.ArgumentParser:
         default=0.1,
         help=argparse.SUPPRESS,
     )
+    parser.add_argument("--max-workers", type=int, help="Concurrency")
     subparsers = parser.add_subparsers()
 
     sp = subparsers.add_parser("create", help="Create empty aggregation.")
-    sp.set_defaults(func=lambda args, tdb_config: create(args.uri, tdb_config))
-
-    sp = subparsers.add_parser("add", help="Add a H5AD to the aggregation")
-    sp.add_argument("h5ad", type=str, help="H5AD URI")
-    sp.add_argument("--dataset-id", type=str, help="Set dataset ID, to make unique obs_ids")
+    sp.add_argument("--manifest", type=argparse.FileType("r"), default=sys.stdin)
     sp.add_argument(
         "--current-schema-only",
         action=argparse.BooleanOptionalAction,
         help="Ignore any data not encoded with current (2.0.0) schema",
         default=True,
     )
-    sp.set_defaults(func=lambda args, tdb_config: add_h5ad(**vars(args), tdb_config=tdb_config))
+    sp.set_defaults(func=lambda args, tdb_config: create(**vars(args), tdb_config=tdb_config))
+
+    sp = subparsers.add_parser("load-X", help="Load X data from H5AD into the aggregation")
+    sp.add_argument("--manifest", type=argparse.FileType("r"), default=sys.stdin)
+    sp.add_argument(
+        "--current-schema-only",
+        action=argparse.BooleanOptionalAction,
+        help="Ignore any data not encoded with current (2.0.0) schema",
+        default=True,
+    )
+    sp.set_defaults(func=lambda args, tdb_config: load_X(**vars(args), tdb_config=tdb_config))
 
     sp = subparsers.add_parser("rank-cells", help="Rank all cells in the consolidation.")
     sp.set_defaults(func=lambda args, tdb_config: rank_cells(**vars(args), tdb_config=tdb_config))

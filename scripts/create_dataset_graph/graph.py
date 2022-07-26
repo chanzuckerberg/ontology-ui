@@ -87,11 +87,11 @@ def create_graph(
     filter_non_human: bool,
     output,
     verbose: bool,
-    ctx: tiledb.Ctx,
+    tdb_config: dict,
     **other,
 ):
     global tiledb_ctx
-    tiledb_ctx = ctx
+    tiledb_ctx = tiledb.Ctx(tdb_config)
 
     global _verbose
     _verbose = verbose
@@ -464,6 +464,13 @@ def load_obs_dataframe(uri: str):
         dims = [c for c in OBS_TERM_COLUMNS if c in dim_names]
         attrs = [c for c in OBS_TERM_COLUMNS if c not in dim_names]
         obs_df = obs.query(dims=dims, attrs=attrs).df[:]
+
+        # stringify
+        for i in range(obs.schema.nattr):
+            attr = obs.attr(i)
+            name = attr.name
+            if attr.dtype == "bytes" and attr.isvar is True and name in obs_df.keys():
+                obs_df[name] = obs_df[name].str.decode("utf-8")
 
     """
     The tissue_ontology_term_id and the assay_ontology_term_id columns may contain auxillary information

@@ -1,5 +1,8 @@
+import io
 import os.path
 import random
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import gc
 
 import anndata
 import tiledb
@@ -7,96 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 
-from .common import OBS_TERM_COLUMNS, VAR_TERM_COLUMNS, get_ctypes
-
-
-def add_h5ad(
-    *,
-    uri: str,
-    h5ad: str,
-    dataset_id: str = None,
-    tdb_config: dict,
-    verbose: bool = False,
-    current_schema_only: bool = True,
-    **other,
-):
-    """Open the SOMA, and incrementally merge obs/var and raw into aggregation."""
-    ctx = tiledb.Ctx(tdb_config)
-
-    # dataset_id is the H5AD URI by default, or user can override (usually to use a more compact dataset_id)
-    dataset_id = dataset_id or h5ad
-    if not os.path.exists(h5ad):
-        print("H5AD path does not exist", h5ad)
-        return 1
-
-    if verbose:
-        print("loading...", h5ad)
-
-    ad = anndata.read_h5ad(h5ad)
-    cxg_version = get_cellxgene_schema_version(ad)
-
-    if current_schema_only and cxg_version != "2.0.0":
-        print("H5AD has old schema version, skipping...", h5ad)
-        return 0
-
-    # The schema allows for raw to be in raw.X, unless there is no "final" matrix,
-    # in which case it is in X. Determine which is the case.  See normative prose:
-    # https://github.com/chanzuckerberg/single-cell-curation/blob/main/schema/2.0.0/schema.md#x-matrix-layers
-    #
-    # The spec is ambiguous on when the raw.var exists.  Guess.
-    #
-    if ad.raw is not None and ad.raw.X is not None:
-        raw_X = ad.raw.X
-        raw_var = ad.raw.var
-    else:
-        raw_X = ad.X
-        raw_var = ad.var
-
-    if raw_X is None or raw_var is None:
-        print("H5AD does NOT contain required RAW data. Skipping...", h5ad)
-        return 1
-
-    # Create a copy of AnnData from which we slice primary data and genes ONLY.
-    ad = anndata.AnnData(X=raw_X, obs=ad.obs, var=raw_var)
-    ad = ad[ad.obs.is_primary_data == True, ad.var.feature_biotype == "gene"]
-    if ad.n_obs == 0:
-        print("H5AD has no primary data, skipping...", h5ad)
-        return 1
-
-    # subset axis dataframes to the columns we care about and standardize index name
-    obs_df = ad.obs[OBS_TERM_COLUMNS]
-    var_df = raw_var[VAR_TERM_COLUMNS]
-    var_df.index.rename("var_id", inplace=True)
-    obs_df.index.rename("obs_id", inplace=True)
-
-    # make obs IDs globally unique by concatenating with the dataset_id
-    obs_df = obs_df.set_index(dataset_id + "_" + obs_df.index)
-
-    # and tie up in an AnnData
-    ad = anndata.AnnData(X=ad.X, obs=obs_df, var=var_df)
-
-    if verbose:
-        print("saving var...", h5ad)
-    save_var(uri, ctx, var_df)
-
-    if verbose:
-        print("saving obs...", h5ad)
-    column_types, varlen_types = get_ctypes(obs_df)
-    tiledb.from_pandas(
-        uri=f"{uri}/obs",
-        dataframe=obs_df,
-        mode="append",
-        ctx=ctx,
-        column_types=column_types,
-        varlen_types=varlen_types,
-    )
-
-    save_raw_X_normed(uri, ad, ctx, verbose, h5ad)
-
-    if verbose:
-        print("Save complete...", h5ad)
-
-    return 0
+from .common import OBS_TERM_COLUMNS, VAR_TERM_COLUMNS, get_ctypes, log
 
 
 def compute_raw_X_normed(raw_X: sparse.spmatrix):
@@ -108,7 +22,135 @@ def compute_raw_X_normed(raw_X: sparse.spmatrix):
     return sparse.diags((1.0 / raw_X.sum(axis=1)).A1).dot(raw_X).tocoo()
 
 
-def save_raw_X_normed(uri, ad, ctx, verbose, h5ad):
+def load_axes_dataframes(uri: str, datasets: list, ctx: tiledb.Ctx, current_schema_only: bool, verbose: bool):
+    # accumulate unique var_ids - ie, merge the datasets on the var/feature axis
+    var_names = set()
+    obs_row_start_idx = 0
+
+    for h5ad in datasets:
+        if not os.path.exists(h5ad):
+            log("H5AD path does not exist", h5ad)
+            continue
+
+        if verbose:
+            log(f"Adding {h5ad}")
+
+        ad = anndata.read_h5ad(h5ad, backed="r")
+        cxg_version = get_cellxgene_schema_version(ad)
+
+        dataset_id = os.path.splitext(os.path.basename(h5ad))[0]
+
+        if current_schema_only and cxg_version != "2.0.0":
+            log("H5AD has old schema version, skipping...", h5ad)
+            continue
+
+        _, raw_var = get_raw(ad)
+        if raw_var is None:
+            print("H5AD does NOT contain required RAW data. Skipping...", h5ad)
+            return
+
+        # Create a copy of AnnData from which we slice primary data and genes ONLY.
+        ad = anndata.AnnData(X=None, obs=ad.obs, var=raw_var)
+        ad = ad[ad.obs.is_primary_data == True, ad.var.feature_biotype == "gene"]
+        if ad.n_obs == 0:
+            log("H5AD has no primary data, skipping...", h5ad)
+            continue
+
+        # subset axis dataframes to the columns we care about and standardize index name
+        obs_df = ad.obs[OBS_TERM_COLUMNS].copy()
+        obs_df["dataset_id"] = dataset_id
+        var_df = raw_var[VAR_TERM_COLUMNS]
+
+        # build a set of unique var_name
+        var_names |= set(var_df.index)
+
+        # incrementally append obs
+        if verbose:
+            log("saving obs...", h5ad)
+        obs_df.index.rename("obs_name", inplace=True)
+        obs_df.reset_index(inplace=True)
+        column_types, varlen_types = get_ctypes(obs_df)
+        tiledb.from_pandas(
+            uri=f"{uri}/obs",
+            dataframe=obs_df,
+            mode="append",
+            ctx=ctx,
+            column_types=column_types,
+            varlen_types=varlen_types,
+            row_start_idx=obs_row_start_idx,
+        )
+
+        obs_row_start_idx += len(obs_df)
+
+    # save var
+    if verbose:
+        log("saving var...", h5ad)
+    var_df = pd.DataFrame(data={"var_name": list(var_names)})
+    column_types, varlen_types = get_ctypes(var_df)
+    tiledb.from_pandas(
+        uri=f"{uri}/var",
+        dataframe=var_df,
+        mode="append",
+        ctx=ctx,
+        column_types=column_types,
+        varlen_types=varlen_types,
+        row_start_idx=0,
+    )
+
+
+def load_raw_X_normed(uri: str, h5ad: str, tdb_config: dict, current_schema_only: bool, verbose: bool):
+
+    if not os.path.exists(h5ad):
+        log("H5AD path does not exist", h5ad)
+        return
+
+    if verbose:
+        log("loading...", h5ad)
+
+    ad = anndata.read_h5ad(h5ad)
+    cxg_version = get_cellxgene_schema_version(ad)
+
+    if current_schema_only and cxg_version != "2.0.0":
+        log("H5AD has old schema version, skipping...", h5ad)
+        return
+
+    raw_X, raw_var = get_raw(ad)
+    if raw_X is None or raw_var is None:
+        log("H5AD does NOT contain required RAW data. Skipping...", h5ad)
+        return
+
+    # Create a copy of AnnData from which we slice primary data and genes ONLY.
+    ad = anndata.AnnData(X=raw_X, obs=ad.obs, var=raw_var, dtype=np.float32)
+    ad = ad[ad.obs.is_primary_data == True, ad.var.feature_biotype == "gene"]
+    ad = anndata.AnnData(X=ad.X, obs=ad.obs, var=ad.var, dtype=np.float32)
+    if ad.n_obs == 0:
+        log("H5AD has no primary data, skipping...", h5ad)
+        return
+
+    ctx = tiledb.Ctx(tdb_config)
+
+    # get the starting row index for this dataset
+    dataset_id = os.path.splitext(os.path.basename(h5ad))[0]
+    with tiledb.open(f"{uri}/obs", ctx=ctx) as obs:
+        # there is a bug in QueryCondition
+        # qc = tiledb.QueryCondition(f"dataset_id == '{dataset_id}'")
+        # row_start_idx_groups = obs.query(attrs=["dataset_id"], attr_cond=qc).df[:].reset_index().groupby("dataset_id").min()
+        row_start_idx_groups = obs.query(attrs=["dataset_id"]).df[:].reset_index().groupby("dataset_id").min()
+        row_start_idx = row_start_idx_groups.loc[bytes(dataset_id, "utf-8"), "index"]
+
+    # get the var_name map
+    with tiledb.open(f"{uri}/var", ctx=ctx) as var:
+        global_var_ids = var.df[:].reset_index().set_index("var_name")
+    ad.var["var_name"] = ad.var.index.astype(bytes)
+    var_id_map = ad.var[["var_name"]].join(global_var_ids, on="var_name").var_id.to_numpy()
+
+    save_raw_X_normed(uri, ad, ctx, row_start_idx, var_id_map, h5ad, verbose)
+
+    if verbose:
+        log("Save complete...", h5ad)
+
+
+def save_raw_X_normed(uri, ad, ctx, row_start_idx, var_id_map, h5ad, verbose):
     if sparse.issparse(ad.X):
         num_samples = 16
         count = 0
@@ -124,39 +166,45 @@ def save_raw_X_normed(uri, ad, ctx, verbose, h5ad):
     if X.dtype != np.float32:
         X = X.astype(np.float32)
 
-    obs_names = ad.obs.index.to_numpy()
     with tiledb.open(f"{uri}/raw_X_normed", mode="w", ctx=ctx) as raw_X_normed:
         for chunk in range(0, ad.n_obs, chunk_size):
+            gc.collect()
             if verbose:
-                print(f"saving X chunk {chunk//chunk_size + 1} of {ad.n_obs//chunk_size + 1}", h5ad)
+                log(f"saving X chunk {chunk//chunk_size + 1} of {ad.n_obs//chunk_size + 1}", h5ad)
+
             X_sp = sparse.csr_matrix(X[chunk : chunk + chunk_size, :])
             X_coo = compute_raw_X_normed(X_sp)
-            obs_ids = obs_names[X_coo.row + chunk].tolist()
-            var_ids = ad.var.index[X_coo.col].tolist()
-            raw_normed_values = X_coo.data
-            raw_X_normed[var_ids] = {
-                "obs_id": obs_ids,
-                "value": raw_normed_values,
-            }
+
+            obs_ids = X_coo.row + (row_start_idx + chunk)
+            var_ids = var_id_map[X_coo.col]
+            raw_X_normed[var_ids] = {"obs_id": obs_ids, "value": X_coo.data}
 
 
-def save_var(uri: str, ctx: tiledb.Ctx, df: pd.DataFrame):
-    # Merges var by index column value
-    with tiledb.open(f"{uri}/var", ctx=ctx) as agg_var:
-        agg_var_df = agg_var.query(dims=["var_id"], attrs=[]).df[:]
+def load_X(
+    *,
+    uri: str,
+    manifest: io.TextIOBase,
+    tdb_config: dict,
+    current_schema_only: bool,
+    max_workers: int,
+    verbose: bool,
+    **other,
+):
+    datasets = [d for d in [d.strip() for d in manifest.readlines()] if d.endswith(".h5ad") and os.path.exists(d)]
+    if len(datasets) == 0:
+        print("No H5AD files in the manifest")
+        return 1
 
-    mask = df.index.isin(agg_var_df.index)
-    if not mask.all():
-        missing_df = df[~mask]
-        column_types, varlen_types = get_ctypes(missing_df)
-        tiledb.from_pandas(
-            uri=f"{uri}/var",
-            dataframe=missing_df,
-            mode="append",
-            ctx=ctx,
-            column_types=column_types,
-            varlen_types=varlen_types,
-        )
+    max_workers = max(1, os.cpu_count() // 16) if max_workers is None else max_workers
+    with ProcessPoolExecutor(max_workers=max_workers) as tp:
+        futures = [
+            tp.submit(load_raw_X_normed, uri, h5ad, tdb_config, current_schema_only, verbose) for h5ad in datasets
+        ]
+        count = 0
+        for future in as_completed(futures):
+            count += 1
+            if verbose:
+                log(f"loadX: dataset {count} of {len(futures)} complete")
 
 
 def get_cellxgene_schema_version(ad: anndata.AnnData):
@@ -171,3 +219,17 @@ def get_cellxgene_schema_version(ad: anndata.AnnData):
         return ad.uns["version"]["corpora_schema_version"]
 
     return None
+
+
+def get_raw(ad: anndata.AnnData):
+
+    # The schema allows for raw to be in raw.X, unless there is no "final" matrix,
+    # in which case it is in X. Determine which is the case.  See normative prose:
+    # https://github.com/chanzuckerberg/single-cell-curation/blob/main/schema/2.0.0/schema.md#x-matrix-layers
+    #
+    # The spec is ambiguous on when the raw.var exists.  Guess.
+    #
+    if ad.raw is not None and ad.raw.X is not None:
+        return (ad.raw.X, ad.raw.var)
+
+    return (ad.X, ad.var)

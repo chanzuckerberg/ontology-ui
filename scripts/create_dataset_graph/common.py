@@ -1,5 +1,6 @@
 from datetime import datetime
 import pandas as pd
+import anndata
 
 # columns we preserve in our mini-atlas, on the assumption all data comes
 # from cellxgene corpus.  Schema:
@@ -28,6 +29,10 @@ def get_ctypes(df: pd.DataFrame):
 
         if pd.api.types.is_object_dtype(base_dtype):
             base_dtype = str
+
+        # for now, store all strings as ascii
+        if base_dtype == str:
+            base_dtype = bytes
 
         if df[k].dtype != base_dtype:
             column_types[k] = base_dtype

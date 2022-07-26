@@ -13,6 +13,7 @@ from .common import chunker, OBS_TERM_COLUMNS, log
 
 
 def do_ranking(uri, chunk_index, var_ids, tdb_config, init_buffer_bytes, verbose):
+    gc.collect()
     with tiledb.open(
         f"{uri}/raw_X_normed", config=tdb_config | {"py.init_buffer_bytes": init_buffer_bytes}
     ) as raw_X_normed:
@@ -29,28 +30,27 @@ def do_ranking(uri, chunk_index, var_ids, tdb_config, init_buffer_bytes, verbose
                 raw_X_ranked[genes.var_id] = {"obs_id": genes.obs_id, "value": genes.ranking}
 
 
-def rank_cells(*, uri: str, tdb_config: dict, verbose: bool = False, **other):
+def rank_cells(*, uri: str, tdb_config: dict, max_workers: int, verbose: bool = False, **other):
     """
     For each gene, rank by normalized raw X value
     """
     ctx = tiledb.Ctx(tdb_config)
 
     with tiledb.open(f"{uri}/var", ctx=ctx) as var:
-        var_df = var.query(attrs=[]).df[:]
+        var_df = var.query(dims=["var_id"], attrs=[]).df[:]
         n_var = len(var_df)
 
     with tiledb.open(f"{uri}/obs", ctx=ctx) as obs:
-        n_obs = len(obs.query(attrs=[]).df[:])
+        n_obs = len(obs.query(dims=["obs_id"], attrs=[]).df[:])
 
     # rather than doing this, we could use return_incomplete
-    sparsity_guess = 0.9
-    row_size_guess = 64  # obs_id average length SWAG
-    init_buffer_bytes = 16 * 1024 ** 3
-    chunk_size = max(1, init_buffer_bytes // int(n_obs * sparsity_guess * row_size_guess))
+    init_buffer_bytes = 2 * 1024 ** 3
+    chunk_size = guess_at_chunk_size(n_obs, init_buffer_bytes=init_buffer_bytes)
     if verbose:
         log(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
 
-    with ProcessPoolExecutor(max_workers=max(4, os.cpu_count() // 8)) as tp:
+    max_workers = max(4, os.cpu_count() // 4) if max_workers is None else max_workers
+    with ProcessPoolExecutor(max_workers=max_workers) as tp:
         count = 0
         result_futures = [
             tp.submit(do_ranking, uri, chunk[0], chunk[1], tdb_config, init_buffer_bytes, verbose)
@@ -74,6 +74,7 @@ def rank_genes_groups(
     top_n: int,
     verbose: bool,
     tdb_config: dict,
+    max_workers: int,
     output,
     **other,
 ):
@@ -88,10 +89,11 @@ def rank_genes_groups(
             return 1
 
     with tiledb.open(f"{uri}/obs", ctx=ctx) as obs:
-        obs_df = obs.query(attrs=groupby).df[:]
+        obs_df = obs.query(dims=["obs_id"], attrs=groupby).df[:]
 
     with tiledb.open(f"{uri}/var", ctx=ctx) as var:
         var_df = var.df[:]
+    var_df["var_name_str"] = var_df.var_name.to_numpy().astype(str)
 
     results = {
         k: _rank_genes_groups(
@@ -102,6 +104,7 @@ def rank_genes_groups(
             top_n=top_n,
             verbose=verbose,
             tdb_config=tdb_config,
+            max_workers=max_workers,
         )
         for k in groupby
     }
@@ -116,6 +119,7 @@ def _rank_genes_groups(
     top_n: int,
     verbose: bool,
     tdb_config: dict,
+    max_workers: int,
 ):
     """
     For each gene, calculate:
@@ -138,7 +142,7 @@ def _rank_genes_groups(
     if verbose:
         log("rank_genes_groups: start calculation of S and R")
 
-    n_partitions = os.cpu_count() // 3
+    n_partitions = max(1, os.cpu_count() // 2) if max_workers is None else max_workers
     partition_chunk_size = max(1, n_var // n_partitions)
     if verbose:
         log(f"partitions: {n_partitions}, partition_chunk_size: {partition_chunk_size}")
@@ -194,24 +198,20 @@ def _rank_genes_groups(
         .reset_index(level=(2, 1))
         .drop(columns=[groupby_key])
     )
+    top_n.index = top_n.index.astype(str)
 
-    results = (
-        top_n.groupby(level=0)
-        .apply(
-            lambda df: (
-                {
-                    "genes": df.xs(df.name).var_id.to_list(),
-                    "pvals": df.xs(df.name).pvals.to_list(),
-                    "pvals_adj": df.xs(df.name).pvals_adj.to_list(),
-                    "lfc": df.xs(df.name).lfc.to_list(),
-                    "scores": df.xs(df.name).U.to_list(),
-                }
-            )
+    results = top_n.groupby(level=0).apply(
+        lambda df: (
+            {
+                "genes": var_df.var_name_str[df.xs(df.name).var_id.to_list()].to_list(),
+                "pvals": df.xs(df.name).pvals.to_list(),
+                "pvals_adj": df.xs(df.name).pvals_adj.to_list(),
+                "lfc": df.xs(df.name).lfc.to_list(),
+                "scores": df.xs(df.name).U.to_list(),
+            }
         )
-        .to_dict()
     )
-
-    return results
+    return results.to_dict()
 
 
 def do_compute_S(
@@ -244,7 +244,7 @@ def do_compute_S(
             gc.collect()
             if verbose:
                 log(f"value sum, partition {partition_index}, chunk {chunk_index+1} of {n_chunks}")
-            all_values = raw_X_normed.df[chunk_var_ids].set_index("obs_id")
+            all_values = raw_X_normed.df[chunk_var_ids].set_index("obs_id").astype({"value": "float64"})
             S = all_values.join(obs_df).groupby(by=["var_id", groupby_key]).value.sum()
             gene_groups.loc[S.index, "S"] = S.to_list()
 
@@ -302,5 +302,5 @@ def do_compute_R(
     return ("R", gene_groups.R.to_dict())
 
 
-def guess_at_chunk_size(n_obs, row_size_guess=64, init_buffer_bytes=1 * 1024 ** 3, sparsity_guess=0.9):
+def guess_at_chunk_size(n_obs, row_size_guess=8, init_buffer_bytes=2 * 1024 ** 3, sparsity_guess=0.9):
     return max(1, init_buffer_bytes // int(n_obs * (1.0 - sparsity_guess) * row_size_guess))
