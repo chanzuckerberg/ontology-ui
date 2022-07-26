@@ -185,6 +185,8 @@ def _rank_genes_groups(
     gene_groups["pvals"] = pvals
     gene_groups["pvals_adj"] = pvals_adj
 
+    print(gene_groups)
+
     # compute log foldchange
     mean = gene_groups.S / gene_groups.n
     S_all = gene_groups.groupby(level=0).S.sum()
@@ -198,7 +200,9 @@ def _rank_genes_groups(
         .reset_index(level=(2, 1))
         .drop(columns=[groupby_key])
     )
+    print(top_n)
     top_n.index = top_n.index.astype(str)
+    print(top_n)
 
     results = top_n.groupby(level=0).apply(
         lambda df: (
@@ -211,6 +215,7 @@ def _rank_genes_groups(
             }
         )
     )
+    print(results)
     return results.to_dict()
 
 

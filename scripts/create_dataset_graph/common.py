@@ -1,4 +1,8 @@
+import io
 from datetime import datetime
+import csv
+from collections import namedtuple
+
 import pandas as pd
 
 # columns we preserve in our mini-atlas, on the assumption all data comes
@@ -35,7 +39,7 @@ def get_ctypes(df: pd.DataFrame):
 
         if df[k].dtype != base_dtype:
             column_types[k] = base_dtype
-            if base_dtype == str:
+            if base_dtype == str or base_dtype == bytes:
                 varlen_types.add(k)
 
     return column_types, varlen_types
@@ -48,3 +52,12 @@ def chunker(listlike, chunk_size):
 
 def log(*args):
     print(f"[{datetime.now()}]", *args)
+
+
+def parse_manifest(manifest: io.TextIOBase):
+    """
+    return manifest as list of tuples, (dataset_id, path)
+    """
+    Dataset = namedtuple("Dataset", ["dataset_id", "path"])
+    manifest_reader = csv.reader(manifest)
+    return [Dataset(*[c.strip() for c in r]) for r in manifest_reader]

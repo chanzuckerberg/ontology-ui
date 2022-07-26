@@ -5,7 +5,7 @@ import tiledb
 import numpy as np
 import pandas as pd
 
-from .common import OBS_TERM_COLUMNS, VAR_TERM_COLUMNS, get_ctypes, log
+from .common import OBS_TERM_COLUMNS, VAR_TERM_COLUMNS, get_ctypes, log, parse_manifest
 from .add import load_axes_dataframes
 
 
@@ -82,7 +82,7 @@ def create_dataframe_array(
         )
 
 
-def create_empty_aggregation(uri: str, ctx: tiledb.Ctx, datasets: list):
+def create_empty_aggregation(uri: str, ctx: tiledb.Ctx):
     """
     Create the empty aggregation.
     """
@@ -114,7 +114,10 @@ def create_empty_aggregation(uri: str, ctx: tiledb.Ctx, datasets: list):
 
 
 def create(*, uri: str, manifest: io.TextIOBase, tdb_config: dict, current_schema_only: bool, verbose: bool, **other):
-    datasets = [d for d in [d.strip() for d in manifest.readlines()] if d.endswith(".h5ad") and os.path.exists(d)]
+    # datasets = [d for d in [d.strip() for d in manifest.readlines()] if d.endswith(".h5ad") and os.path.exists(d)]
+    datasets = parse_manifest(manifest)
+    datasets = [d for d in datasets if d.path.endswith('.h5ad') and os.path.exists(d.path)]
+
     if len(datasets) == 0:
         print("No H5AD files in the manifest")
         return 1
@@ -127,7 +130,7 @@ def create(*, uri: str, manifest: io.TextIOBase, tdb_config: dict, current_schem
 
     if verbose:
         log("Creating empty aggregation", uri)
-    create_empty_aggregation(uri, ctx, datasets)
+    create_empty_aggregation(uri, ctx)
 
     load_axes_dataframes(uri, datasets, ctx, current_schema_only, verbose)
 
