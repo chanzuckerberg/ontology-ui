@@ -8,7 +8,7 @@ import anndata
 import tiledb
 import numpy as np
 import pandas as pd
-from scipy import sparse
+from scipy import sparse, special as sc
 
 from .common import OBS_TERM_COLUMNS, VAR_TERM_COLUMNS, get_ctypes, log, parse_manifest
 
@@ -19,7 +19,8 @@ def compute_raw_X_normed(raw_X: sparse.spmatrix):
     This sums the counts by obs (row), and divides it into each value in the
     sparse matrix.
     """
-    return sparse.diags((1.0 / raw_X.sum(axis=1)).A1).dot(raw_X).tocoo()
+    with sc.errstate(divide="ignore"):
+        return sparse.diags((1.0 / raw_X.sum(axis=1)).A1).dot(raw_X).tocoo()
 
 
 def load_axes_dataframes(uri: str, datasets: list, ctx: tiledb.Ctx, current_schema_only: bool, verbose: bool):
