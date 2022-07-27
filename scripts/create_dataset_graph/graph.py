@@ -186,10 +186,9 @@ def annotate_ontology(in_use_ontologies: dict, obs_df: pd.DataFrame, var_df: pd.
             print("missing column name", column_name)
             continue
         for term_id in genes_rankings[column_name].keys():
+            # some terms have been filtered from the graph
             if term_id in in_use_ontologies[ontology_name]:
                 in_use_ontologies[ontology_name][term_id]["genes"] = genes_rankings[column_name][term_id]["genes"]
-            else:
-                print("unknown term!", term_id)
 
     return in_use_ontologies
 
