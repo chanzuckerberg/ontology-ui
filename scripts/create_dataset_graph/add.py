@@ -48,8 +48,7 @@ def load_axes_dataframes(uri: str, datasets: list, ctx: tiledb.Ctx, current_sche
             return
 
         # Create a copy of AnnData from which we slice primary data and genes ONLY.
-        ad = anndata.AnnData(X=None, obs=ad.obs, var=raw_var)
-        ad = ad[ad.obs.is_primary_data == True, ad.var.feature_biotype == "gene"]
+        ad = filter_anndata(anndata.AnnData(X=None, obs=ad.obs, var=raw_var))
         if ad.n_obs == 0:
             log("H5AD has no primary data, skipping...", h5ad.path)
             continue
@@ -122,9 +121,7 @@ def load_raw_X_normed(
         return
 
     # Create a copy of AnnData from which we slice primary data and genes ONLY.
-    ad = anndata.AnnData(X=raw_X, obs=ad.obs, var=raw_var, dtype=np.float32)
-    ad = ad[ad.obs.is_primary_data == True, ad.var.feature_biotype == "gene"]
-    ad = anndata.AnnData(X=ad.X, obs=ad.obs, var=ad.var, dtype=np.float32)
+    ad = filter_anndata(anndata.AnnData(X=raw_X, obs=ad.obs, var=raw_var, dtype=np.float32))
     if ad.n_obs == 0:
         log("H5AD has no primary data, skipping...", h5ad_path)
         return
@@ -233,13 +230,34 @@ def get_cellxgene_schema_version(ad: anndata.AnnData):
 
 
 def get_raw(ad: anndata.AnnData):
-    # The schema allows for raw to be in raw.X, unless there is no "final" matrix,
-    # in which case it is in X. Determine which is the case.  See normative prose:
-    # https://github.com/chanzuckerberg/single-cell-curation/blob/main/schema/2.0.0/schema.md#x-matrix-layers
-    #
-    # The spec is ambiguous on when the raw.var exists.  Guess.
-    #
+    """
+    The schema allows for raw to be in raw.X, unless there is no "final" matrix,
+    in which case it is in X. Determine which is the case.  See normative prose:
+    https://github.com/chanzuckerberg/single-cell-curation/blob/main/schema/2.0.0/schema.md#x-matrix-layers
+
+    The spec is ambiguous on when the raw.var exists. Return best guess.
+    """
     if ad.raw is not None and ad.raw.X is not None:
         return (ad.raw.X, ad.raw.var)
 
     return (ad.X, ad.var)
+
+
+def filter_anndata(ad: anndata.AnnData) -> anndata.AnnData:
+    """
+    Return an anndata filtered for those cells/genes of interest.
+
+    obs filter:
+    * primary data only (obs.is_primary_data == True)
+    * human only (obs.organism_ontology_term_id == 'NCBITaxon:9606')
+
+    var filter:
+    * genes only  (var.feature_biotype == 'gene')
+
+    """
+    HOMO_SAPIENS = "NCBITaxon:9606"
+    ad = ad[
+        (ad.obs.is_primary_data == True) & (ad.obs.organism_ontology_term_id == HOMO_SAPIENS),
+        (ad.var.feature_biotype == "gene"),
+    ]
+    return anndata.AnnData(X=ad.X, obs=ad.obs, var=ad.var, dtype=np.float32)
