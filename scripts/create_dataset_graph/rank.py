@@ -156,7 +156,7 @@ def _rank_genes_groups(
 
         completed_count = 0
 
-        with Bar("Ranking genes", max=len(result_futures)) as bar:
+        with Bar(f"Ranking genes for {groupby_key}:", max=len(result_futures)) as bar:
             for future in as_completed(result_futures):
                 try:
                     name, result = future.result()
