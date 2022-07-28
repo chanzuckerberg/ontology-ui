@@ -49,12 +49,15 @@ export interface DrawForceDagHighlightProps {
 export const drawForceDag = (
   nodes: OntologyVertexDatum[],
   links: SimulationLinkDatum<any>[],
+  hullToNodes: Map<string, string[]>,
   dagCanvasRef: React.RefObject<HTMLCanvasElement>,
   ontology: Ontology,
   setHoverNode: (node: OntologyVertexDatum | undefined) => void,
   setPinnedNode: (node: OntologyVertexDatum | undefined) => void,
   onForceSimulationEnd: any,
-  defaultHighlightProps: DrawForceDagHighlightProps = {}
+  defaultHighlightProps: DrawForceDagHighlightProps = {},
+  hullRoots: string[],
+  nodeToHullRoot: Map<string, string>
 ) => {
   if (!dagCanvasRef || !dagCanvasRef.current) return null;
 
@@ -75,40 +78,6 @@ export const drawForceDag = (
   const highlightProps: DrawForceDagHighlightProps = {
     ...defaultHighlightProps,
   };
-
-  /**
-   * Hull root vertices
-   */
-  const hullRoots: string[] = [
-    // hardcoded for the alpha, to be inferred with a heuristic
-    "CL:0002086",
-    "CL:0000542",
-    // "CL:0000540",
-    "CL:0000084",
-    "CL:0000236",
-    "CL:1000497",
-    "CL:0000039",
-    "CL:0000125",
-    "CL:0000101",
-    "CL:0000099",
-    "CL:0002563",
-    // "CL:0000988",
-    "CL:0000451",
-    "CL:0008007",
-    "CL:0002368",
-    // "CL:0000763",
-    "CL:0000163",
-    "CL:0000147",
-    "CL:0011026",
-    "CL:0000094",
-    "CL:0000100",
-    "CL:0001035",
-    "CL:0001065",
-    "CL:0000786",
-    "CL:1000854",
-    "CL:0000235",
-    "CL:0000210",
-  ];
 
   /**
    * Sizes
@@ -151,7 +120,6 @@ export const drawForceDag = (
   const initialRadius = 10;
   const graphDiameter = 2 * (initialRadius * Math.sqrt(0.5 + nodes.length));
   let canvasInvTransformMatrix: DOMMatrixReadOnly = dagCanvasRef.current.getContext("2d")!.getTransform().inverse();
-
   /**
    * Set up d3 force simulation
    */
@@ -161,7 +129,19 @@ export const drawForceDag = (
      */
     .force(
       "link",
-      forceLink(links).id((d: any) => d.id)
+      forceLink(links)
+        .id((d: any) => d.id)
+        .strength(function (d) {
+          const atLeastOneInHull = nodeToHullRoot.has(d.source.id) || nodeToHullRoot.has(d.target.id);
+          const inSameHull = nodeToHullRoot.get(d.source.id) === nodeToHullRoot.get(d.target.id);
+          const inNoHull = !(atLeastOneInHull || inSameHull);
+          let val;
+          if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) val = 1.0;
+          //else if(highlightProps.hullsEnabled && inNoHull) val=0.1;
+          //else if(highlightProps.hullsEnabled) val=0.1;
+          else val = 0.1;
+          return val;
+        })
     )
     .force("charge", forceManyBody())
     .force(
@@ -256,7 +236,7 @@ export const drawForceDag = (
       /**
        * Draw hulls
        */
-      drawHulls(ontology, nodes, context, hullBorderColor, hullLabelColor, hullRoots);
+      drawHulls(ontology, nodes, hullToNodes, context, hullBorderColor, hullLabelColor, hullRoots);
 
       /**
        * Draw text on hull nodes
