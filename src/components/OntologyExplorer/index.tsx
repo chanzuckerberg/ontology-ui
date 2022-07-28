@@ -103,8 +103,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
-
+  
+  const heightMap = graph.heightMaps[ontoID];
   const depthMap = graph.depthMaps[ontoID];
+  
   const maxDepth = Math.max(...depthMap.values()); // (alec) replace this with iterator through nodes in dagState
   const minDepth =
     Math.max(
