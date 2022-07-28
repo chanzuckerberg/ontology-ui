@@ -51,7 +51,7 @@ def load_axes_dataframes(uri: str, datasets: list, ctx: tiledb.Ctx, current_sche
         # Create a copy of AnnData from which we slice primary data and genes ONLY.
         ad = filter_anndata(anndata.AnnData(X=None, obs=ad.obs, var=raw_var))
         if ad.n_obs == 0:
-            log("H5AD has no primary data, skipping...", h5ad.path)
+            log("H5AD has no data after filtering, skipping...", h5ad.path)
             continue
 
         # subset axis dataframes to the columns we care about and standardize index name
