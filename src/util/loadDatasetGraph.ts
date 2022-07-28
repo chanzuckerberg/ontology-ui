@@ -151,17 +151,17 @@ function calcHeightDFS(ontology: Ontology, term: OntologyTerm, heightMap: Map<st
       heights.push(calcHeightDFS(ontology, childTerm, heightMap) + 1);
     }
   }
-  const val = heights.length > 0 ? Math.max(...heights) : 0;
+  const maxHeight = heights.length > 0 ? Math.max(...heights) : 0;
   if (heightMap.has(term.id)) {
-    const updatedVal = Math.max(heightMap.get(term.id) ?? 0, val);
+    const updatedVal = Math.max(heightMap.get(term.id) ?? 0, maxHeight);
     heightMap.set(term.id, updatedVal);
     term.height = updatedVal;
   } else {
-    heightMap.set(term.id, val);
-    term.height = val;
+    heightMap.set(term.id, maxHeight);
+    term.height = maxHeight;
   }
 
-  return val;
+  return maxHeight;
 }
 /**
  * Add our ID to our immediate parent's children[].
