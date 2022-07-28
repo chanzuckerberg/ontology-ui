@@ -12,6 +12,8 @@ import SearchSidebar, { SearchTerm, urlSearchParamsToSearchTerms, searchTermToUr
 import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d";
 import { OntologyExplorerState, OntologyExplorerProps, OntologyVertexDatum, DagState, CreateDagProps } from "./types";
 import lruMemoize from "../../util/lruMemo";
+import { getHullNodes } from "./drawForce/hulls";
+
 import {
   ontologySubset,
   ontologyFilter,
@@ -54,6 +56,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const [dagState, setDagState] = useState<DagState | null>(null);
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
+
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
   const [sugiyamaIsOpen, setSugiyamaIsOpen] = useState<boolean>(false);
 
@@ -126,6 +129,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     handlePruningDepthChange(maxDepth);
   }
 
+
   /*
    * memoized callback to navigate.
    */
@@ -157,22 +161,70 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
     Side effect: sets the render & simulation state.
     */
+
     if (dagState) {
       const { nodes, links } = dagState;
+
+      const nodeToHullRoot = new Map();
+      let flag = true;
+      let height = 7;
+      const allHullRoots: string[] = [];
+      while (flag && height >= 2) {
+        flag = false;
+        const hullRoots = []; // get all hullRoots of a certain height
+        for (const [k, v] of heightMap) {
+          if (v === height) {
+            hullRoots.push(k);
+          }
+        }
+        hullRoots.forEach((item) => {
+          // for each root
+          const hullNodes = getHullNodes(item, ontology, nodes);
+          hullNodes.forEach((n: any) => {
+            // for each node in root
+            if (!nodeToHullRoot.has(n.id)) {
+              // if not already assigned a root
+              if (!allHullRoots.includes(item)) {
+                allHullRoots.push(item); // add root
+              }
+              nodeToHullRoot.set(n.id, item); // set the root.
+            }
+          });
+        });
+        for (const node of nodes) {
+          const id = node.id;
+          if (!nodeToHullRoot.has(id)) {
+            flag = true;
+            break;
+          }
+        }
+        height -= 1;
+      }
+      const hullToNodes = new Map();
+      nodeToHullRoot.forEach((v, k) => {
+        if (hullToNodes.has(v)) {
+          hullToNodes.get(v).push(k);
+        } else {
+          hullToNodes.set(v, [k]);
+        }
+      });
       const _redrawCanvas = drawForceDag(
         nodes,
         links,
+        hullToNodes,
         dagCanvasRef,
         ontology,
         (node?: OntologyVertexDatum) => setHoverNode(node),
         (node?: OntologyVertexDatum) => go(`../${node?.id ?? ""}`),
         () => setSimulationRunning(false),
-        defaultForceHightlightProps
+        { ...defaultForceHightlightProps, hullsEnabled },
+        allHullRoots,
+        nodeToHullRoot
       );
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagState, dagCanvasRef, go]);
+  }, [ontology, dagState, dagCanvasRef, go, hullsEnabled, heightMap]);
 
   useEffect(() => {
     /*
@@ -279,6 +331,9 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
           dagState?.sugiyamaStratifyData && dagState?.sugiyamaStratifyData.length < sugiyamaRenderThreshold
         }
         handleSugiyamaOpen={handleSugiyamaOpen}
+        handleDisplayHulls={() =>
+          setForceCanvasHighlightProps({ ...forceCanvasHighlightProps, hullsEnabled: !hullsEnabled })
+        }
         simulationRunning={simulationRunning}
         menubarHeight={menubarHeight}
         outdegreeCutoffNodes={minimumOutdegree}

@@ -29,6 +29,7 @@ interface OntologyExplorerControlDrawerProps {
   handleHighlightAncestorChange: any;
   sugiyamaIsOpen: boolean;
   sugiyamaIsEnabled: boolean;
+  handleDisplayHulls: any;
   handleSugiyamaOpen: any;
   minimumOutdegree: string;
   maximumOutdegree: string;
@@ -61,6 +62,7 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
     maxDepth,
     currentPruningDepth,
     sugiyamaIsEnabled,
+    handleDisplayHulls,
   } = props;
 
   const handleSettingsOpen = () => setSettingsIsOpen(true);
@@ -117,6 +119,14 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             label: "Activate hierarchy layout",
             onKeyDown: () => {
               handleSugiyamaOpen();
+            },
+          },
+          {
+            combo: "H",
+            global: true,
+            label: "Display hulls",
+            onKeyDown: () => {
+              handleDisplayHulls();
             },
           },
         ]}
