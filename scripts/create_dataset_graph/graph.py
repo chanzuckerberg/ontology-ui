@@ -5,19 +5,17 @@ import json
 import shutil
 import tempfile
 import requests
-from argparse import ArgumentParser, ArgumentTypeError
-import argparse
 import datetime
-from collections import deque
+from collections import deque, namedtuple
 from functools import reduce
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import tiledb
-import numpy as np
-import pandas as pd
-import psutil
-import yaml
 import owlready2
+import yaml
+import pandas as pd
+
+from .common import OBS_TERM_COLUMNS
 
 """
 Given reference ontologies (CL, UBERON, etc) and a baseline dataset,
@@ -60,18 +58,6 @@ OWL_INFO_URI = (
     "/cellxgene_schema_cli/cellxgene_schema/ontology_files/owl_info.yml"
 )
 
-# Columns that contain terms in the CXG
-CXG_TERM_COLUMNS = [
-    "assay_ontology_term_id",
-    "cell_type_ontology_term_id",
-    "development_stage_ontology_term_id",
-    "disease_ontology_term_id",
-    "ethnicity_ontology_term_id",
-    "organism_ontology_term_id",
-    "sex_ontology_term_id",
-    "tissue_ontology_term_id",
-]
-
 # attributes that link terms (relationships)
 TERM_LINKS = ["parents", "part_of", "have_part", "develops_from", "derives_from"]
 
@@ -93,33 +79,45 @@ ONLY_IN_TAXON = owlready2.IRIS["http://purl.obolibrary.org/obo/RO_0002160"]
 HOMO_SAPIENS = owlready2.IRIS["http://purl.obolibrary.org/obo/NCBITaxon_9606"]
 
 
-def main():
+def create_graph(
+    *,
+    uri: str,
+    owl_info: str,
+    rank_genes_groups: str,
+    filter_non_human: bool,
+    output,
+    verbose: bool,
+    tdb_config: dict,
+    **other,
+):
     global tiledb_ctx
-    global cxg_mode
+    tiledb_ctx = tiledb.Ctx(tdb_config)
 
-    parser = create_args_parser()
-    args = parser.parse_args()
-    cxg_mode = args.uri.endswith(".cxg") or args.uri.endswith(".cxg/")
-    tiledb_ctx = create_tiledb_ctx(args)
+    global _verbose
+    _verbose = verbose
 
     # Load the current cellxgene schema OWL configuration, which points
     # at all of the master ontology files.
-    owl_info = fetch_yaml(args.owl_info)
+    owl_info = fetch_yaml(owl_info)
+
+    # Load the ranked genes
+    with open(rank_genes_groups) as rgg:
+        genes_rankings = json.load(rgg)
 
     # Load initial data
     with ThreadPoolExecutor() as tp:
 
         load_ontology = tp.submit(load_ontologies, owl_info)
-        load_obs = tp.submit(load_obs_dataframe, args)
-        load_var = tp.submit(load_var_dataframe, args)
+        load_obs = tp.submit(load_obs_dataframe, uri)
+        load_var = tp.submit(load_var_dataframe, uri)
 
         obs_df = load_obs.result()
         var_df = load_var.result()
 
         # identify terms in use by the dataset
         master_ontology = load_ontology.result()
-        terms_directly_in_use, terms_in_use = get_terms_in_use(args, master_ontology, obs_df)
-        if args.output != sys.stdout:
+        terms_directly_in_use, terms_in_use = get_terms_in_use(filter_non_human, master_ontology, obs_df)
+        if output != sys.stdout:
             print(
                 f"{len(terms_directly_in_use)} terms directly in use, "
                 f"{len(terms_in_use)} total (including ancestral terms)."
@@ -129,19 +127,19 @@ def main():
         in_use_ontologies = create_in_use_ontologies(master_ontology, terms_in_use)
 
         # annotate the in-use ontology with data attributes
-        in_use_ontologies = annotate_ontology(in_use_ontologies, obs_df, var_df)
+        in_use_ontologies = annotate_ontology(in_use_ontologies, obs_df, var_df, genes_rankings)
 
         # filter empty/unused terms to make the graph smaller
         in_use_ontologies = cleanup_fields(in_use_ontologies)
 
     # Create & save the graph
     result = {
-        "dataset": args.uri,
+        "dataset": uri,
         "created_on": datetime.datetime.now().astimezone().isoformat(),
         "owl_info": {name: info["urls"][info["latest"]] for name, info in owl_info.items()},
         "ontologies": in_use_ontologies,
     }
-    json.dump(result, args.output)
+    json.dump(result, output)
 
 
 def create_in_use_ontologies(master_ontology, terms_in_use):
@@ -156,7 +154,7 @@ def create_in_use_ontologies(master_ontology, terms_in_use):
     return in_use_ontologies
 
 
-def annotate_ontology(in_use_ontologies: dict, obs_df: pd.DataFrame, var_df: pd.DataFrame):
+def annotate_ontology(in_use_ontologies: dict, obs_df: pd.DataFrame, var_df: pd.DataFrame, genes_rankings: dict):
     # Add stats & other annotations
 
     # Number of cells per term
@@ -168,7 +166,7 @@ def annotate_ontology(in_use_ontologies: dict, obs_df: pd.DataFrame, var_df: pd.
         if ontology_name in in_use_ontologies and termId in in_use_ontologies[ontology_name]:
             in_use_ontologies[ontology_name][termId]["n_cells"] = count
 
-    # Data links between cell_type and tissue_type and save in part_of
+    # Links found in the data between cell_type and tissue_type are saved in 'part_of'
     grouped = (
         obs_df[["cell_type_ontology_term_id", "tissue_ontology_term_id"]]
         .groupby(by=["cell_type_ontology_term_id", "tissue_ontology_term_id"])
@@ -181,6 +179,16 @@ def annotate_ontology(in_use_ontologies: dict, obs_df: pd.DataFrame, var_df: pd.
         part_of = set(in_use_ontologies[ontology_name][fromId]["part_of"])
         part_of.update(list(filter(lambda id: id.startswith("UBERON:"), grouped[fromId].index)))
         in_use_ontologies[ontology_name][fromId]["part_of"] = list(part_of)
+
+    # add genes of significance annotation based upon the gene groups rankings (derived from data)
+    for ontology_name, column_name in [("CL", "cell_type_ontology_term_id"), ("UBERON", "tissue_ontology_term_id")]:
+        if column_name not in genes_rankings:
+            print("missing column name", column_name)
+            continue
+        for term_id in genes_rankings[column_name].keys():
+            # some terms have been filtered from the graph
+            if term_id in in_use_ontologies[ontology_name]:
+                in_use_ontologies[ontology_name][term_id]["genes"] = genes_rankings[column_name][term_id]["genes"]
 
     return in_use_ontologies
 
@@ -235,17 +243,17 @@ def is_non_human(term_id, term) -> bool:
     return non_human
 
 
-def get_seed_terms(args, master_ontology, ont_name):
+def get_seed_terms(filter_non_human: bool, master_ontology, ont_name):
     # return seed terms for the specified ontology. Filter as requested.
-    if ont_name in ["CL", "UBERON"] and args.filter_non_human:
+    if ont_name in ["CL", "UBERON"] and filter_non_human:
         return (k for k, v in master_ontology[ont_name].items() if not v["deprecated"] and not is_non_human(k, v))
     return master_ontology[ont_name].keys()
 
 
-def get_terms_in_use(args, master_ontology, obs_df):
+def get_terms_in_use(filter_non_human: bool, master_ontology, obs_df):
     # Seed with terms used by the dataset.
     terms_in_use = set()
-    for col in CXG_TERM_COLUMNS:
+    for col in OBS_TERM_COLUMNS:
         terms_in_use.update(obs_df[col].unique())
 
     # Silently remove known unknowns
@@ -276,7 +284,7 @@ def get_terms_in_use(args, master_ontology, obs_df):
     # in our ontology, even if they are not present in the data.
     for ont_name in SEED_ONTOLOGIES:
         # terms_in_use.update(term_id for term_id in master_ontology[ont_name].keys())
-        terms_in_use.update(get_seed_terms(args, master_ontology, ont_name))
+        terms_in_use.update(get_seed_terms(filter_non_human, master_ontology, ont_name))
 
     # generate list of all referenced terms, including links, parents, etc.
     to_be_processed = deque(terms_in_use)
@@ -304,7 +312,7 @@ def get_term_counts(obs_df: pd.DataFrame) -> dict:
         return acc
 
     term_counts = {}
-    for col in CXG_TERM_COLUMNS:
+    for col in OBS_TERM_COLUMNS:
         counts = obs_df[col].value_counts()
         term_counts = reduce(merge_counts, counts.items(), term_counts)
 
@@ -335,7 +343,8 @@ def download(url):
     Downloads to a temp file. If ends with .gz, decompresses.  File name returned.
     Caller must delete file when no longer needed.
     """
-    print(f"Downloading {url}")
+    if _verbose:
+        print(f"Downloading {url}")
     is_gzipped = url.endswith(".gz")
     suffix = ".gz" if is_gzipped else None
     with requests.get(url, stream=True) as r:
@@ -385,7 +394,8 @@ def build_ontology(owl_info, onto_prefix, onto):
     onto_iri = onto.base_iri
     if onto_iri.endswith("#"):
         onto_iri = onto_iri[0:-1]
-    print(f"Building {onto_prefix}")
+    if _verbose:
+        print(f"Building {onto_prefix}")
 
     # by default, whitelist a link to any ontology we are incorporating. Update
     # this list with manual overrides as helpful.
@@ -421,6 +431,7 @@ def build_ontology(owl_info, onto_prefix, onto):
 
         except Exception as e:
             print(f"Error handling {name}: {e}")
+            raise e
 
     return ontology
 
@@ -436,7 +447,8 @@ def load_ontologies(owl_info):
             # unfortunately, can't parallelize owlready2 interactions
             onto_prefix = download_futures[future]
             fname = future.result()
-            print(f"Loading {onto_prefix}")
+            if _verbose:
+                print(f"Loading {onto_prefix}")
             onto = owlready2.get_ontology(fname).load()
             os.unlink(fname)
             ontologies[onto_prefix] = build_ontology(owl_info, onto_prefix, onto)
@@ -444,21 +456,21 @@ def load_ontologies(owl_info):
     return ontologies
 
 
-def load_obs_dataframe(args):
+def load_obs_dataframe(uri: str):
     global tiledb_ctx
-    with tiledb.open(f"{args.uri}/obs", ctx=tiledb_ctx) as obs:
+    with tiledb.open(f"{uri}/obs", ctx=tiledb_ctx) as obs:
         # split col into dims and attrs as required by tiledb query API
         dim_names = set(d.name for d in obs.schema.domain)
-        dims = [c for c in CXG_TERM_COLUMNS if c in dim_names]
-        attrs = [c for c in CXG_TERM_COLUMNS if c not in dim_names]
-        if not cxg_mode:
-            attrs.append("obs_idx")
+        dims = [c for c in OBS_TERM_COLUMNS if c in dim_names]
+        attrs = [c for c in OBS_TERM_COLUMNS if c not in dim_names]
         obs_df = obs.query(dims=dims, attrs=attrs).df[:]
 
-    # sort by obs_idx if not in cxg_mode
-    if not cxg_mode:
-        obs_df = obs_df.sort_values(by=["obs_idx"], ignore_index=True)
-        assert np.all(obs_df.index == obs_df["obs_idx"])
+        # stringify
+        for i in range(obs.schema.nattr):
+            attr = obs.attr(i)
+            name = attr.name
+            if attr.dtype == "bytes" and attr.isvar is True and name in obs_df.keys():
+                obs_df[name] = obs_df[name].str.decode("utf-8")
 
     """
     The tissue_ontology_term_id and the assay_ontology_term_id columns may contain auxillary information
@@ -470,79 +482,14 @@ def load_obs_dataframe(args):
     This code removes the extra suffix annotation from _all_ term columns.
     """
     pat = r"(?P<term>^.+:\S+)(?:\s\(.*\))?$"
-    for col in CXG_TERM_COLUMNS:
+    for col in OBS_TERM_COLUMNS:
         obs_df[col] = obs_df[col].str.replace(pat, lambda m: m.group("term"), regex=True)
 
     return obs_df
 
 
-def load_var_dataframe(args):
+def load_var_dataframe(uri: str):
     global tiledb_ctx
-    with tiledb.open(f"{args.uri}/var", ctx=tiledb_ctx) as var:
+    with tiledb.open(f"{uri}/var", ctx=tiledb_ctx) as var:
         var_df = var.df[:]
-        if not cxg_mode:
-            var_df = var_df.sort_values(by=["var_idx"], ignore_index=True)
-            assert np.all(var_df.index == var_df["var_idx"])
     return var_df
-
-
-def create_tiledb_ctx(args: ArgumentParser) -> tiledb.Ctx:
-    requested_tile_cache_size = int(args.tile_cache_fraction * psutil.virtual_memory().total) >> 20 << 20
-    tile_cache_size = max(10 * 1024 ** 2, requested_tile_cache_size)
-    ctx = tiledb.Ctx(
-        {
-            "vfs.s3.region": os.environ.get("AWS_DEFAULT_REGION", "us-west-2"),
-            "py.init_buffer_bytes": 128 * 1024 ** 2,  # per-column buffer size
-            "sm.tile_cache_size": tile_cache_size,
-        }
-    )
-    return ctx
-
-
-# Credit: https://stackoverflow.com/a/64259328
-def float_range(mini, maxi):
-    """
-    Return function handle of an argument type function for
-    ArgumentParser checking a float range: mini <= arg <= maxi
-      mini - minimum acceptable argument
-      maxi - maximum acceptable argument
-    """
-
-    # Define the function with default arguments
-    def float_range_checker(arg):
-        """New Type function for argparse - a float within predefined range."""
-
-        try:
-            f = float(arg)
-        except ValueError:
-            raise ArgumentTypeError("must be a floating point number")
-        if f < mini or f > maxi:
-            raise ArgumentTypeError("must be in range [" + str(mini) + " .. " + str(maxi) + "]")
-        return f
-
-    # Return function handle to checking function
-    return float_range_checker
-
-
-def create_args_parser() -> ArgumentParser:
-    parser = ArgumentParser()
-    parser.add_argument("uri", type=str, help="Dataset URI")
-    parser.add_argument("--owl-info", type=str, help="cellxenge schema owl_info.yml URI", default=OWL_INFO_URI)
-    parser.add_argument(
-        "--filter-non-human",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Remove (do not include) unreferenced non-human terms",
-    )
-    parser.add_argument("-o", "--output", type=argparse.FileType("w"), default=sys.stdout)
-    parser.add_argument(
-        "--tile-cache-fraction",
-        type=float_range(0.0, 1.0),
-        default=0.33,
-        help=argparse.SUPPRESS,
-    )
-    return parser
-
-
-if __name__ == "__main__":
-    sys.exit(main())
