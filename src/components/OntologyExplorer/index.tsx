@@ -146,7 +146,12 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       const allHullRoots: string[] = [];
       while (flag && height >= 2) {
         flag = false;
-        const hullRoots = [...heightMap].filter(([_, v]) => v === height).map(([k, _]) => k); // get all hullRoots of a certain height
+        const hullRoots = []; // get all hullRoots of a certain height
+        for (const [k, v] of heightMap) {
+          if (v === height) {
+            hullRoots.push(k);
+          }
+        }
         hullRoots.forEach((item) => {
           // for each root
           const hullNodes = getHullNodes(item, ontology, nodes);
@@ -161,22 +166,17 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
             }
           });
         });
-        try {
-          nodes.forEach((node) => {
-            // for each node,
-            const id = node.id;
-            if (!nodeToHullRoot.has(id)) {
-              // check if node doesn't have a root
-              flag = true; // set true
-              throw Error;
-            }
-          });
-        } catch {}
+        for (const node of nodes) {
+          const id = node.id;
+          if (!nodeToHullRoot.has(id)) {
+            flag = true;
+            break;
+          }
+        }
         height -= 1;
       }
       const hullToNodes = new Map();
-      [...nodeToHullRoot].forEach((kv) => {
-        const [k, v] = kv;
+      nodeToHullRoot.forEach((v, k) => {
         if (hullToNodes.has(v)) {
           hullToNodes.get(v).push(k);
         } else {
