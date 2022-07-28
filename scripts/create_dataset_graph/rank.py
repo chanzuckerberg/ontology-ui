@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 from statsmodels.stats.multitest import multipletests
+from progress.bar import Bar
 
 from .common import chunker, OBS_TERM_COLUMNS, log
 
@@ -44,7 +45,7 @@ def rank_cells(*, uri: str, tdb_config: dict, max_workers: int, verbose: bool = 
         n_obs = len(obs.query(dims=["obs_id"], attrs=[]).df[:])
 
     # rather than doing this, we could use return_incomplete
-    init_buffer_bytes = 8 * 1024 ** 3
+    init_buffer_bytes = 8 * 1024**3
     chunk_size = guess_at_chunk_size(n_obs, init_buffer_bytes=init_buffer_bytes)
     if verbose:
         log(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
@@ -56,16 +57,16 @@ def rank_cells(*, uri: str, tdb_config: dict, max_workers: int, verbose: bool = 
             tp.submit(do_ranking, uri, chunk[0], chunk[1], tdb_config, init_buffer_bytes, verbose)
             for chunk in enumerate(chunker(var_df.index, chunk_size))
         ]
-        for future in as_completed(result_futures):
-            try:
-                future.result()
-            except Exception as e:
-                print("Error", e)
-                raise e
+        with Bar("Ranking cells", max=len(result_futures)) as bar:
+            for future in as_completed(result_futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    print("Error", e)
+                    raise e
 
-            count += 1
-            if verbose:
-                log(f"chunk {count} of {len(result_futures)} complete.")
+                count += 1
+                bar.next()
 
 
 def rank_genes_groups(
@@ -154,20 +155,21 @@ def _rank_genes_groups(
             result_futures.append(tp.submit(do_compute_R, uri, groupby_key, chunk[0], chunk[1], tdb_config, verbose))
 
         completed_count = 0
-        for future in as_completed(result_futures):
-            try:
-                name, result = future.result()
-                series = pd.Series(result, name=name)
-                gene_groups.loc[series.index, name] = series.to_list()
 
-            except Exception as e:
-                print("Error", e)
-                raise e
+        with Bar("Ranking genes", max=len(result_futures)) as bar:
+            for future in as_completed(result_futures):
+                try:
+                    name, result = future.result()
+                    series = pd.Series(result, name=name)
+                    gene_groups.loc[series.index, name] = series.to_list()
 
-            completed_count += 1
-            if verbose:
-                log(f"future {completed_count} of {len(result_futures)} complete.")
-            gc.collect()
+                except Exception as e:
+                    print("Error", e)
+                    raise e
+
+                completed_count += 1
+                gc.collect()
+                bar.next()
 
     if verbose:
         log("rank_genes_groups - finished calculation of S and R")
@@ -227,7 +229,7 @@ def do_compute_S(
     if verbose:
         log(f"value sum, starting partition {partition_index}")
 
-    init_buffer_bytes = 2 * 1024 ** 3
+    init_buffer_bytes = 2 * 1024**3
     tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
     del tdb_config["sm.tile_cache_size"]
     ctx = tiledb.Ctx(tdb_config)
@@ -264,7 +266,7 @@ def do_compute_R(
     if verbose:
         log(f"value rank, starting partition {partition_index}")
 
-    init_buffer_bytes = 2 * 1024 ** 3
+    init_buffer_bytes = 2 * 1024**3
     tdb_config = {**tdb_config, "py.init_buffer_bytes": init_buffer_bytes}
     del tdb_config["sm.tile_cache_size"]
     ctx = tiledb.Ctx(tdb_config)
@@ -304,5 +306,5 @@ def do_compute_R(
     return ("R", gene_groups.R.to_dict())
 
 
-def guess_at_chunk_size(n_obs, row_size_guess=8, init_buffer_bytes=2 * 1024 ** 3, sparsity_guess=0.9):
+def guess_at_chunk_size(n_obs, row_size_guess=8, init_buffer_bytes=2 * 1024**3, sparsity_guess=0.9):
     return max(1, init_buffer_bytes // int(n_obs * (1.0 - sparsity_guess) * row_size_guess))

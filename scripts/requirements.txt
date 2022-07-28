@@ -10,3 +10,4 @@ cython # used by Owlready2
 owlready2
 pyyaml
 anndata
+progress
