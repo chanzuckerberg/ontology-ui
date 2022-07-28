@@ -49,7 +49,7 @@ def rank_cells(*, uri: str, tdb_config: dict, max_workers: int, verbose: bool = 
     if verbose:
         log(f"n_var={n_var}, n_obs={n_obs}, chunk_size={chunk_size}")
 
-    max_workers = max(4, os.cpu_count() // 4) if max_workers is None else max_workers
+    max_workers = max(4, os.cpu_count() // 8) if max_workers is None else max_workers
     with ProcessPoolExecutor(max_workers=max_workers) as tp:
         count = 0
         result_futures = [
