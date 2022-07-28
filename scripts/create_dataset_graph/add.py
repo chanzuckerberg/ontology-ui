@@ -124,7 +124,7 @@ def load_raw_X_normed(
     # Create a copy of AnnData from which we slice primary data and genes ONLY.
     ad = filter_anndata(anndata.AnnData(X=raw_X, obs=ad.obs, var=raw_var, dtype=np.float32))
     if ad.n_obs == 0:
-        log("H5AD has no primary data, skipping...", h5ad_path)
+        log("H5AD has no data after filtering, skipping...", h5ad_path)
         return
 
     ctx = tiledb.Ctx(tdb_config)
