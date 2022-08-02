@@ -129,6 +129,14 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
             );
           })}
       </ul>
+      <h3>Marker genes</h3>
+      <ul>
+        {vertex &&
+          vertex.genes &&
+          vertex.genes.map((gene) => {
+            return <li key={gene}>{gene}</li>;
+          })}
+      </ul>
       <h3>🫁 Part-of (compartment)</h3>
       <ul>
         {vertex &&
@@ -155,6 +163,7 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
             );
           })}
       </ul>
+
       <h3> Derived-from</h3>
       <ul>
         {vertex &&
