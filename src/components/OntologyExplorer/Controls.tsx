@@ -5,7 +5,6 @@ import {
   Drawer,
   RadioGroup,
   Radio,
-  Slider,
   Checkbox,
   NumericInput,
   HotkeysTarget2,

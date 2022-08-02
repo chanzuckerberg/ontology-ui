@@ -134,12 +134,12 @@ export const drawForceDag = (
         .strength(function (d) {
           const atLeastOneInHull = nodeToHullRoot.has(d.source.id) || nodeToHullRoot.has(d.target.id);
           const inSameHull = nodeToHullRoot.get(d.source.id) === nodeToHullRoot.get(d.target.id);
-          const inNoHull = !(atLeastOneInHull || inSameHull);
           let val;
-          if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) val = 1.0;
-          //else if(highlightProps.hullsEnabled && inNoHull) val=0.1;
-          //else if(highlightProps.hullsEnabled) val=0.1;
-          else val = 0.1;
+          if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) {
+            val = 1.0;
+          } else {
+            val = 0.1;
+          }
           return val;
         })
     )
