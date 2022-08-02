@@ -18,6 +18,7 @@ export interface OntologyTerm {
   synonyms: string[];
   depth: number; // for a control to prune nodes by depths
   height: number; // for automatically selecting hulls
+  genes: string[];
 
   // Statistics & information from the dataset
   n_cells: number; // number of cells labelled with this term
