@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 
 import { olsLookupTermByOboId } from "../util/fetchEBITerm";
 import { DatasetGraph, EBIOlsTerm, OntologyTerm, OntologyId } from "../d";
 import { ontologyLookupId, ontologyQuery, LinkNames } from "../util/ontologyDag";
 import { SearchTerm } from "./OntologyExplorer/searchSidebar";
 import { Button, Icon } from "@blueprintjs/core";
-import { geneMeanState, geneNameConversionTableState } from "../recoil";
+import { geneNameConversionTableState, selectedGeneState } from "../recoil";
 
 export interface VertexProps {
   graph: DatasetGraph;
@@ -27,9 +27,7 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
   const [olsTerm, setOlsTerm] = useState<EBIOlsTerm | null>();
 
   const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
-  const geneMean = useRecoilValue(geneMeanState);
-
-  console.log("gene mean", geneMean);
+  const [selectedGene, setSelectedGene] = useRecoilState(selectedGeneState);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,7 +138,17 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
         {vertex &&
           vertex.genes &&
           vertex.genes.map((gene) => {
-            return <li key={gene}>{geneNameConversionTable.get(gene)}</li>;
+            return (
+              <li
+                key={gene}
+                onClick={() => {
+                  setSelectedGene(gene);
+                }}
+                style={{ fontWeight: selectedGene === gene ? 700 : 300, cursor: "pointer" }}
+              >
+                {geneNameConversionTable.get(gene) || gene}
+              </li>
+            );
           })}
       </ul>
       <h3>🫁 Part-of (compartment)</h3>

@@ -28,6 +28,8 @@ import { useNavigateRef } from "../useNavigateRef";
 import { Drawer, Classes, DrawerSize } from "@blueprintjs/core";
 import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "../../util/errorFallback";
+import { useRecoilState, useRecoilValue } from "recoil";
+import { selectedGeneExpressionState, selectedGeneState } from "../../recoil";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
@@ -61,6 +63,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
   const [sugiyamaIsOpen, setSugiyamaIsOpen] = useState<boolean>(false);
+
+  /* recoil */
+  const [selectedGene] = useRecoilState(selectedGeneState);
+  const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
 
   const [windowWidth, windowHeight] = useWindowSize();
   const menubarHeight = 50;
@@ -251,9 +257,24 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         ...forceCanvasHighlightProps,
         nodeHighlight,
       };
+
+      if (selectedGene || selectedGeneExpression) {
+        console.log("in redrawCanvas", selectedGene, selectedGeneExpression);
+      }
+
       redrawCanvas(highlights);
     }
-  }, [redrawCanvas, forceCanvasHighlightProps, pinnedVertexID, ontoID, highlightQuery, xref, graph.ontologies]);
+  }, [
+    redrawCanvas,
+    forceCanvasHighlightProps,
+    pinnedVertexID,
+    ontoID,
+    highlightQuery,
+    xref,
+    graph.ontologies,
+    selectedGene,
+    selectedGeneExpression,
+  ]);
 
   useEffect(() => {
     /*
@@ -369,7 +390,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
              */}
             {!pinnedVertex && hoverVertex && (
               <ErrorBoundary FallbackComponent={ErrorFallback}>
-                <Suspense fallback={<p>Loading, this is a suspsense fallback ui</p>}>
+                <Suspense fallback={<p>Loading vertex, this is a suspsense fallback ui</p>}>
                   <Vertex
                     searchTerms={searchTerms}
                     setSearchTerms={handleSetSearchTerms}
@@ -383,7 +404,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
             )}
             {pinnedVertex && (
               <ErrorBoundary FallbackComponent={ErrorFallback}>
-                <Suspense fallback={<p>Loading, this is a suspsense fallback ui</p>}>
+                <Suspense fallback={<p>Loading vertex, this is a suspsense fallback ui</p>}>
                   <Vertex
                     searchTerms={searchTerms}
                     setSearchTerms={handleSetSearchTerms}
