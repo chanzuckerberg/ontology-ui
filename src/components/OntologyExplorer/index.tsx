@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useParams, useSearchParams, createSearchParams } from "react-router-dom";
 import { useWindowSize } from "@react-hook/window-size";
 import memoizeOne from "memoize-one";
@@ -26,6 +26,8 @@ import {
 
 import { useNavigateRef } from "../useNavigateRef";
 import { Drawer, Classes, DrawerSize } from "@blueprintjs/core";
+import { ErrorBoundary } from "react-error-boundary";
+import { ErrorFallback } from "../../util/errorFallback";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
@@ -103,10 +105,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
-  
+
   const heightMap = graph.heightMaps[ontoID];
   const depthMap = graph.depthMaps[ontoID];
-  
+
   const maxDepth = Math.max(...depthMap.values()); // (alec) replace this with iterator through nodes in dagState
   const minDepth =
     Math.max(
@@ -130,7 +132,6 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   if (state.dagCreateProps.pruningDepth === -1) {
     handlePruningDepthChange(maxDepth);
   }
-
 
   /*
    * memoized callback to navigate.
@@ -367,24 +368,32 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
              * Render cards
              */}
             {!pinnedVertex && hoverVertex && (
-              <Vertex
-                searchTerms={searchTerms}
-                setSearchTerms={handleSetSearchTerms}
-                graph={graph}
-                vertex={hoverVertex}
-                query={query}
-                makeTo={(id: OntologyId) => makeLsbTo(id)}
-              />
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <Suspense fallback={<p>Loading, this is a suspsense fallback ui</p>}>
+                  <Vertex
+                    searchTerms={searchTerms}
+                    setSearchTerms={handleSetSearchTerms}
+                    graph={graph}
+                    vertex={hoverVertex}
+                    query={query}
+                    makeTo={(id: OntologyId) => makeLsbTo(id)}
+                  />
+                </Suspense>
+              </ErrorBoundary>
             )}
             {pinnedVertex && (
-              <Vertex
-                searchTerms={searchTerms}
-                setSearchTerms={handleSetSearchTerms}
-                graph={graph}
-                vertex={pinnedVertex}
-                query={query}
-                makeTo={(id: OntologyId) => makeLsbTo(id)}
-              />
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <Suspense fallback={<p>Loading, this is a suspsense fallback ui</p>}>
+                  <Vertex
+                    searchTerms={searchTerms}
+                    setSearchTerms={handleSetSearchTerms}
+                    graph={graph}
+                    vertex={pinnedVertex}
+                    query={query}
+                    makeTo={(id: OntologyId) => makeLsbTo(id)}
+                  />
+                </Suspense>
+              </ErrorBoundary>
             )}
           </div>
         </div>

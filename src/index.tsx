@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import React from "react";
 import ReactDOM from "react-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { RecoilRoot } from "recoil";
@@ -17,9 +17,7 @@ ReactDOM.render(
     <HelmetProvider>
       <HotkeysProvider>
         <RecoilRoot>
-          <Suspense fallback={<p>Loading, this is a suspsense fallback ui</p>}>
-            <App basename={basename} />
-          </Suspense>
+          <App basename={basename} />
         </RecoilRoot>
       </HotkeysProvider>
     </HelmetProvider>

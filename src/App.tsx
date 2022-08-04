@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { useRecoilValue } from "recoil";
 
 import VertexView from "./routes/VertexView";
 import DagView from "./routes/DagExplorerView";
 import loadDatasetGraph from "./util/loadDatasetGraph";
 import { DatasetGraph, Ontology } from "./d";
-import { geneNameConversionTableState } from "./recoil";
 
 interface AppState {
   graph?: DatasetGraph;
@@ -17,12 +15,6 @@ interface AppState {
 function App({ basename }: { basename: string }) {
   const [state, setState] = useState<AppState>({});
   const { graph, lattice } = state;
-  const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
-
-  console.log(
-    "An example of loading ensembl conversion file in App, using recoil and Suspense",
-    geneNameConversionTable
-  );
 
   useEffect(() => {
     const initState = async () => {

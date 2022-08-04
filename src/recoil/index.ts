@@ -1,4 +1,5 @@
 import { selector } from "recoil";
+import { dsvFormat } from "d3-dsv";
 
 export const geneNameConversionTableState = selector<any>({
   key: "geneNameConversionTable",
@@ -19,6 +20,27 @@ export const geneNameConversionTableState = selector<any>({
       }
 
       return geneNameConversionTable;
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
+export const geneMeanState = selector<any>({
+  key: "geneMean",
+  get: async ({ get }) => {
+    try {
+      const response = await fetch(`./gene_data_filtered.tsv`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Encoding": "utf-8",
+        },
+      });
+
+      const csvString = await response.text();
+      const geneData = dsvFormat(",").parseRows(csvString);
+
+      return geneData.slice(1);
     } catch (error) {
       throw error;
     }
