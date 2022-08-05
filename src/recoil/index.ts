@@ -1,5 +1,6 @@
 import { selector, atom } from "recoil";
 import { dsvFormat } from "d3-dsv";
+import { extent } from "d3-array";
 
 export const selectedGeneState = atom<null | string>({
   key: "selectedGene",
@@ -61,6 +62,7 @@ export const selectedGeneExpressionState = selector<any>({
 
     if (selectedGene && geneData) {
       const colorByData: any = {};
+      const means: number[] = [];
 
       for (let i = 0; i < geneData.length; i++) {
         if (geneData[i][2] === selectedGene) {
@@ -68,8 +70,11 @@ export const selectedGeneExpressionState = selector<any>({
             mean: geneData[i][3],
             frac: geneData[i][4],
           };
+          means.push(geneData[i][3]);
         }
       }
+
+      colorByData["expressionRange"] = extent(means);
 
       return colorByData;
     } else {

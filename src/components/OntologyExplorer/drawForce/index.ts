@@ -95,7 +95,6 @@ export const drawForceDag = (
   const cellCountWhale: number = 1000000;
   const cellCountShrimp: number = 1;
   const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
-  const geneExpressionScale = scaleLinear().domain([1.3, 2.2]).range([0, 1]);
 
   /**
    * Colors
@@ -230,7 +229,9 @@ export const drawForceDag = (
           context.fillStyle = hoverNodeAncestorColor;
         }
         if (geneHighlight && geneHighlight[node.id]) {
-          console.log("current selected gene table", geneHighlight, "node id", node.id);
+          // this could be cached rather than reinstantiated
+          const geneExpressionScale = scaleLinear().domain(geneHighlight.expressionRange).range([0, 1]);
+
           context.fillStyle = interpolateMagma(geneExpressionScale(geneHighlight[node.id].mean));
         }
       }
