@@ -9,6 +9,7 @@ import { drawHulls } from "./hulls";
 
 import React from "react";
 import { scaleLinear } from "d3-scale";
+import { interpolateMagma } from "d3-scale-chromatic";
 
 /**
  * Credit & reference:
@@ -31,6 +32,7 @@ export interface DrawForceDagHighlightProps {
   hullsEnabled?: boolean;
   highlightAncestors?: boolean;
   nodeHighlight?: Map<string, NodeHighlight>;
+  geneHighlight?: any;
 }
 
 /**
@@ -93,6 +95,7 @@ export const drawForceDag = (
   const cellCountWhale: number = 1000000;
   const cellCountShrimp: number = 1;
   const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
+  const geneExpressionScale = scaleLinear().domain([1.3, 2.2]).range([0, 1]);
 
   /**
    * Colors
@@ -162,7 +165,7 @@ export const drawForceDag = (
     const context = htmlCanvas.getContext("2d");
     if (!context) return;
     const { width, height } = htmlCanvas.getBoundingClientRect();
-    const { highlightAncestors, hullsEnabled, nodeHighlight } = highlightProps;
+    const { highlightAncestors, hullsEnabled, nodeHighlight, geneHighlight } = highlightProps;
 
     /**
      * Clear
@@ -225,6 +228,10 @@ export const drawForceDag = (
         }
         if (highlightAncestors && hoverVertex.ancestors.has(node.id)) {
           context.fillStyle = hoverNodeAncestorColor;
+        }
+        if (geneHighlight && geneHighlight[node.id]) {
+          console.log("current selected gene table", geneHighlight, "node id", node.id);
+          context.fillStyle = interpolateMagma(geneExpressionScale(geneHighlight[node.id].mean));
         }
       }
 

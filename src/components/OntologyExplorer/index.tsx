@@ -35,6 +35,7 @@ const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
   highlightAncestors: false,
   nodeHighlight: new Map(),
+  geneHighlight: null,
 };
 
 const defaultState: OntologyExplorerState = {
@@ -253,14 +254,12 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         }
       }
       if (pinnedVertexID) nodeHighlight.set(pinnedVertexID, "pinned");
+
       const highlights = {
         ...forceCanvasHighlightProps,
         nodeHighlight,
+        geneHighlight: selectedGeneExpression,
       };
-
-      if (selectedGene || selectedGeneExpression) {
-        console.log("in redrawCanvas", selectedGene, selectedGeneExpression);
-      }
 
       redrawCanvas(highlights);
     }
