@@ -9,7 +9,7 @@ import { drawHulls } from "./hulls";
 
 import React from "react";
 import { scaleLinear } from "d3-scale";
-import { interpolateMagma } from "d3-scale-chromatic";
+import { interpolateViridis } from "d3-scale-chromatic";
 
 /**
  * Credit & reference:
@@ -229,10 +229,7 @@ export const drawForceDag = (
           context.fillStyle = hoverNodeAncestorColor;
         }
         if (geneHighlight && geneHighlight[node.id]) {
-          // this could be cached rather than reinstantiated
-          const geneExpressionScale = scaleLinear().domain(geneHighlight.expressionRange).range([0, 1]);
-
-          context.fillStyle = interpolateMagma(geneExpressionScale(geneHighlight[node.id].mean));
+          context.fillStyle = interpolateViridis(geneHighlight.geneExpressionColorScale(geneHighlight[node.id].mean));
         }
       }
 

@@ -13,6 +13,7 @@ import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d"
 import { OntologyExplorerState, OntologyExplorerProps, OntologyVertexDatum, DagState, CreateDagProps } from "./types";
 import lruMemoize from "../../util/lruMemo";
 import { getHullNodes } from "./drawForce/hulls";
+import { interpolateViridis } from "d3-scale-chromatic";
 
 import {
   ontologySubset,
@@ -29,7 +30,7 @@ import { Drawer, Classes, DrawerSize } from "@blueprintjs/core";
 import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "../../util/errorFallback";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { selectedGeneExpressionState, selectedGeneState } from "../../recoil";
+import { geneNameConversionTableState, selectedGeneExpressionState, selectedGeneState } from "../../recoil";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
@@ -68,6 +69,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   /* recoil */
   const [selectedGene] = useRecoilState(selectedGeneState);
   const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
+  const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
 
   const [windowWidth, windowHeight] = useWindowSize();
   const menubarHeight = 50;
@@ -420,7 +422,23 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         {/**
          * Render ontology force layout
          */}
-        <div style={{ flexGrow: 1 }}>
+        <div style={{ flexGrow: 1, position: "relative" }}>
+          {selectedGene && (
+            <svg id="graphLegend" style={{ width: 300, height: 100, position: "absolute", top: "40" }}>
+              <text x="20" y="20">
+                {geneNameConversionTable.get(selectedGene)}
+              </text>
+              {[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map((val, i) => {
+                return <rect key={i} x={20 + i * 15} y={30} height={15} width={15} fill={interpolateViridis(val)} />;
+              })}
+              <text x="20" y="65">
+                {parseFloat(selectedGeneExpression.expressionRange[0]).toPrecision(3)}
+              </text>
+              <text x="158" y="65">
+                {parseFloat(selectedGeneExpression.expressionRange[1]).toPrecision(3)}
+              </text>
+            </svg>
+          )}
           <canvas
             style={{
               cursor: "crosshair",

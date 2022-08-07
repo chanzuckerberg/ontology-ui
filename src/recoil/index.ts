@@ -1,6 +1,7 @@
 import { selector, atom } from "recoil";
 import { dsvFormat } from "d3-dsv";
 import { extent } from "d3-array";
+import { scaleLinear } from "d3-scale";
 
 export const selectedGeneState = atom<null | string>({
   key: "selectedGene",
@@ -74,7 +75,10 @@ export const selectedGeneExpressionState = selector<any>({
         }
       }
 
-      colorByData["expressionRange"] = extent(means);
+      const _extent: any = extent(means);
+
+      colorByData["expressionRange"] = _extent;
+      colorByData["geneExpressionColorScale"] = scaleLinear().domain(_extent).range([0, 1]);
 
       return colorByData;
     } else {
