@@ -2,6 +2,9 @@ import { useParams } from "react-router-dom";
 
 import { DatasetGraph, OntologyId } from "../d";
 import Vertex from "../components/Vertex";
+import { ErrorBoundary } from "react-error-boundary";
+import { Suspense } from "react";
+import { ErrorFallback } from "../util/errorFallback";
 
 export interface VertexViewProps {
   graph: DatasetGraph;
@@ -14,5 +17,11 @@ export default function VertexView({ graph }: VertexViewProps) {
   const vertex = vertexID ? ontology?.get(vertexID) : undefined;
   if (!vertex) return null;
 
-  return <Vertex graph={graph} vertex={vertex} makeTo={(id: OntologyId) => `../${id}`} />;
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <Suspense fallback={<p>Loading, this is a suspsense fallback ui</p>}>
+        <Vertex graph={graph} vertex={vertex} makeTo={(id: OntologyId) => `../${id}`} />{" "}
+      </Suspense>
+    </ErrorBoundary>
+  );
 }

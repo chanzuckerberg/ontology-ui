@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useRecoilState, useRecoilValue } from "recoil";
 
 import { olsLookupTermByOboId } from "../util/fetchEBITerm";
 import { DatasetGraph, EBIOlsTerm, OntologyTerm, OntologyId } from "../d";
 import { ontologyLookupId, ontologyQuery, LinkNames } from "../util/ontologyDag";
 import { SearchTerm } from "./OntologyExplorer/searchSidebar";
 import { Button, Icon } from "@blueprintjs/core";
+import { geneNameConversionTableState, selectedGeneState } from "../recoil";
 
 export interface VertexProps {
   graph: DatasetGraph;
@@ -23,6 +25,9 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
   query = query ? "?" + query : "";
 
   const [olsTerm, setOlsTerm] = useState<EBIOlsTerm | null>();
+
+  const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
+  const [selectedGene, setSelectedGene] = useRecoilState(selectedGeneState);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,9 +66,6 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
           />
         )}
       </h1>
-      <h5>Count: {vertex && vertex.n_cells ? vertex.n_cells : "0"}</h5>
-      <p>{!olsTerm && "Loading..."}</p>
-      <p>{olsTerm && definition}</p>
       <pre>
         {vertexID}{" "}
         {searchTerms && setSearchTerms && (
@@ -81,7 +83,8 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
           />
         )}
       </pre>
-
+      <p>{!olsTerm && "Loading..."}</p>
+      <p>{olsTerm && definition}</p>
       {vertex.synonyms.length > 1 && (
         <p style={{ fontStyle: "italic", color: "grey", fontSize: 10 }}>
           Synonyms:{" "}
@@ -92,6 +95,7 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
           </span>
         </p>
       )}
+      <h5>Count: {vertex && vertex.n_cells ? vertex.n_cells : "0"}</h5>
 
       <h3> Parents </h3>
       <ul>
@@ -129,6 +133,24 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
             );
           })}
       </ul>
+      <h3>Genes of statistical significance</h3>
+      <ul>
+        {vertex &&
+          vertex.genes &&
+          vertex.genes.map((gene) => {
+            return (
+              <li
+                key={gene}
+                onClick={() => {
+                  setSelectedGene(gene);
+                }}
+                style={{ fontWeight: selectedGene === gene ? 700 : 300, cursor: "pointer" }}
+              >
+                {geneNameConversionTable.get(gene) || gene}
+              </li>
+            );
+          })}
+      </ul>
       <h3>🫁 Part-of (compartment)</h3>
       <ul>
         {vertex &&
@@ -155,6 +177,7 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
             );
           })}
       </ul>
+
       <h3> Derived-from</h3>
       <ul>
         {vertex &&

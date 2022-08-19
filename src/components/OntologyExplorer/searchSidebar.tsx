@@ -1,18 +1,7 @@
 import { useState } from "react";
-import {
-  Button,
-  RadioGroup,
-  Radio,
-  Icon,
-  ButtonGroup,
-  InputGroup,
-  ControlGroup,
-  HTMLSelect,
-  Colors,
-} from "@blueprintjs/core";
+import { Button, RadioGroup, Radio, Icon, ButtonGroup, InputGroup, HTMLSelect, Colors } from "@blueprintjs/core";
 import { Classes, Popover2 } from "@blueprintjs/popover2";
 import memoizeOne from "memoize-one";
-import { spawn } from "child_process";
 
 export type FilterMode = "none" | "keep" | "remove";
 export type SearchMode = "compartment" | "celltype";

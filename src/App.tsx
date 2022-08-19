@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -21,6 +21,7 @@ function App({ basename }: { basename: string }) {
       const [graph, lattice] = await loadDatasetGraph("./dataset_graph.json");
       setState({ graph, lattice });
     };
+
     initState();
   }, [setState]);
 

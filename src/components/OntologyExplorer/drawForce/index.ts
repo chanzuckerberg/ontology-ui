@@ -9,6 +9,7 @@ import { drawHulls } from "./hulls";
 
 import React from "react";
 import { scaleLinear } from "d3-scale";
+import { interpolateViridis } from "d3-scale-chromatic";
 
 /**
  * Credit & reference:
@@ -31,6 +32,7 @@ export interface DrawForceDagHighlightProps {
   hullsEnabled?: boolean;
   highlightAncestors?: boolean;
   nodeHighlight?: Map<string, NodeHighlight>;
+  geneHighlight?: any;
 }
 
 /**
@@ -134,12 +136,12 @@ export const drawForceDag = (
         .strength(function (d) {
           const atLeastOneInHull = nodeToHullRoot.has(d.source.id) || nodeToHullRoot.has(d.target.id);
           const inSameHull = nodeToHullRoot.get(d.source.id) === nodeToHullRoot.get(d.target.id);
-          const inNoHull = !(atLeastOneInHull || inSameHull);
           let val;
-          if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) val = 1.0;
-          //else if(highlightProps.hullsEnabled && inNoHull) val=0.1;
-          //else if(highlightProps.hullsEnabled) val=0.1;
-          else val = 0.1;
+          if (highlightProps.hullsEnabled && atLeastOneInHull && inSameHull) {
+            val = 1.0;
+          } else {
+            val = 0.1;
+          }
           return val;
         })
     )
@@ -162,7 +164,7 @@ export const drawForceDag = (
     const context = htmlCanvas.getContext("2d");
     if (!context) return;
     const { width, height } = htmlCanvas.getBoundingClientRect();
-    const { highlightAncestors, hullsEnabled, nodeHighlight } = highlightProps;
+    const { highlightAncestors, hullsEnabled, nodeHighlight, geneHighlight } = highlightProps;
 
     /**
      * Clear
@@ -225,6 +227,9 @@ export const drawForceDag = (
         }
         if (highlightAncestors && hoverVertex.ancestors.has(node.id)) {
           context.fillStyle = hoverNodeAncestorColor;
+        }
+        if (geneHighlight && geneHighlight[node.id]) {
+          context.fillStyle = interpolateViridis(geneHighlight.geneExpressionColorScale(geneHighlight[node.id].mean));
         }
       }
 

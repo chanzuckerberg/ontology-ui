@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { RecoilRoot } from "recoil";
 
 import App from "./App";
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -15,7 +16,9 @@ ReactDOM.render(
   <React.StrictMode>
     <HelmetProvider>
       <HotkeysProvider>
-        <App basename={basename} />
+        <RecoilRoot>
+          <App basename={basename} />
+        </RecoilRoot>
       </HotkeysProvider>
     </HelmetProvider>
   </React.StrictMode>,

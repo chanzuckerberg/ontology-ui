@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useParams, useSearchParams, createSearchParams } from "react-router-dom";
 import { useWindowSize } from "@react-hook/window-size";
 import memoizeOne from "memoize-one";
@@ -13,6 +13,7 @@ import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d"
 import { OntologyExplorerState, OntologyExplorerProps, OntologyVertexDatum, DagState, CreateDagProps } from "./types";
 import lruMemoize from "../../util/lruMemo";
 import { getHullNodes } from "./drawForce/hulls";
+import { interpolateViridis } from "d3-scale-chromatic";
 
 import {
   ontologySubset,
@@ -26,11 +27,16 @@ import {
 
 import { useNavigateRef } from "../useNavigateRef";
 import { Drawer, Classes, DrawerSize } from "@blueprintjs/core";
+import { ErrorBoundary } from "react-error-boundary";
+import { ErrorFallback } from "../../util/errorFallback";
+import { useRecoilState, useRecoilValue } from "recoil";
+import { geneNameConversionTableState, selectedGeneExpressionState, selectedGeneState } from "../../recoil";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
   highlightAncestors: false,
   nodeHighlight: new Map(),
+  geneHighlight: null,
 };
 
 const defaultState: OntologyExplorerState = {
@@ -59,6 +65,11 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
   const [sugiyamaIsOpen, setSugiyamaIsOpen] = useState<boolean>(false);
+
+  /* recoil */
+  const [selectedGene] = useRecoilState(selectedGeneState);
+  const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
+  const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
 
   const [windowWidth, windowHeight] = useWindowSize();
   const menubarHeight = 50;
@@ -103,10 +114,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const { minimumOutdegree, maximumOutdegree } = dagCreateProps;
   const { hullsEnabled, highlightAncestors } = forceCanvasHighlightProps;
-  
+
   const heightMap = graph.heightMaps[ontoID];
   const depthMap = graph.depthMaps[ontoID];
-  
+
   const maxDepth = Math.max(...depthMap.values()); // (alec) replace this with iterator through nodes in dagState
   const minDepth =
     Math.max(
@@ -130,7 +141,6 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   if (state.dagCreateProps.pruningDepth === -1) {
     handlePruningDepthChange(maxDepth);
   }
-
 
   /*
    * memoized callback to navigate.
@@ -246,13 +256,26 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         }
       }
       if (pinnedVertexID) nodeHighlight.set(pinnedVertexID, "pinned");
+
       const highlights = {
         ...forceCanvasHighlightProps,
         nodeHighlight,
+        geneHighlight: selectedGeneExpression,
       };
+
       redrawCanvas(highlights);
     }
-  }, [redrawCanvas, forceCanvasHighlightProps, pinnedVertexID, ontoID, highlightQuery, xref, graph.ontologies]);
+  }, [
+    redrawCanvas,
+    forceCanvasHighlightProps,
+    pinnedVertexID,
+    ontoID,
+    highlightQuery,
+    xref,
+    graph.ontologies,
+    selectedGene,
+    selectedGeneExpression,
+  ]);
 
   useEffect(() => {
     /*
@@ -367,31 +390,55 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
              * Render cards
              */}
             {!pinnedVertex && hoverVertex && (
-              <Vertex
-                searchTerms={searchTerms}
-                setSearchTerms={handleSetSearchTerms}
-                graph={graph}
-                vertex={hoverVertex}
-                query={query}
-                makeTo={(id: OntologyId) => makeLsbTo(id)}
-              />
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <Suspense fallback={<p>Loading vertex, this is a suspsense fallback ui</p>}>
+                  <Vertex
+                    searchTerms={searchTerms}
+                    setSearchTerms={handleSetSearchTerms}
+                    graph={graph}
+                    vertex={hoverVertex}
+                    query={query}
+                    makeTo={(id: OntologyId) => makeLsbTo(id)}
+                  />
+                </Suspense>
+              </ErrorBoundary>
             )}
             {pinnedVertex && (
-              <Vertex
-                searchTerms={searchTerms}
-                setSearchTerms={handleSetSearchTerms}
-                graph={graph}
-                vertex={pinnedVertex}
-                query={query}
-                makeTo={(id: OntologyId) => makeLsbTo(id)}
-              />
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <Suspense fallback={<p>Loading vertex, this is a suspsense fallback ui</p>}>
+                  <Vertex
+                    searchTerms={searchTerms}
+                    setSearchTerms={handleSetSearchTerms}
+                    graph={graph}
+                    vertex={pinnedVertex}
+                    query={query}
+                    makeTo={(id: OntologyId) => makeLsbTo(id)}
+                  />
+                </Suspense>
+              </ErrorBoundary>
             )}
           </div>
         </div>
         {/**
          * Render ontology force layout
          */}
-        <div style={{ flexGrow: 1 }}>
+        <div style={{ flexGrow: 1, position: "relative" }}>
+          {selectedGene && (
+            <svg id="graphLegend" style={{ width: 300, height: 100, position: "absolute", top: "40" }}>
+              <text x="20" y="20">
+                {geneNameConversionTable.get(selectedGene)}
+              </text>
+              {[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map((val, i) => {
+                return <rect key={i} x={20 + i * 15} y={30} height={15} width={15} fill={interpolateViridis(val)} />;
+              })}
+              <text x="20" y="65">
+                {parseFloat(selectedGeneExpression.expressionRange[0]).toPrecision(3)}
+              </text>
+              <text x="158" y="65">
+                {parseFloat(selectedGeneExpression.expressionRange[1]).toPrecision(3)}
+              </text>
+            </svg>
+          )}
           <canvas
             style={{
               cursor: "crosshair",
