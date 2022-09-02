@@ -10,7 +10,13 @@ import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
 import SearchSidebar, { SearchTerm, urlSearchParamsToSearchTerms, searchTermToUrlSearchParam } from "./searchSidebar";
 import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d";
-import { OntologyExplorerState, OntologyExplorerProps, OntologyVertexDatum, DagState, CreateDagProps } from "./types";
+import {
+  OntologyExplorerState,
+  OntologyExplorerProps,
+  OntologyVertexDatum,
+  CreateDagProps,
+  DagStateNodesLinksStrat,
+} from "./types";
 import lruMemoize from "../../util/lruMemo";
 import { getHullNodes } from "./drawForce/hulls";
 import { interpolateViridis } from "d3-scale-chromatic";
@@ -29,8 +35,12 @@ import { useNavigateRef } from "../useNavigateRef";
 import { Drawer, Classes, DrawerSize } from "@blueprintjs/core";
 import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "../../util/errorFallback";
+
 import { useRecoilState, useRecoilValue } from "recoil";
-import { geneNameConversionTableState, selectedGeneExpressionState, selectedGeneState } from "../../recoil";
+import { geneNameConversionTableState, selectedGeneExpressionState } from "../../recoil";
+import { sugiyamaIsOpenState, selectedGeneState } from "../../recoil/controls";
+import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../../recoil/sugi";
+import { simulationRunningState } from "../../recoil/force";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: false,
@@ -47,29 +57,33 @@ const defaultState: OntologyExplorerState = {
     doCreateSugiyamaDatastructure: true,
     pruningDepth: -1,
   },
-  sugiyamaRenderThreshold: 200,
   cardWidth: 400,
   cardHeight: 850,
 };
 
 export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.Element {
+  /* recoil */
+  /* atoms */
+  const [selectedGene] = useRecoilState(selectedGeneState);
+  const [sugiyamaIsOpen, setSugiyamaIsOpen] = useRecoilState(sugiyamaIsOpenState);
+  const [sugiyamaRenderThreshold] = useRecoilState(sugiyamaRenderThresholdState);
+  const [simulationRunning, setSimulationRunning] = useRecoilState(simulationRunningState);
+
+  /* selectors */
+  const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
+  const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
+  const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
+
   /*
    * Component internal state
    */
+  const [dagDataStructure, setDagDataStructure] = useState<any>(null);
   const [state, setState] = useState<OntologyExplorerState>(defaultState);
   const [hoverNode, setHoverNode] = useState<OntologyVertexDatum>();
-  const [simulationRunning, setSimulationRunning] = useState<boolean>(false);
-  const [dagState, setDagState] = useState<DagState | null>(null);
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
     useState<DrawForceDagHighlightProps>(defaultForceHightlightProps);
 
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
-  const [sugiyamaIsOpen, setSugiyamaIsOpen] = useState<boolean>(false);
-
-  /* recoil */
-  const [selectedGene] = useRecoilState(selectedGeneState);
-  const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
-  const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
 
   const [windowWidth, windowHeight] = useWindowSize();
   const menubarHeight = 50;
@@ -77,7 +91,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const forceCanvasWidth = windowWidth - 800;
   const forceCanvasHeight = windowHeight - menubarHeight - 16;
 
-  const { dagCreateProps, cardWidth, sugiyamaRenderThreshold } = state;
+  const { dagCreateProps, cardWidth } = state;
 
   /*
   TODO: components should not interact with page-level state such as params and search
@@ -164,8 +178,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       - parameters that affect the choice of nodes or their connectivity, eg, minimumOutdegree
     Side effect: sets the DAG state.
     */
-    setDagState(createDag(graph, ontoID, filterQuery, dagCreateProps));
-  }, [filterQuery, graph, ontoID, dagCreateProps]);
+    setDagDataStructure(createDag(graph, ontoID, filterQuery, dagCreateProps));
+  }, [filterQuery, graph, ontoID, dagCreateProps, setDagDataStructure]);
 
   useEffect(() => {
     /*
@@ -174,8 +188,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     Side effect: sets the render & simulation state.
     */
 
-    if (dagState) {
-      const { nodes, links } = dagState;
+    if (dagDataStructure) {
+      const { nodes, links } = dagDataStructure;
 
       const nodeToHullRoot = new Map();
       let flag = true;
@@ -236,7 +250,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagState, dagCanvasRef, go, hullsEnabled, heightMap]);
+  }, [ontology, dagDataStructure, dagCanvasRef, go, hullsEnabled, heightMap]);
 
   useEffect(() => {
     /*
@@ -351,10 +365,6 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     <div id="ontologyExplorerContainer">
       <Controls
         pinnedVertex={pinnedVertex}
-        sugiyamaIsOpen={sugiyamaIsOpen}
-        sugiyamaIsEnabled={
-          dagState?.sugiyamaStratifyData && dagState?.sugiyamaStratifyData.length < sugiyamaRenderThreshold
-        }
         handleSugiyamaOpen={handleSugiyamaOpen}
         handleDisplayHulls={() =>
           setForceCanvasHighlightProps({ ...forceCanvasHighlightProps, hullsEnabled: !hullsEnabled })
@@ -458,7 +468,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
           }}
         >
           <SearchSidebar
-            emptyFilterResult={(dagState?.nodes?.length ?? 0) <= 1}
+            emptyFilterResult={(dagDataStructure?.nodes?.length ?? 0) <= 1}
             searchTerms={searchTerms}
             setSearchTerms={handleSetSearchTerms}
           />
@@ -477,9 +487,9 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
           size={DrawerSize.LARGE}
         >
           <div className={Classes.DRAWER_BODY}>
-            {dagState?.sugiyamaStratifyData && dagState?.sugiyamaStratifyData.length < sugiyamaRenderThreshold ? (
+            {sugiyamaIsEnabled ? (
               <div style={{ marginLeft: 20, marginTop: 20 }}>
-                <Sugiyama sugiyamaStratifyData={dagState.sugiyamaStratifyData} ontology={ontology} />
+                <Sugiyama ontology={ontology} />
               </div>
             ) : (
               <div className={Classes.DIALOG_BODY}>
@@ -512,7 +522,7 @@ function _createDag(
   ontoID: OntologyPrefix,
   filterQuery: OntologyQuery | null,
   options: CreateDagProps
-): DagState {
+): DagStateNodesLinksStrat {
   const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure, pruningDepth } = options;
 
   let ontology = graph.ontologies[ontoID];
