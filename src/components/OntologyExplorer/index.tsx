@@ -250,7 +250,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagDataStructure, dagCanvasRef, go, hullsEnabled, heightMap]);
+  }, [ontology, dagDataStructure, dagCanvasRef, go, hullsEnabled, heightMap, setSimulationRunning]);
 
   useEffect(() => {
     /*
