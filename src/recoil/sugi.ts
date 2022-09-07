@@ -1,5 +1,5 @@
 import { atom, selector } from "recoil";
-import { dagStratify, sugiyama } from "d3-dag/dist";
+import { Dag, dagStratify, sugiyama } from "d3-dag/dist";
 import { DagStateNodesLinksStrat } from "../components/OntologyExplorer/types";
 
 interface LayoutState {
@@ -50,13 +50,14 @@ interface SugiyamaNode {
   parentIds: string[];
 }
 
-export const sugiyamaDagStratifiedState = selector<SugiyamaNode | null>({
+export const sugiyamaDagStratifiedState = selector<Dag<SugiyamaNode, unknown> | null>({
   key: "sugiyamaDagStratifiedState",
   get: ({ get }) => {
     const dagDataStructure = get(dagDataStructureState);
 
     if (!dagDataStructure) return null;
 
+    console.log("dag data structure sugiyama stratify", dagDataStructure.sugiyamaStratifyData);
     /**
      * Initialize stratify data operator
      * https://erikbrinkman.github.io/d3-dag/interfaces/dag_create.ConnectOperator.html
@@ -86,9 +87,7 @@ export const sugiyamaLayoutState = selector<LayoutState>({
       /**
        * pass the data structure to the layout generator
        */
-      console.log("in sugiyama state layout, sugiyamaDagStratified:", sugiyamaDagStratified);
       const { width, height } = _sugiyamaLayout(sugiyamaDagStratified);
-      console.log("in sugiyama state layout, AFTER creating layout");
 
       _width = width;
       _height = height;
