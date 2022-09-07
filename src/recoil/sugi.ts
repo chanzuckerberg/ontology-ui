@@ -45,7 +45,12 @@ export const sugiyamaRenderThresholdState = atom<number>({
   default: 200,
 });
 
-export const sugiyamaDagStratifiedState = selector<any | null>({
+interface SugiyamaNode {
+  id: string;
+  parentIds: string[];
+}
+
+export const sugiyamaDagStratifiedState = selector<SugiyamaNode | null>({
   key: "sugiyamaDagStratifiedState",
   get: ({ get }) => {
     const dagDataStructure = get(dagDataStructureState);
@@ -81,7 +86,9 @@ export const sugiyamaLayoutState = selector<LayoutState>({
       /**
        * pass the data structure to the layout generator
        */
+      console.log("in sugiyama state layout, sugiyamaDagStratified:", sugiyamaDagStratified);
       const { width, height } = _sugiyamaLayout(sugiyamaDagStratified);
+      console.log("in sugiyama state layout, AFTER creating layout");
 
       _width = width;
       _height = height;
