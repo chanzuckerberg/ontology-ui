@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Button,
   Classes,
@@ -15,6 +14,9 @@ import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../../d";
 import { Link } from "react-router-dom";
+import { settingsDrawerActiveState } from "../../recoil/controls";
+import { useRecoilState, useRecoilValue } from "recoil";
+import { sugiyamaIsEnabledState } from "../../recoil/sugi";
 
 interface OntologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
@@ -26,8 +28,6 @@ interface OntologyExplorerControlDrawerProps {
   hullsEnabled: boolean;
   highlightAncestors: boolean;
   handleHighlightAncestorChange: any;
-  sugiyamaIsOpen: boolean;
-  sugiyamaIsEnabled: boolean;
   handleDisplayHulls: any;
   handleSugiyamaOpen: any;
   minimumOutdegree: string;
@@ -40,7 +40,8 @@ interface OntologyExplorerControlDrawerProps {
 }
 
 export default function OntologyExplorerControlDrawer(props: OntologyExplorerControlDrawerProps): JSX.Element {
-  const [settingsIsOpen, setSettingsIsOpen] = useState<boolean>(false);
+  const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
+  const [settingsDrawerActive, setSettingsDrawerActive] = useRecoilState(settingsDrawerActiveState);
 
   const params = useParams();
 
@@ -60,12 +61,8 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
     minDepth,
     maxDepth,
     currentPruningDepth,
-    sugiyamaIsEnabled,
     handleDisplayHulls,
   } = props;
-
-  const handleSettingsOpen = () => setSettingsIsOpen(true);
-  const handleSettingsClose = () => setSettingsIsOpen(false);
 
   return (
     <div
@@ -151,9 +148,11 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
         Hierarchy layout
       </Button>
       <Drawer
-        isOpen={settingsIsOpen}
+        isOpen={settingsDrawerActive}
         size={560}
-        onClose={handleSettingsClose}
+        onClose={() => {
+          setSettingsDrawerActive(false);
+        }}
         hasBackdrop={false}
         canOutsideClickClose={true}
         title="Graph configuration"
@@ -244,7 +243,13 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
         </div>
         <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
       </Drawer>
-      <Button style={{ marginRight: 20 }} icon="settings" onClick={handleSettingsOpen} />
+      <Button
+        style={{ marginRight: 20 }}
+        icon="settings"
+        onClick={() => {
+          setSettingsDrawerActive(true);
+        }}
+      />
     </div>
   );
 }

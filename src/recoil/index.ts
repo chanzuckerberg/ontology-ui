@@ -1,12 +1,9 @@
-import { selector, atom } from "recoil";
+import { selector } from "recoil";
 import { dsvFormat } from "d3-dsv";
 import { extent } from "d3-array";
 import { scaleLinear } from "d3-scale";
 
-export const selectedGeneState = atom<null | string>({
-  key: "selectedGene",
-  default: null,
-});
+import { selectedGeneState } from "./controls";
 
 export const geneNameConversionTableState = selector<any>({
   key: "geneNameConversionTable",

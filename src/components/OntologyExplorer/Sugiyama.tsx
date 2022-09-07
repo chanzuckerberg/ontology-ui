@@ -1,79 +1,26 @@
-import { useState, useEffect } from "react";
-import { sugiyama, Dag, dagStratify } from "d3-dag/dist";
 import { line, curveCatmullRom } from "d3-shape";
 
 import { scaleLinear } from "d3-scale";
 
 import { Ontology } from "../../d";
-
-interface SugiyamaNode {
-  id: string;
-  parentIds: string[];
-}
+import { useRecoilValue } from "recoil";
+import { sugiyamaLayoutState } from "../../recoil/sugi";
 
 interface SugiyamaProps {
-  sugiyamaStratifyData: SugiyamaNode[];
   ontology: Ontology;
 }
 
-interface LayoutState {
-  nodeRadius: number;
-  layeringChoice: string;
-  decrossingsChoice: string;
-  coordsChoice: string;
-  scaleMultiplier: number;
-  sugiyamaWidthAspectRatio: number | null;
-  sugiyamaHeightAspectRatio: number | null;
-}
-
-const defaultLayoutState: LayoutState = {
-  nodeRadius: 10,
-  layeringChoice: "Simplex (slow)",
-  decrossingsChoice: "Optimal (slow)",
-  coordsChoice: "Quad (slow)",
-  scaleMultiplier: 110,
-  sugiyamaWidthAspectRatio: null,
-  sugiyamaHeightAspectRatio: null,
-};
-
-export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaProps): JSX.Element | null {
-  const [dag, setDag] = useState<Dag<SugiyamaNode, unknown>>();
-  const [layout, setLayout] = useState<LayoutState>(defaultLayoutState);
-
-  useEffect(() => {
-    /**
-     * Initialize stratify data operator
-     * https://erikbrinkman.github.io/d3-dag/interfaces/dag_create.ConnectOperator.html
-     */
-    const _createDagStructure = dagStratify();
-
-    /**
-     * transform data to d3-dag preferred format
-     */
-    const dag: Dag<SugiyamaNode, unknown> = _createDagStructure(sugiyamaStratifyData);
-
-    setDag(dag);
-  }, [sugiyamaStratifyData]);
-
-  useEffect(() => {
-    if (dag) {
-      /**
-       * Initialize d3-dag layout operator
-       */
-      const _sugiyamaLayout = sugiyama();
-
-      /**
-       * pass the data structure to the layout generator
-       */
-      const _layout = _sugiyamaLayout(dag); // error is here
-
-      const { width, height } = _layout;
-      setLayout((s) => ({ ...s, sugiyamaWidthAspectRatio: width, sugiyamaHeightAspectRatio: height }));
-    }
-  }, [dag]);
-
-  const { sugiyamaWidthAspectRatio, sugiyamaHeightAspectRatio, scaleMultiplier } = layout;
-  if (!dag || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
+export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | null {
+  /* recoil */
+  /* selectors */
+  const sugiyamaLayout = useRecoilValue(sugiyamaLayoutState);
+  const {
+    sugiyamaWidthAspectRatio,
+    sugiyamaHeightAspectRatio,
+    scaleMultiplier,
+    sugiyamaStratifyData: sugiyamaDagStratified,
+  } = sugiyamaLayout;
+  if (!sugiyamaDagStratified || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
 
   const createLine = line()
     .curve(curveCatmullRom)
@@ -101,7 +48,7 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
       style={{ marginRight: 20 }}
     >
       <g>
-        {dag.links().map((link: any) => {
+        {sugiyamaDagStratified.links().map((link: any) => {
           const { points /*, source, target*/ } = link;
           const pathString = createLine(points as any);
           if (pathString !== null) {
@@ -112,7 +59,7 @@ export default function Sugiyama({ ontology, sugiyamaStratifyData }: SugiyamaPro
         })}
       </g>
       <g>
-        {dag.descendants().map((d: any) => {
+        {sugiyamaDagStratified.descendants().map((d: any) => {
           const vertex: any = ontology.get(d.data.id);
           return (
             <g key={d.data.id} transform={`translate(${d.x * scaleMultiplier},${d.y * scaleMultiplier})`}>

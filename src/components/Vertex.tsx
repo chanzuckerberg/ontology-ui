@@ -7,7 +7,8 @@ import { DatasetGraph, EBIOlsTerm, OntologyTerm, OntologyId } from "../d";
 import { ontologyLookupId, ontologyQuery, LinkNames } from "../util/ontologyDag";
 import { SearchTerm } from "./OntologyExplorer/searchSidebar";
 import { Button, Icon } from "@blueprintjs/core";
-import { geneNameConversionTableState, selectedGeneState } from "../recoil";
+import { geneNameConversionTableState } from "../recoil";
+import { selectedGeneState } from "../recoil/controls";
 
 export interface VertexProps {
   graph: DatasetGraph;

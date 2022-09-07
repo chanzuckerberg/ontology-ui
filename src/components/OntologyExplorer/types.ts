@@ -32,7 +32,7 @@ export interface CreateDagProps {
 }
 
 // state related to the current DAG
-export interface DagState {
+export interface DagStateNodesLinksStrat {
   nodes: OntologyVertexDatum[];
   links: SimulationLinkDatum<any>[];
   sugiyamaStratifyData: any;
@@ -41,7 +41,6 @@ export interface DagState {
 // Other DAG exploration state
 export interface OntologyExplorerState {
   dagCreateProps: CreateDagProps;
-  sugiyamaRenderThreshold: number;
   cardWidth: number;
   cardHeight: number;
 }
