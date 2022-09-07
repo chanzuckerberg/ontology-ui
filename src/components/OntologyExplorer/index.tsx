@@ -39,11 +39,11 @@ import { ErrorFallback } from "../../util/errorFallback";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { geneNameConversionTableState, selectedGeneExpressionState } from "../../recoil";
 import { sugiyamaIsOpenState, selectedGeneState } from "../../recoil/controls";
-import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../../recoil/sugi";
+import { dagDataStructureState, sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../../recoil/sugi";
 import { simulationRunningState } from "../../recoil/force";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
-  hullsEnabled: false,
+  hullsEnabled: true,
   highlightAncestors: false,
   nodeHighlight: new Map(),
   geneHighlight: null,
@@ -68,6 +68,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const [sugiyamaIsOpen, setSugiyamaIsOpen] = useRecoilState(sugiyamaIsOpenState);
   const [sugiyamaRenderThreshold] = useRecoilState(sugiyamaRenderThresholdState);
   const [simulationRunning, setSimulationRunning] = useRecoilState(simulationRunningState);
+  const [dagDataStructure, setDagDataStructure] = useRecoilState(dagDataStructureState);
 
   /* selectors */
   const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
@@ -77,7 +78,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   /*
    * Component internal state
    */
-  const [dagDataStructure, setDagDataStructure] = useState<any>(null);
+  const [dagDataStructure_MUTABLE, setDagDataStructure_MUTABLE] = useState<any>(null);
   const [state, setState] = useState<OntologyExplorerState>(defaultState);
   const [hoverNode, setHoverNode] = useState<OntologyVertexDatum>();
   const [forceCanvasHighlightProps, setForceCanvasHighlightProps] =
@@ -182,14 +183,33 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   }, [filterQuery, graph, ontoID, dagCreateProps, setDagDataStructure]);
 
   useEffect(() => {
+    /***
+     *
+     * this is a hack because d3 mutates the dag data structure directly,
+     * adding node.vx & node.x, etc, recoiljs will not allow mutation (which is good)
+     * and the 'correct' solution would be to rewrite d3 to add a setter.
+     * So, in the interest of time, we store the dag data structure in recoil and,
+     * as a side effect, persist to local state here in the component (mutable).
+     * We want this data structure in global state because there are a number of
+     * derived properties which follow from it, like whether the sugiyama layout
+     * should be enabled, for instance
+     *
+     */
+
+    const DEEPCOPY_dagDataStructure = structuredClone(dagDataStructure);
+
+    setDagDataStructure_MUTABLE(DEEPCOPY_dagDataStructure);
+  }, [dagDataStructure]);
+
+  useEffect(() => {
     /*
     Rebuild the renderer and simulation-driven layout whenever inputs to the sim change.
 
     Side effect: sets the render & simulation state.
     */
 
-    if (dagDataStructure) {
-      const { nodes, links } = dagDataStructure;
+    if (dagDataStructure_MUTABLE) {
+      const { nodes, links } = dagDataStructure_MUTABLE;
 
       const nodeToHullRoot = new Map();
       let flag = true;
@@ -250,7 +270,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagDataStructure, dagCanvasRef, go, hullsEnabled, heightMap, setSimulationRunning]);
+  }, [ontology, dagDataStructure_MUTABLE, dagCanvasRef, go, hullsEnabled, heightMap, setSimulationRunning]);
 
   useEffect(() => {
     /*
@@ -468,7 +488,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
           }}
         >
           <SearchSidebar
-            emptyFilterResult={(dagDataStructure?.nodes?.length ?? 0) <= 1}
+            emptyFilterResult={(dagDataStructure_MUTABLE?.nodes?.length ?? 0) <= 1}
             searchTerms={searchTerms}
             setSearchTerms={handleSetSearchTerms}
           />

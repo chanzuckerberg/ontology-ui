@@ -4,7 +4,7 @@ import { scaleLinear } from "d3-scale";
 
 import { Ontology } from "../../d";
 import { useRecoilValue } from "recoil";
-import { dagState, layoutState } from "../../recoil/sugi";
+import { sugiyamaDagStratifiedState, sugiyamaLayoutState } from "../../recoil/sugi";
 
 interface SugiyamaProps {
   ontology: Ontology;
@@ -13,11 +13,11 @@ interface SugiyamaProps {
 export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | null {
   /* recoil */
   /* selectors */
-  const layout = useRecoilValue(layoutState);
-  const dag = useRecoilValue(dagState);
+  const sugiyamaLayout = useRecoilValue(sugiyamaLayoutState);
+  const sugiyamaDagStratified = useRecoilValue(sugiyamaDagStratifiedState);
 
-  const { sugiyamaWidthAspectRatio, sugiyamaHeightAspectRatio, scaleMultiplier } = layout;
-  if (!dag || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
+  const { sugiyamaWidthAspectRatio, sugiyamaHeightAspectRatio, scaleMultiplier } = sugiyamaLayout;
+  if (!sugiyamaDagStratified || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
 
   const createLine = line()
     .curve(curveCatmullRom)
@@ -45,7 +45,7 @@ export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | nul
       style={{ marginRight: 20 }}
     >
       <g>
-        {dag.links().map((link: any) => {
+        {sugiyamaDagStratified.links().map((link: any) => {
           const { points /*, source, target*/ } = link;
           const pathString = createLine(points as any);
           if (pathString !== null) {
@@ -56,7 +56,7 @@ export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | nul
         })}
       </g>
       <g>
-        {dag.descendants().map((d: any) => {
+        {sugiyamaDagStratified.descendants().map((d: any) => {
           const vertex: any = ontology.get(d.data.id);
           return (
             <g key={d.data.id} transform={`translate(${d.x * scaleMultiplier},${d.y * scaleMultiplier})`}>

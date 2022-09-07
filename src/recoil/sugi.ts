@@ -29,13 +29,24 @@ export const sugiyamaIsEnabledState = selector<boolean>({
   },
 });
 
+/**
+ * don't render the sugiyama unless nodes array length is less than n
+ *
+ * ie., has to be a subset of the overall graph
+ *
+ * this is here because rendering a sugiyama at 3000 nodes would be super messy
+ * and there's no guarantee it would even finish because what the algo is doing
+ * is computing optimal 'de-crossings', and the more nodes the greater the crossings,
+ * where crossings is defined as some 'good enough' minimization of the number of edges
+ * that overlap
+ */
 export const sugiyamaRenderThresholdState = atom<number>({
   key: "sugiyamaRenderThreshold",
   default: 200,
 });
 
-export const dagState = selector<any | null>({
-  key: "sugiyamaDagState",
+export const sugiyamaDagStratifiedState = selector<any | null>({
+  key: "sugiyamaDagStratifiedState",
   get: ({ get }) => {
     const dagDataStructure = get(dagDataStructureState);
 
@@ -54,14 +65,14 @@ export const dagState = selector<any | null>({
   },
 });
 
-export const layoutState = selector<LayoutState>({
+export const sugiyamaLayoutState = selector<LayoutState>({
   key: "sugiyamaLayoutState",
   get: ({ get }) => {
-    const dag = get(dagState);
+    const sugiyamaDagStratified = get(sugiyamaDagStratifiedState);
     let _width = null;
     let _height = null;
 
-    if (dag) {
+    if (sugiyamaDagStratified) {
       /**
        * Initialize d3-dag layout operator
        */
@@ -70,7 +81,7 @@ export const layoutState = selector<LayoutState>({
       /**
        * pass the data structure to the layout generator
        */
-      const { width, height } = _sugiyamaLayout(dag); // error is here
+      const { width, height } = _sugiyamaLayout(sugiyamaDagStratified);
 
       _width = width;
       _height = height;
