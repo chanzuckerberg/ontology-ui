@@ -4,7 +4,7 @@ import { scaleLinear } from "d3-scale";
 
 import { Ontology } from "../../d";
 import { useRecoilValue } from "recoil";
-import { sugiyamaDagStratifiedState, sugiyamaLayoutState } from "../../recoil/sugi";
+import { sugiyamaLayoutState } from "../../recoil/sugi";
 
 interface SugiyamaProps {
   ontology: Ontology;
@@ -14,9 +14,12 @@ export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | nul
   /* recoil */
   /* selectors */
   const sugiyamaLayout = useRecoilValue(sugiyamaLayoutState);
-  const sugiyamaDagStratified = useRecoilValue(sugiyamaDagStratifiedState);
-
-  const { sugiyamaWidthAspectRatio, sugiyamaHeightAspectRatio, scaleMultiplier } = sugiyamaLayout;
+  const {
+    sugiyamaWidthAspectRatio,
+    sugiyamaHeightAspectRatio,
+    scaleMultiplier,
+    sugiyamaStratifyData: sugiyamaDagStratified
+  } = sugiyamaLayout;
   if (!sugiyamaDagStratified || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
 
   const createLine = line()

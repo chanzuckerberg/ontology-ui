@@ -10,6 +10,7 @@ interface LayoutState {
   scaleMultiplier: number;
   sugiyamaWidthAspectRatio: number | null;
   sugiyamaHeightAspectRatio: number | null;
+  sugiyamaStratifyData: any;
 }
 
 export const dagDataStructureState = atom<DagStateNodesLinksStrat | null>({
@@ -45,38 +46,16 @@ export const sugiyamaRenderThresholdState = atom<number>({
   default: 200,
 });
 
-export const sugiyamaDagStratifiedState = selector<Dag<any, unknown> | null>({
-  key: "sugiyamaDagStratifiedState",
-  get: ({ get }) => {
-    const dagDataStructure = get(dagDataStructureState);
-
-    if (!dagDataStructure) return null;
-
-    console.log("dag data structure sugiyama stratify", dagDataStructure.sugiyamaStratifyData);
-    /**
-     * Initialize stratify data operator
-     * https://erikbrinkman.github.io/d3-dag/interfaces/dag_create.ConnectOperator.html
-     */
-    const _createDagStructure = dagStratify();
-    const dagStructure = _createDagStructure(dagDataStructure.sugiyamaStratifyData);
-
-    console.log("dagstructure", dagStructure);
-
-    /**
-     * transform data to d3-dag preferred format
-     */
-    return dagStructure;
-  },
-});
-
 export const sugiyamaLayoutState = selector<LayoutState>({
   key: "sugiyamaLayoutState",
   get: ({ get }) => {
-    const sugiyamaDagStratified = get(sugiyamaDagStratifiedState);
+    const dagDataStructure = get(dagDataStructureState);
+    const _createDagStructure = dagStratify();
+    const sugiyamaDagStratified = _createDagStructure( dagDataStructure?.sugiyamaStratifyData);    
     let _width = null;
     let _height = null;
-
-    if (sugiyamaDagStratified) {
+    
+    if (sugiyamaDagStratified) {  
       /**
        * Initialize d3-dag layout operator
        */
@@ -90,7 +69,6 @@ export const sugiyamaLayoutState = selector<LayoutState>({
       _width = width;
       _height = height;
     }
-
     return {
       nodeRadius: 10,
       layeringChoice: "Simplex (slow)",
@@ -99,6 +77,7 @@ export const sugiyamaLayoutState = selector<LayoutState>({
       scaleMultiplier: 110,
       sugiyamaWidthAspectRatio: _width,
       sugiyamaHeightAspectRatio: _height,
+      sugiyamaStratifyData: sugiyamaDagStratified,
     };
   },
 });
