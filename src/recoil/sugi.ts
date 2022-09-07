@@ -45,12 +45,7 @@ export const sugiyamaRenderThresholdState = atom<number>({
   default: 200,
 });
 
-interface SugiyamaNode {
-  id: string;
-  parentIds: string[];
-}
-
-export const sugiyamaDagStratifiedState = selector<Dag<SugiyamaNode, unknown> | null>({
+export const sugiyamaDagStratifiedState = selector<Dag<any, unknown> | null>({
   key: "sugiyamaDagStratifiedState",
   get: ({ get }) => {
     const dagDataStructure = get(dagDataStructureState);
@@ -63,11 +58,14 @@ export const sugiyamaDagStratifiedState = selector<Dag<SugiyamaNode, unknown> | 
      * https://erikbrinkman.github.io/d3-dag/interfaces/dag_create.ConnectOperator.html
      */
     const _createDagStructure = dagStratify();
+    const dagStructure = _createDagStructure(dagDataStructure.sugiyamaStratifyData);
+
+    console.log("dagstructure", dagStructure);
 
     /**
      * transform data to d3-dag preferred format
      */
-    return _createDagStructure(dagDataStructure.sugiyamaStratifyData);
+    return dagStructure;
   },
 });
 
