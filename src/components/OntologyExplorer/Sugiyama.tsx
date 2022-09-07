@@ -18,7 +18,7 @@ export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | nul
     sugiyamaWidthAspectRatio,
     sugiyamaHeightAspectRatio,
     scaleMultiplier,
-    sugiyamaStratifyData: sugiyamaDagStratified
+    sugiyamaStratifyData: sugiyamaDagStratified,
   } = sugiyamaLayout;
   if (!sugiyamaDagStratified || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
 

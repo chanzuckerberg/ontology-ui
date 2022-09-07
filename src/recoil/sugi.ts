@@ -51,11 +51,11 @@ export const sugiyamaLayoutState = selector<LayoutState>({
   get: ({ get }) => {
     const dagDataStructure = get(dagDataStructureState);
     const _createDagStructure = dagStratify();
-    const sugiyamaDagStratified = _createDagStructure( dagDataStructure?.sugiyamaStratifyData);    
+    const sugiyamaDagStratified = _createDagStructure(dagDataStructure?.sugiyamaStratifyData);
     let _width = null;
     let _height = null;
-    
-    if (sugiyamaDagStratified) {  
+
+    if (sugiyamaDagStratified) {
       /**
        * Initialize d3-dag layout operator
        */
