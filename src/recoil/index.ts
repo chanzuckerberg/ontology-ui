@@ -1,9 +1,15 @@
-import { selector } from "recoil";
+import { atom, selector } from "recoil";
 import { dsvFormat } from "d3-dsv";
 import { extent } from "d3-array";
 import { scaleLinear } from "d3-scale";
 
 import { selectedGeneState } from "./controls";
+import { DagStateNodesLinksStrat } from "../types/graph";
+
+export const dagDataStructureState = atom<DagStateNodesLinksStrat | null>({
+  key: "dagDataStructure",
+  default: null,
+});
 
 export const geneNameConversionTableState = selector<any>({
   key: "geneNameConversionTable",

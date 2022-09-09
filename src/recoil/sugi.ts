@@ -1,6 +1,6 @@
 import { atom, selector } from "recoil";
 import { dagStratify, sugiyama } from "d3-dag/dist";
-import { DagStateNodesLinksStrat } from "../types/graph";
+import { dagDataStructureState } from ".";
 
 interface LayoutState {
   nodeRadius: number;
@@ -12,11 +12,6 @@ interface LayoutState {
   sugiyamaHeightAspectRatio: number | null;
   sugiyamaStratifyData: any;
 }
-
-export const dagDataStructureState = atom<DagStateNodesLinksStrat | null>({
-  key: "dagDataStructure",
-  default: null,
-});
 
 export const sugiyamaIsEnabledState = selector<boolean>({
   key: "sugiyamaIsEnabled",
