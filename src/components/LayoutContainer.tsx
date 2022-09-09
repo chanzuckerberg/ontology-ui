@@ -9,14 +9,14 @@ import Vertex from "./Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
 import SearchSidebar, { SearchTerm, urlSearchParamsToSearchTerms, searchTermToUrlSearchParam } from "./SearchSidebar";
-import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../d";
+import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../types/d";
 import {
   OntologyExplorerState,
   OntologyExplorerProps,
   OntologyVertexDatum,
   CreateDagProps,
   DagStateNodesLinksStrat,
-} from "./graph";
+} from "../types/graph";
 import lruMemoize from "../util/lruMemo";
 import { getHullNodes } from "./drawForce/hulls";
 import { interpolateViridis } from "d3-scale-chromatic";

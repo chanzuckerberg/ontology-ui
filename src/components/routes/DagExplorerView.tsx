@@ -1,7 +1,7 @@
-import { DatasetGraph } from "../d";
-import OntologyExplorer from "../components/OntologyExplorer";
+import { DatasetGraph } from "../../types/d";
+import OntologyExplorer from "../LayoutContainer";
 import { ErrorBoundary } from "react-error-boundary";
-import { ErrorFallback } from "../util/errorFallback";
+import { ErrorFallback } from "../../util/errorFallback";
 import { Suspense } from "react";
 
 export interface DagExplorerViewProps {

@@ -12,7 +12,7 @@ import {
 
 import { useParams } from "react-router-dom";
 
-import { OntologyTerm } from "../d";
+import { OntologyTerm } from "../types/d";
 import { Link } from "react-router-dom";
 import { settingsDrawerActiveState } from "../recoil/controls";
 import { useRecoilState, useRecoilValue } from "recoil";

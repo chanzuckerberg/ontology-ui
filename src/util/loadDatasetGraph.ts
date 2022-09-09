@@ -1,5 +1,5 @@
 import load from "./load";
-import { DatasetGraph, Ontology, OntologyId, OntologyPrefix, OntologyTerm } from "../d";
+import { DatasetGraph, Ontology, OntologyId, OntologyPrefix, OntologyTerm } from "../types/d";
 
 /**
  * Load and initialize the dataset graph from the given URI.

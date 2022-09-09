@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { RecoilRoot } from "recoil";
 
-import App from "./components/App";
+import App from "./App";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/popover2/lib/css/blueprint-popover2.css";
 import "@blueprintjs/select/lib/css/blueprint-select.css";
