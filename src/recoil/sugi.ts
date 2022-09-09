@@ -1,6 +1,6 @@
 import { atom, selector } from "recoil";
-import { Dag, dagStratify, sugiyama } from "d3-dag/dist";
-import { DagStateNodesLinksStrat } from "../components/OntologyExplorer/types";
+import { dagStratify, sugiyama } from "d3-dag/dist";
+import { DagStateNodesLinksStrat } from "../components/graph.d";
 
 interface LayoutState {
   nodeRadius: number;

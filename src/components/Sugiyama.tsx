@@ -2,9 +2,9 @@ import { line, curveCatmullRom } from "d3-shape";
 
 import { scaleLinear } from "d3-scale";
 
-import { Ontology } from "../../d";
+import { Ontology } from "../d";
 import { useRecoilValue } from "recoil";
-import { sugiyamaLayoutState } from "../../recoil/sugi";
+import { sugiyamaLayoutState } from "../recoil/sugi";
 
 interface SugiyamaProps {
   ontology: Ontology;

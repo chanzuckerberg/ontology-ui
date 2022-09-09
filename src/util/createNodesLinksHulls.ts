@@ -1,4 +1,4 @@
-import { OntologyVertexDatum } from "../components/OntologyExplorer/types";
+import { OntologyVertexDatum } from "../components/graph.d";
 
 import { Ontology, OntologyTerm } from "../d";
 

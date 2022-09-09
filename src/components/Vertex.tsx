@@ -5,7 +5,7 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import { olsLookupTermByOboId } from "../util/fetchEBITerm";
 import { DatasetGraph, EBIOlsTerm, OntologyTerm, OntologyId } from "../d";
 import { ontologyLookupId, ontologyQuery, LinkNames } from "../util/ontologyDag";
-import { SearchTerm } from "./OntologyExplorer/searchSidebar";
+import { SearchTerm } from "./SearchSidebar";
 import { Button, Icon } from "@blueprintjs/core";
 import { geneNameConversionTableState } from "../recoil";
 import { selectedGeneState } from "../recoil/controls";
