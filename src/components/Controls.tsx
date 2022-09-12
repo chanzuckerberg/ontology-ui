@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { settingsDrawerActiveState } from "../recoil/controls";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { sugiyamaIsEnabledState } from "../recoil/sugi";
+import { dotplotIsOpenState } from "../recoil/dotplot";
 
 interface OntologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
@@ -42,6 +43,7 @@ interface OntologyExplorerControlDrawerProps {
 export default function OntologyExplorerControlDrawer(props: OntologyExplorerControlDrawerProps): JSX.Element {
   const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
   const [settingsDrawerActive, setSettingsDrawerActive] = useRecoilState(settingsDrawerActiveState);
+  const [, setDotplotIsOpen] = useRecoilState(dotplotIsOpenState);
 
   const params = useParams();
 
@@ -123,6 +125,14 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             label: "Display hulls",
             onKeyDown: () => {
               handleDisplayHulls();
+            },
+          },
+          {
+            combo: "D",
+            global: true,
+            label: "Activate dotplot",
+            onKeyDown: () => {
+              setDotplotIsOpen(true);
             },
           },
         ]}
