@@ -1,4 +1,4 @@
-import { OntologyId, EBIOlsTerm, EBIOlsTermAPIResponse } from "../d";
+import { OntologyId, EBIOlsTerm, EBIOlsTermAPIResponse } from "../types/d";
 
 const EBIBaseUrl = "https://www.ebi.ac.uk/ols/api";
 

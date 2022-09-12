@@ -1,6 +1,6 @@
-import { OntologyVertexDatum } from "../components/OntologyExplorer/types";
+import { OntologyVertexDatum } from "../types/graph";
 
-import { Ontology, OntologyTerm } from "../d";
+import { Ontology, OntologyTerm } from "../types/d";
 
 export const createNodesLinksHulls = (ontology: Ontology, doCreateSugiyamaDatastructure: boolean) => {
   const nodes: OntologyVertexDatum[] = [];

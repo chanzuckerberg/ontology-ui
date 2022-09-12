@@ -5,7 +5,7 @@
 // TODO XXX: we should define the DAG types in this file, and then
 // have the ontology specialize them. For now, just use the ontology
 // objects directly.
-import { Ontology, OntologyTerm, OntologyId, OntologyPrefix } from "../d";
+import { Ontology, OntologyTerm, OntologyId, OntologyPrefix } from "../types/d";
 
 /**
  * Given an ID, return its ontology, term and prefix, OR return undefined.

@@ -2,8 +2,8 @@ import { forceSimulation, forceLink, forceManyBody, forceX, forceY, SimulationLi
 
 import { select } from "d3-selection";
 
-import { OntologyVertexDatum } from "../types";
-import { Ontology } from "../../../d";
+import { OntologyVertexDatum } from "../../types/graph";
+import { Ontology } from "../../types/d";
 
 import { drawHulls } from "./hulls";
 

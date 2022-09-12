@@ -3,21 +3,21 @@ import { useParams, useSearchParams, createSearchParams } from "react-router-dom
 import { useWindowSize } from "@react-hook/window-size";
 import memoizeOne from "memoize-one";
 
-import { createNodesLinksHulls } from "../../util/createNodesLinksHulls";
+import { createNodesLinksHulls } from "../util/createNodesLinksHulls";
 import { drawForceDag, DrawForceDagHighlightProps, NodeHighlight } from "./drawForce";
-import Vertex from "../Vertex";
+import Vertex from "./Vertex";
 import Sugiyama from "./Sugiyama";
 import Controls from "./Controls";
-import SearchSidebar, { SearchTerm, urlSearchParamsToSearchTerms, searchTermToUrlSearchParam } from "./searchSidebar";
-import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../../d";
+import SearchSidebar, { SearchTerm, urlSearchParamsToSearchTerms, searchTermToUrlSearchParam } from "./SearchSidebar";
+import { OntologyId, OntologyTerm, OntologyPrefix, DatasetGraph } from "../types/d";
 import {
   OntologyExplorerState,
   OntologyExplorerProps,
   OntologyVertexDatum,
   CreateDagProps,
   DagStateNodesLinksStrat,
-} from "./types";
-import lruMemoize from "../../util/lruMemo";
+} from "../types/graph";
+import lruMemoize from "../util/lruMemo";
 import { getHullNodes } from "./drawForce/hulls";
 import { interpolateViridis } from "d3-scale-chromatic";
 
@@ -29,18 +29,18 @@ import {
   ontologyQuery,
   compartmentQuery,
   createCompartmentQuery,
-} from "../../util/ontologyDag";
+} from "../util/ontologyDag";
 
-import { useNavigateRef } from "../useNavigateRef";
+import { useNavigateRef } from "../util/useNavigateRef";
 import { Drawer, Classes, DrawerSize } from "@blueprintjs/core";
 import { ErrorBoundary } from "react-error-boundary";
-import { ErrorFallback } from "../../util/errorFallback";
+import { ErrorFallback } from "../util/errorFallback";
 
 import { useRecoilState, useRecoilValue } from "recoil";
-import { geneNameConversionTableState, selectedGeneExpressionState } from "../../recoil";
-import { sugiyamaIsOpenState, selectedGeneState } from "../../recoil/controls";
-import { dagDataStructureState, sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../../recoil/sugi";
-import { simulationRunningState } from "../../recoil/force";
+import { geneNameConversionTableState, selectedGeneExpressionState } from "../recoil";
+import { sugiyamaIsOpenState, selectedGeneState } from "../recoil/controls";
+import { dagDataStructureState, sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
+import { simulationRunningState } from "../recoil/force";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: true,

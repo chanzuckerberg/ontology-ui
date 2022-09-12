@@ -1,10 +1,10 @@
 import { useParams } from "react-router-dom";
 
-import { DatasetGraph, OntologyId } from "../d";
-import Vertex from "../components/Vertex";
+import { DatasetGraph, OntologyId } from "../../types/d";
+import Vertex from "../Vertex";
 import { ErrorBoundary } from "react-error-boundary";
 import { Suspense } from "react";
-import { ErrorFallback } from "../util/errorFallback";
+import { ErrorFallback } from "../../util/errorFallback";
 
 export interface VertexViewProps {
   graph: DatasetGraph;

@@ -1,6 +1,6 @@
 import { polygonHull } from "d3-polygon";
 
-import { Ontology } from "../../../d";
+import { Ontology } from "../../types/d";
 
 import { interpolateSinebow } from "d3-scale-chromatic";
 import { color } from "d3-color";

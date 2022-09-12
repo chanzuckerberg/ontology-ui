@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
-import VertexView from "./routes/VertexView";
-import DagView from "./routes/DagExplorerView";
+import VertexView from "./components/routes/VertexView";
+import DagView from "./components/routes/DagExplorerView";
 import loadDatasetGraph from "./util/loadDatasetGraph";
-import { DatasetGraph, Ontology } from "./d";
+import { DatasetGraph, Ontology } from "./types/d";
 
 interface AppState {
   graph?: DatasetGraph;
