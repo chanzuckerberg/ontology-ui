@@ -37,7 +37,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "../util/errorFallback";
 
 import { useRecoilState, useRecoilValue } from "recoil";
-import { dagDataStructureState, geneNameConversionTableState, selectedGeneExpressionState } from "../recoil";
+import { geneNameConversionTableState, selectedGeneExpressionState } from "../recoil";
 import { sugiyamaIsOpenState, selectedGeneState } from "../recoil/controls";
 import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
 import { simulationRunningState } from "../recoil/force";
@@ -70,7 +70,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const [sugiyamaRenderThreshold] = useRecoilState(sugiyamaRenderThresholdState);
   const [simulationRunning, setSimulationRunning] = useRecoilState(simulationRunningState);
   const [dagDataStructure, setDagDataStructure] = useRecoilState(dagDataStructureState);
-
+  const [, setUrlState] = useRecoilState(urlState);
   /* selectors */
   const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
   const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
@@ -109,6 +109,12 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
    *    xref (query param): the left side bar cross-ref state
    */
   const params = useParams();
+
+  // sync the params with recoil so that we know when the ontology changes
+  useEffect(() => {
+    setUrlState(params);
+  }, [params, setUrlState]);
+
   const { vertexID: pinnedVertexID } = params;
   // unknown ontology - just display our default.  TODO - we should show an error?
   const ontoID = params.ontoID && params.ontoID in graph.ontologies ? params.ontoID : "CL";
@@ -510,7 +516,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
           <div className={Classes.DRAWER_BODY}>
             {sugiyamaIsEnabled ? (
               <div style={{ marginLeft: 20, marginTop: 20 }}>
-                <Sugiyama ontology={ontology} />
+                <Sugiyama />
               </div>
             ) : (
               <div className={Classes.DIALOG_BODY}>

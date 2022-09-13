@@ -2,25 +2,24 @@ import { line, curveCatmullRom } from "d3-shape";
 
 import { scaleLinear } from "d3-scale";
 
-import { Ontology } from "../types/d";
 import { useRecoilValue } from "recoil";
 import { sugiyamaLayoutState } from "../recoil/sugi";
+import { currentOntologyState } from "../recoil";
 
-interface SugiyamaProps {
-  ontology: Ontology;
-}
-
-export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | null {
+export default function Sugiyama(): JSX.Element | null {
   /* recoil */
   /* selectors */
   const sugiyamaLayout = useRecoilValue(sugiyamaLayoutState);
+  const ontology = useRecoilValue(currentOntologyState);
+
   const {
     sugiyamaWidthAspectRatio,
     sugiyamaHeightAspectRatio,
     scaleMultiplier,
     sugiyamaStratifyData: sugiyamaDagStratified,
   } = sugiyamaLayout;
-  if (!sugiyamaDagStratified || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
+
+  if (!ontology || !sugiyamaDagStratified || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
 
   const createLine = line()
     .curve(curveCatmullRom)
@@ -40,6 +39,8 @@ export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | nul
   const cellCountWhale: number = 1000000;
   const cellCountShrimp: number = 1;
   const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
+
+  console.log("ontology in sugyiyama", ontology);
 
   return (
     <svg

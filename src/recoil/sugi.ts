@@ -1,6 +1,6 @@
 import { atom, selector } from "recoil";
 import { dagStratify, sugiyama } from "d3-dag/dist";
-import { dagDataStructureState } from ".";
+import { dagDataStructureState } from "../recoil";
 
 interface LayoutState {
   nodeRadius: number;
