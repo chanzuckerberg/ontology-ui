@@ -1,11 +1,14 @@
 import { Classes, Drawer, DrawerSize } from "@blueprintjs/core";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { geneDataState } from "../recoil";
 import {
+  dotplotColumnState,
   dotplotEnabledState,
   dotplotIsOpenState,
   dotplotRenderThresholdState,
   dotplotRowState,
+  includedCelltypesState,
+  includedGeneNamesState,
+  dotsState,
 } from "../recoil/dotplot";
 import { OntologyVertexDatum } from "../types/graph";
 
@@ -15,6 +18,15 @@ const Dotplot = () => {
   const dotplotEnabled = useRecoilValue(dotplotEnabledState);
 
   const dotplotRows = useRecoilValue(dotplotRowState);
+
+  const dotplotColumns = useRecoilValue(dotplotColumnState);
+
+  const includedCelltypes = useRecoilValue(includedCelltypesState);
+  const dots = useRecoilValue(dotsState);
+
+  const includedGeneNames = useRecoilValue(includedGeneNamesState);
+
+  console.log("all dots", dots);
 
   return (
     <div id="dotplot">

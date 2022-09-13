@@ -2,19 +2,19 @@ import { atom, selector } from "recoil";
 import { dagDataStructureState, geneDataState } from ".";
 import { OntologyVertexDatum } from "../types/graph";
 
+// is the dotplot drawer open?
 export const dotplotIsOpenState = atom<boolean>({
   key: "dotplotIsOpen",
   default: false,
 });
 
-/**
- * max rows for the dotplot
- */
+// how many celltypes max, in the dotplot?
 export const dotplotRenderThresholdState = atom<number>({
   key: "dotplotRenderThreshold",
   default: 200,
 });
 
+// are we currently under the max render threshold?
 export const dotplotEnabledState = selector<boolean>({
   key: "dotplotEnabled",
   get: ({ get }) => {
@@ -29,13 +29,7 @@ export const dotplotEnabledState = selector<boolean>({
   },
 });
 
-export const dotplotIsEnabledState = selector<boolean>({
-  key: "dotplotIsEnabled",
-  get: ({ get }) => {
-    return true;
-  },
-});
-
+// all of the cell types in the dotplot, and their associated data
 export const dotplotRowState = selector<OntologyVertexDatum[] | null>({
   key: "dotplotRows",
   get: ({ get }) => {
@@ -50,14 +44,58 @@ export const dotplotRowState = selector<OntologyVertexDatum[] | null>({
   },
 });
 
+// all of the celltypes as a list of strings like CL:0000000
+export const includedCelltypesState = selector<string[]>({
+  key: "includedCelltypes",
+  get: ({ get }) => {
+    const dotplotRows = get(dotplotRowState);
+
+    if (dotplotRows) {
+      return dotplotRows.map((row) => row.id);
+    } else {
+      return [];
+    }
+  },
+});
+
+// all of the cell / gene pairs data in the dotplot, expression values
+export const dotsState = selector<string[][]>({
+  key: "includedGenes",
+  get: ({ get }) => {
+    const geneData = get(geneDataState);
+    const includedCelltypes = get(includedCelltypesState);
+
+    const includedGenes = geneData.filter((gene: string[]) => {
+      return includedCelltypes.includes(gene[1]);
+    });
+
+    return includedGenes;
+  },
+});
+
+// a selector which contains a deduplicated list of genes
+export const includedGeneNamesState = selector<string[]>({
+  key: "includedGeneNames",
+  get: ({ get }) => {
+    const includedGenes = get(dotsState);
+
+    // deduplicate the gene names
+    const allIncludedNames = includedGenes.map((gene) => gene[2]);
+    console.log("included gene names in recoil", allIncludedNames);
+
+    const deduplicatedNames = [...new Set(allIncludedNames)];
+
+    console.log("deduplicated", deduplicatedNames);
+
+    return [];
+  },
+});
+
 export const dotplotColumnState = selector<any[] | null>({
   key: "dotplotColumns",
   get: ({ get }) => {
     const dotplotRows = get(dotplotRowState);
     const geneData = get(geneDataState);
-
-    console.log("dotplotRows", dotplotRows);
-    console.log("geneData", geneData);
 
     return null;
   },
