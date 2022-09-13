@@ -2,8 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { RecoilRoot } from "recoil";
-import { RecoilURLSync } from "recoil-sync";
-import "recoil-sync/";
 
 import App from "./App";
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -19,9 +17,7 @@ ReactDOM.render(
     <HelmetProvider>
       <HotkeysProvider>
         <RecoilRoot>
-          <RecoilURLSync serialize={(x: any) => x} deserialize={(x: any) => x} location={{ part: "queryParams" }}>
-            <App basename={basename} />
-          </RecoilURLSync>
+          <App basename={basename} />
         </RecoilRoot>
       </HotkeysProvider>
     </HelmetProvider>

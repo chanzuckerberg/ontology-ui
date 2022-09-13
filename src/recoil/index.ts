@@ -3,12 +3,10 @@ import { dsvFormat } from "d3-dsv";
 import { extent } from "d3-array";
 import { scaleLinear } from "d3-scale";
 
-import { syncEffect } from "recoil-sync";
-import { string } from "@recoiljs/refine";
-
 import { selectedGeneState } from "./controls";
 import { DagStateNodesLinksStrat } from "../types/graph";
-import { Ontology } from "../types/d";
+import { DatasetGraph, Ontology } from "../types/d";
+import { createDatasetGraph, createLattice } from "../util/loadDatasetGraph";
 
 export const dagDataStructureState = atom<DagStateNodesLinksStrat | null>({
   key: "dagDataStructure",
@@ -16,20 +14,22 @@ export const dagDataStructureState = atom<DagStateNodesLinksStrat | null>({
 });
 
 // a recoil atom that syncs the url
-export const urlParamsState = atom<string>({
+export const urlState = atom<any | null>({
   key: "urlParams",
-  default: "",
-  effects: [syncEffect({ refine: string() })],
+  default: null,
 });
 
-export const ontologyDataState = selector<any>({
-  key: "ontologyData",
+export const graphState = selector<any>({
+  key: "rawGraph",
   get: async ({ get }) => {
     try {
       const response = await fetch("/dataset_graph.json");
       const data = await response.json();
 
-      return data;
+      const graph: DatasetGraph = createDatasetGraph(data);
+      const lattice: Ontology = createLattice(graph);
+
+      return [graph, lattice];
     } catch (error) {
       throw error;
     }
@@ -39,16 +39,12 @@ export const ontologyDataState = selector<any>({
 export const currentOntologyState = selector<Ontology | null>({
   key: "currentOntology",
   get: ({ get }) => {
-    const ontologyData = get(ontologyDataState);
-    const urlParams = get(urlParamsState);
-    if (!ontologyData) return null;
+    const [graph] = get(graphState);
+    const url = get(urlState);
 
-    console.log("this is the ontology data", ontologyData);
-    console.log("this is the url", urlParams);
+    if (!graph || !url?.ontoID) return null;
 
-    // use url params to get the current ontology
-
-    return null;
+    return graph?.ontologies[url.ontoID];
   },
 });
 

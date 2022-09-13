@@ -12,8 +12,6 @@ export default function Sugiyama(): JSX.Element | null {
   const sugiyamaLayout = useRecoilValue(sugiyamaLayoutState);
   const ontology = useRecoilValue(currentOntologyState);
 
-  console.log("current ontology in sugiaya", ontology);
-
   const {
     sugiyamaWidthAspectRatio,
     sugiyamaHeightAspectRatio,
@@ -41,6 +39,8 @@ export default function Sugiyama(): JSX.Element | null {
   const cellCountWhale: number = 1000000;
   const cellCountShrimp: number = 1;
   const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
+
+  console.log("ontology in sugyiyama", ontology);
 
   return (
     <svg

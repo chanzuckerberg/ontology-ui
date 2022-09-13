@@ -18,7 +18,7 @@ export default async function loadDatasetGraph(url: string): Promise<[DatasetGra
  * Create the lattice -- the flattened map of all terms, used
  * for quick & easy search.
  */
-function createLattice(datasetGraph: DatasetGraph): Ontology {
+export function createLattice(datasetGraph: DatasetGraph): Ontology {
   return new Map(
     (function* () {
       for (const ontology of Object.values(datasetGraph.ontologies)) {
@@ -38,7 +38,7 @@ function createLattice(datasetGraph: DatasetGraph): Ontology {
  *    * parents is merged into .xref to make search simpler.
  *    * add children
  */
-function createDatasetGraph(rawGraph: any): DatasetGraph {
+export function createDatasetGraph(rawGraph: any): DatasetGraph {
   // Convert each ontology from Object to Map
   const datasetGraph: DatasetGraph = {
     ...rawGraph,
