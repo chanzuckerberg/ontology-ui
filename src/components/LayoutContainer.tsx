@@ -525,7 +525,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
             )}
           </div>
         </Drawer>
-        <Dotplot ontology={ontology} />
+        <Dotplot />
       </div>
     </div>
   );

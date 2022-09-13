@@ -9,49 +9,12 @@ import {
 } from "../recoil/dotplot";
 import { OntologyVertexDatum } from "../types/graph";
 
-interface DotplotProps {
-  ontology: any;
-}
-
-const Dotplot = ({ ontology }: DotplotProps) => {
+const Dotplot = () => {
   const [dotplotIsOpen, setDotplotIsOpen] = useRecoilState(dotplotIsOpenState);
   const [dotplotRenderThreshold] = useRecoilState(dotplotRenderThresholdState);
   const dotplotEnabled = useRecoilValue(dotplotEnabledState);
+
   const dotplotRows = useRecoilValue(dotplotRowState);
-  const geneData = useRecoilValue(geneDataState);
-
-  if (!dotplotIsOpen) return null;
-
-  /*
-    each gene looks like this. it's a pair of cell/gene
-    [
-      0 "10100", index position
-      1 "CL:0000065", cl term
-      2 "ENSMUSG00000045658", gene id
-      3 "2.2974446", mean
-      4 "0.59615386", frac expressing
-    ]
-
-    mean: geneData[i][3],
-    frac: geneData[i][4],
-  */
-
-  /**
-   * Since we have cl/gene pairs, the dotplot
-   * already exists, more or less
-   */
-
-  const _justCellIDs: string[] = [];
-
-  dotplotRows?.forEach((row) => {
-    _justCellIDs.push(row.id);
-  });
-
-  console.log("dotplotrows", _justCellIDs);
-
-  const includedPairs = [];
-
-  geneData.forEach((gene: []) => {});
 
   return (
     <div id="dotplot">

@@ -43,7 +43,7 @@ interface OntologyExplorerControlDrawerProps {
 export default function OntologyExplorerControlDrawer(props: OntologyExplorerControlDrawerProps): JSX.Element {
   const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
   const [settingsDrawerActive, setSettingsDrawerActive] = useRecoilState(settingsDrawerActiveState);
-  const [, setDotplotIsOpen] = useRecoilState(dotplotIsOpenState);
+  const [dotplotIsOpen, setDotplotIsOpen] = useRecoilState(dotplotIsOpenState);
 
   const params = useParams();
 
@@ -132,7 +132,7 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             global: true,
             label: "Activate dotplot",
             onKeyDown: () => {
-              setDotplotIsOpen(true);
+              setDotplotIsOpen(!dotplotIsOpen);
             },
           },
         ]}
