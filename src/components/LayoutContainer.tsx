@@ -37,7 +37,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "../util/errorFallback";
 
 import { useRecoilState, useRecoilValue } from "recoil";
-import { geneNameConversionTableState, selectedGeneExpressionState } from "../recoil";
+import { dagDataStructureState, geneNameConversionTableState, selectedGeneExpressionState, urlState } from "../recoil";
 import { sugiyamaIsOpenState, selectedGeneState } from "../recoil/controls";
 import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
 import { simulationRunningState } from "../recoil/force";
