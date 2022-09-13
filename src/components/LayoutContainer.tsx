@@ -37,9 +37,9 @@ import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "../util/errorFallback";
 
 import { useRecoilState, useRecoilValue } from "recoil";
-import { geneNameConversionTableState, selectedGeneExpressionState } from "../recoil";
+import { dagDataStructureState, geneNameConversionTableState, selectedGeneExpressionState } from "../recoil";
 import { sugiyamaIsOpenState, selectedGeneState } from "../recoil/controls";
-import { dagDataStructureState, sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
+import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
 import { simulationRunningState } from "../recoil/force";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
@@ -509,7 +509,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
           <div className={Classes.DRAWER_BODY}>
             {sugiyamaIsEnabled ? (
               <div style={{ marginLeft: 20, marginTop: 20 }}>
-                <Sugiyama ontology={ontology} />
+                <Sugiyama />
               </div>
             ) : (
               <div className={Classes.DIALOG_BODY}>

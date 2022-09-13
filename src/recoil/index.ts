@@ -3,12 +3,53 @@ import { dsvFormat } from "d3-dsv";
 import { extent } from "d3-array";
 import { scaleLinear } from "d3-scale";
 
+import { syncEffect } from "recoil-sync";
+import { string } from "@recoiljs/refine";
+
 import { selectedGeneState } from "./controls";
 import { DagStateNodesLinksStrat } from "../types/graph";
+import { Ontology } from "../types/d";
 
 export const dagDataStructureState = atom<DagStateNodesLinksStrat | null>({
   key: "dagDataStructure",
   default: null,
+});
+
+// a recoil atom that syncs the url
+export const urlParamsState = atom<string>({
+  key: "urlParams",
+  default: "",
+  effects: [syncEffect({ refine: string() })],
+});
+
+export const ontologyDataState = selector<any>({
+  key: "ontologyData",
+  get: async ({ get }) => {
+    try {
+      const response = await fetch("/dataset_graph.json");
+      const data = await response.json();
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
+export const currentOntologyState = selector<Ontology | null>({
+  key: "currentOntology",
+  get: ({ get }) => {
+    const ontologyData = get(ontologyDataState);
+    const urlParams = get(urlParamsState);
+    if (!ontologyData) return null;
+
+    console.log("this is the ontology data", ontologyData);
+    console.log("this is the url", urlParams);
+
+    // use url params to get the current ontology
+
+    return null;
+  },
 });
 
 export const geneNameConversionTableState = selector<any>({

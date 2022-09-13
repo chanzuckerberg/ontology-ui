@@ -2,25 +2,26 @@ import { line, curveCatmullRom } from "d3-shape";
 
 import { scaleLinear } from "d3-scale";
 
-import { Ontology } from "../types/d";
 import { useRecoilValue } from "recoil";
 import { sugiyamaLayoutState } from "../recoil/sugi";
+import { currentOntologyState } from "../recoil";
 
-interface SugiyamaProps {
-  ontology: Ontology;
-}
-
-export default function Sugiyama({ ontology }: SugiyamaProps): JSX.Element | null {
+export default function Sugiyama(): JSX.Element | null {
   /* recoil */
   /* selectors */
   const sugiyamaLayout = useRecoilValue(sugiyamaLayoutState);
+  const ontology = useRecoilValue(currentOntologyState);
+
+  console.log("current ontology in sugiaya", ontology);
+
   const {
     sugiyamaWidthAspectRatio,
     sugiyamaHeightAspectRatio,
     scaleMultiplier,
     sugiyamaStratifyData: sugiyamaDagStratified,
   } = sugiyamaLayout;
-  if (!sugiyamaDagStratified || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
+
+  if (!ontology || !sugiyamaDagStratified || !sugiyamaWidthAspectRatio || !sugiyamaHeightAspectRatio) return null;
 
   const createLine = line()
     .curve(curveCatmullRom)
