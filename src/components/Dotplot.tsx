@@ -9,6 +9,7 @@ import {
   dotplotState,
   diffexpGenesDotplotState,
   dotScaleState,
+  rowHighlightedState,
 } from "../recoil/dotplot";
 import { geneNameConversionTableState } from "../recoil/genes";
 import { OntologyVertexDatum } from "../types/graph";
@@ -19,6 +20,7 @@ const Dotplot = () => {
   /* atoms */
   const [dotplotIsOpen, setDotplotIsOpen] = useRecoilState(dotplotIsOpenState);
   const [dotplotRenderThreshold] = useRecoilState(dotplotRenderThresholdState);
+  const [rowHighlighted, setRowHighlighted] = useRecoilState(rowHighlightedState);
 
   /* selectors */
   const dotplotEnabled = useRecoilValue(dotplotEnabledState);
@@ -90,7 +92,16 @@ const Dotplot = () => {
                   dotplotRows.map((row: OntologyVertexDatum, i: number) => {
                     const vertex = ontology.get(row.id);
                     return (
-                      <text key={row.id} x={100} y={i * 12 + 100} textAnchor="end" style={{ fontSize: 10 }}>
+                      <text
+                        key={row.id}
+                        x={100}
+                        y={i * 12 + 100}
+                        textAnchor="end"
+                        style={{ fontSize: 10, cursor: "pointer", fontWeight: rowHighlighted === row.id ? 700 : 300 }}
+                        onClick={() => {
+                          setRowHighlighted(row.id);
+                        }}
+                      >
                         {(vertex && vertex.label) || row.id}
                       </text>
                     );
@@ -126,6 +137,7 @@ const Dotplot = () => {
                                   cy={offsetY * 12 + 97}
                                   r={fracScale(parseFloat(dot.fracExpressing))}
                                   fill={interpolateViridis(meanScale(parseFloat(dot.mean)))}
+                                  fillOpacity={celltype.id === rowHighlighted ? 1 : 0.5}
                                 />
                               );
                             } else {

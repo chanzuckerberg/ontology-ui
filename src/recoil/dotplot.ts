@@ -11,6 +11,11 @@ export const dotplotIsOpenState = atom<boolean>({
   default: false,
 });
 
+export const rowHighlightedState = atom<string | null>({
+  key: "rowHighlighted",
+  default: null,
+});
+
 // how many celltypes max, in the dotplot?
 export const dotplotRenderThresholdState = atom<number>({
   key: "dotplotRenderThreshold",
