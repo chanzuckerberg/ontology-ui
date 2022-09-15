@@ -3,7 +3,7 @@ import { currentOntologyState, dagDataStructureState } from ".";
 import { geneDataState } from "./genes";
 import { OntologyVertexDatum } from "../types/graph";
 
-import { scaleLinear, ScaleLinear } from "d3-scale";
+import { scaleLinear } from "d3-scale";
 
 // is the dotplot drawer open?
 export const dotplotIsOpenState = atom<boolean>({
