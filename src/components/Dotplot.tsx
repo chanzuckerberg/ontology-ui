@@ -44,7 +44,7 @@ const Dotplot = () => {
         onClose={() => {
           setDotplotIsOpen(false);
         }}
-        title={`Dotplot view (scroll ↔️) cells: ${dotplotRows.length}`}
+        title={`Dotplot view (scroll ↔️) —— celltypes: ${dotplotRows.length}, genes: ${diffexpGenes.length}`}
         position={"bottom"}
         isOpen={dotplotIsOpen}
         canOutsideClickClose={true}
