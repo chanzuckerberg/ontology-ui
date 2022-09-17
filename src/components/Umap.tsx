@@ -1,10 +1,47 @@
+import { extent } from "d3-array";
+import { scaleLinear } from "d3-scale";
 import { useRecoilValue } from "recoil";
-import { umapEmbeddingState } from "../recoil/umap";
+import { currentCelltypesState, currentOntologyState } from "../recoil";
+import { umapCoordsExtentState, umapEmbeddingState } from "../recoil/umap";
 
 const Umap = () => {
-  const umap = useRecoilValue(umapEmbeddingState);
+  const ontology = useRecoilValue(currentOntologyState);
+  const currentCelltypes = useRecoilValue(currentCelltypesState);
 
-  return <p>allo</p>;
+  const umapCoords = useRecoilValue(umapEmbeddingState);
+  const extent = useRecoilValue(umapCoordsExtentState);
+
+  if (!umapCoords || !extent) return <p>no umap coords</p>;
+
+  const umapPadding = 100;
+
+  const xScale = scaleLinear()
+    .domain([extent.xMin, extent.xMax])
+    .range([umapPadding, 1000 - umapPadding]);
+  const yScale = scaleLinear()
+    .domain([extent.yMin, extent.yMax])
+    .range([umapPadding, 1000 - umapPadding]);
+
+  return (
+    <div>
+      <p>Umap</p>
+      <svg height={1000} width={1000}>
+        <g>
+          {umapCoords.map((coord, i) => {
+            console.log("coord", coord);
+            return (
+              <g key={i}>
+                <text x={xScale(coord[0])} y={yScale(coord[1])}>
+                  {ontology?.get(currentCelltypes[i])?.label || currentCelltypes[i]}
+                </text>
+                <circle key={i} cx={xScale(coord[0])} cy={yScale(coord[1])} r={2} fill="red" />;
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+    </div>
+  );
 };
 
 export default Umap;

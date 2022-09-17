@@ -133,14 +133,40 @@ export const umapEmbeddingState = selector<number[][] | null>({
 
     if (!umapVectors) return null;
 
+    // remove all vectors that are all zeros
+    const filteredVectors = umapVectors.filter((vector) => {
+      return vector.some((x) => x !== 0);
+    });
+
     const embedding = new UMAP({
       // nComponents: 2,
       // minDist: 0.1,
       // nNeighbors: 15,
-    }).fit(umapVectors);
-
-    console.log("embedding", embedding);
+    }).fit(filteredVectors);
 
     return embedding;
+  },
+});
+
+export const umapCoordsExtentState = selector<{ xMin: number; xMax: number; yMin: number; yMax: number } | null>({
+  key: "umapCoordsExtentState",
+  get: ({ get }) => {
+    // here, we return 4 values: the min and max x and y coordinates
+    const umapEmbedding = get(umapEmbeddingState);
+    if (!umapEmbedding) return null;
+    const xCoords = umapEmbedding.map((pair) => pair[0]);
+    const yCoords = umapEmbedding.map((pair) => pair[1]);
+    const xMin = Math.min(...xCoords);
+    const xMax = Math.max(...xCoords);
+    const yMin = Math.min(...yCoords);
+    const yMax = Math.max(...yCoords);
+
+    // then we return them as an object with keys xMin, xMax, yMin, yMax
+    return {
+      xMin,
+      xMax,
+      yMin,
+      yMax,
+    };
   },
 });
