@@ -46,6 +46,7 @@ import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/
 import { simulationRunningState } from "../recoil/force";
 
 import Dotplot from "./Dotplot";
+import Umap from "./Umap";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: true,
@@ -417,6 +418,9 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         handlePruningDepthChange={handlePruningDepthChange}
       />
       <div id="horizontalScroll" style={{ display: "flex", justifyContent: "space-between" }}>
+        <div id="umapContainer">
+          <Umap />
+        </div>
         <div
           id="card"
           style={{

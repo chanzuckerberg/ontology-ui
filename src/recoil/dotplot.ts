@@ -1,7 +1,6 @@
 import { atom, selector } from "recoil";
-import { currentOntologyState, dagDataStructureState } from ".";
+import { currentCelltypesState, currentOntologyState, dagDataStructureNodesState, dagDataStructureState } from ".";
 import { geneDataState } from "./genes";
-import { OntologyVertexDatum } from "../types/graph";
 
 import { scaleLinear } from "d3-scale";
 
@@ -47,31 +46,16 @@ export const dotplotEnabledState = selector<boolean>({
   },
 });
 
-// rows in the dotplot (celltypes), and their associated data
-export const dotplotRowState = selector<OntologyVertexDatum[] | null>({
-  key: "dotplotRows",
-  get: ({ get }) => {
-    const dagDataStructure = get(dagDataStructureState);
-    const dotplotEnabled = get(dotplotEnabledState);
-
-    if (dagDataStructure && dagDataStructure.nodes && dotplotEnabled) {
-      return dagDataStructure.nodes;
-    } else {
-      return null;
-    }
-  },
-});
-
 // columns in the dotplot (genes), as an array of names in format eg., 'ENSG00000196549'
 export const diffexpGenesDotplotState = selector<Array<any>>({
   key: "diffexpGenesDotplot",
   get: ({ get }) => {
-    const rows = get(dotplotRowState);
+    const nodes = get(dagDataStructureNodesState);
     const ontology = get(currentOntologyState);
 
-    if (rows && ontology) {
-      const allDiffexpGenes = rows.map((row) => {
-        return ontology?.get(row.id)?.genes;
+    if (nodes && ontology) {
+      const allDiffexpGenes = nodes.map((node) => {
+        return ontology?.get(node.id)?.genes;
       });
 
       // flatten the array of arrays, remove duplicates and undefined values
@@ -84,41 +68,25 @@ export const diffexpGenesDotplotState = selector<Array<any>>({
   },
 });
 
-// all of the celltypes as an array of strings like CL:0000000
-export const includedCelltypesState = selector<string[]>({
-  key: "includedCelltypes",
-  get: ({ get }) => {
-    const dotplotRows = get(dotplotRowState);
-
-    if (dotplotRows) {
-      return dotplotRows.map((row) => row.id);
-    } else {
-      return [];
-    }
-  },
-});
-
 /* 
-
-    each gene is a pair of cell/gene that looks like this
-    [
-      0 "10100", index position
-      1 "CL:0000065", cl term
-      2 "ENSMUSG00000045658", gene id
-      3 "2.2974446", mean
-      4 "0.59615386", frac expressing
-    ]
-
-    mean: geneData[i][3],
-    frac: geneData[i][4],
+  each expression pair is cell/gene that looks like this
+  [
+    0 "10100", index position
+    1 "CL:0000065", cl term
+    2 "ENSMUSG00000045658", gene id
+    3 "2.2974446", mean
+    4 "0.59615386", frac expressing
+  ]
   
-   */
+  mean: geneData[i][3],
+  frac: geneData[i][4],
+*/
 
 export const includedPairsState = selector<string[][]>({
   key: "includedPairs",
   get: ({ get }) => {
     const geneData = get(geneDataState);
-    const includedCelltypes = get(includedCelltypesState);
+    const includedCelltypes = get(currentCelltypesState);
     const diffexpGenes = get(diffexpGenesDotplotState);
 
     const includedPairs = geneData.filter((gene: string[]) => {

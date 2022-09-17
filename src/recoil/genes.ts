@@ -31,20 +31,20 @@ export const geneNameConversionTableState = selector<any>({
   },
 });
 
-export const geneDataState = selector<any>({
+export const geneDataState = selector<string[][]>({
   key: "geneData",
   get: async ({ get }) => {
     try {
-      const response = await fetch(`./gene_data_filtered.tsv`, {
+      const response: Response = await fetch(`./gene_data_filtered.tsv`, {
         headers: {
           "Content-Type": "application/json",
           "Accept-Encoding": "utf-8",
         },
       });
 
-      const csvString = await response.text();
+      const csvString: string = await response.text();
       // index,cell_type,gene_id,mean,frac
-      const geneData = dsvFormat(",").parseRows(csvString);
+      const geneData: string[][] = dsvFormat(",").parseRows(csvString);
 
       return geneData.slice(1);
     } catch (error) {
@@ -52,6 +52,22 @@ export const geneDataState = selector<any>({
     }
   },
 });
+
+/*
+
+TODO: Refactor this to avoid mixing key types, ie., nest [key: string] one deeper 
+https://stackoverflow.com/questions/61431397/how-to-define-typescript-type-as-a-dictionary-of-strings-but-with-one-numeric-i
+
+interface ColorByData {
+  [key: string]: {
+    mean: string;
+    frac: string;
+  };
+  expressionRange: number[];
+  geneExpressionColorScale: any;
+}
+
+*/
 
 export const selectedGeneExpressionState = selector<any>({
   key: "selectedGeneExpression",
@@ -66,10 +82,10 @@ export const selectedGeneExpressionState = selector<any>({
       for (let i = 0; i < geneData.length; i++) {
         if (geneData[i][2] === selectedGene) {
           colorByData[geneData[i][1]] = {
-            mean: geneData[i][3],
-            frac: geneData[i][4],
+            mean: parseFloat(geneData[i][3]),
+            frac: parseFloat(geneData[i][4]),
           };
-          means.push(geneData[i][3]);
+          means.push(parseFloat(geneData[i][3]));
         }
       }
 

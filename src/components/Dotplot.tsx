@@ -1,11 +1,10 @@
 import { Classes, Drawer, DrawerSize } from "@blueprintjs/core";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { currentOntologyState } from "../recoil";
+import { currentOntologyState, dagDataStructureNodesState } from "../recoil";
 import {
   dotplotEnabledState,
   dotplotIsOpenState,
   dotplotRenderThresholdState,
-  dotplotRowState,
   dotplotState,
   diffexpGenesDotplotState,
   dotScaleState,
@@ -25,7 +24,7 @@ const Dotplot = () => {
   /* selectors */
   const dotplotEnabled = useRecoilValue(dotplotEnabledState);
   const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
-  const dotplotRows = useRecoilValue(dotplotRowState);
+  const dotplotRows = useRecoilValue(dagDataStructureNodesState);
   const dots = useRecoilValue(dotplotState);
   const diffexpGenes = useRecoilValue(diffexpGenesDotplotState);
   const ontology = useRecoilValue(currentOntologyState);
