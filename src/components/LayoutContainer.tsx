@@ -37,10 +37,15 @@ import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "../util/errorFallback";
 
 import { useRecoilState, useRecoilValue } from "recoil";
-import { dagDataStructureState, geneNameConversionTableState, selectedGeneExpressionState, urlState } from "../recoil";
+
+import { dagDataStructureState, urlState } from "../recoil";
+import { geneNameConversionTableState, selectedGeneExpressionState } from "../recoil/genes";
+
 import { sugiyamaIsOpenState, selectedGeneState } from "../recoil/controls";
 import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
 import { simulationRunningState } from "../recoil/force";
+
+import Dotplot from "./Dotplot";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: true,
@@ -524,6 +529,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
             )}
           </div>
         </Drawer>
+        <Dotplot />
       </div>
     </div>
   );
