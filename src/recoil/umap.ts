@@ -33,15 +33,6 @@ export const umapVectorState = selector<Vectors | null>({
 
     if (!dagDataStructure || !geneData || !umapEnabled || !currentCelltypes) return null;
 
-    dagDataStructure?.nodes.forEach((node) => {
-      if (node.n_cells === 0) {
-        return null;
-      } else {
-        console.log(node.id);
-        // do stuff
-      }
-    });
-
     const currentGeneData = geneData.filter((pair) => {
       return currentCelltypes.includes(pair[1]);
     });

@@ -39,8 +39,8 @@ import { ErrorFallback } from "../util/errorFallback";
 import { useRecoilState, useRecoilValue } from "recoil";
 
 import { dagDataStructureState, urlState } from "../recoil";
+import { windowDimensionsState } from "../recoil/layout";
 import { geneNameConversionTableState, selectedGeneExpressionState } from "../recoil/genes";
-
 import { sugiyamaIsOpenState, selectedGeneState, activeGraphState } from "../recoil/controls";
 import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
 import { simulationRunningState } from "../recoil/force";
@@ -77,6 +77,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
   const [simulationRunning, setSimulationRunning] = useRecoilState(simulationRunningState);
   const [dagDataStructure, setDagDataStructure] = useRecoilState(dagDataStructureState);
   const [, setUrlState] = useRecoilState(urlState);
+  const [, setWindowDimensions] = useRecoilState(windowDimensionsState);
 
   /* selectors */
   const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
@@ -95,11 +96,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
 
-  const [windowWidth, windowHeight] = useWindowSize();
   const menubarHeight = 50;
   const cardPadding = 10;
-  const forceCanvasWidth = windowWidth - 800;
-  const forceCanvasHeight = windowHeight - menubarHeight - 16;
 
   const { dagCreateProps, cardWidth } = state;
 
@@ -118,10 +116,22 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
    */
   const params = useParams();
 
+  const [windowWidth, windowHeight] = useWindowSize();
+
   // sync the params with recoil so that we know when the ontology changes
   useEffect(() => {
     setUrlState(params);
   }, [params, setUrlState]);
+
+  useEffect(() => {
+    setWindowDimensions({
+      width: windowWidth,
+      height: windowHeight,
+    });
+  }, [windowWidth, windowHeight, setWindowDimensions]);
+
+  const forceCanvasWidth = windowWidth - 800;
+  const forceCanvasHeight = windowHeight - menubarHeight - 16;
 
   const { vertexID: pinnedVertexID } = params;
   // unknown ontology - just display our default.  TODO - we should show an error?

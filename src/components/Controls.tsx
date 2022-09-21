@@ -152,6 +152,14 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
               setActiveGraph("umap");
             },
           },
+          {
+            combo: "F",
+            global: true,
+            label: "Activate force-directed layout",
+            onKeyDown: () => {
+              setActiveGraph("force");
+            },
+          },
         ]}
       >
         {({ handleKeyDown, handleKeyUp }) => (
