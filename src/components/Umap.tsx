@@ -1,4 +1,3 @@
-import { extent } from "d3-array";
 import { scaleLinear } from "d3-scale";
 import { useRecoilValue } from "recoil";
 import { currentCelltypesState, currentOntologyState } from "../recoil";

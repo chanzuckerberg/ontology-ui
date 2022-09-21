@@ -68,20 +68,6 @@ export const diffexpGenesDotplotState = selector<Array<any>>({
   },
 });
 
-/* 
-  each expression pair is cell/gene that looks like this
-  [
-    0 "10100", index position
-    1 "CL:0000065", cl term
-    2 "ENSMUSG00000045658", gene id
-    3 "2.2974446", mean
-    4 "0.59615386", frac expressing
-  ]
-  
-  mean: geneData[i][3],
-  frac: geneData[i][4],
-*/
-
 export const includedPairsState = selector<string[][]>({
   key: "includedPairs",
   get: ({ get }) => {

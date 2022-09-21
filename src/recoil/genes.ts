@@ -53,22 +53,6 @@ export const geneDataState = selector<string[][]>({
   },
 });
 
-/*
-
-TODO: Refactor this to avoid mixing key types, ie., nest [key: string] one deeper 
-https://stackoverflow.com/questions/61431397/how-to-define-typescript-type-as-a-dictionary-of-strings-but-with-one-numeric-i
-
-interface ColorByData {
-  [key: string]: {
-    mean: string;
-    frac: string;
-  };
-  expressionRange: number[];
-  geneExpressionColorScale: any;
-}
-
-*/
-
 export const selectedGeneExpressionState = selector<any>({
   key: "selectedGeneExpression",
   get: ({ get }) => {
