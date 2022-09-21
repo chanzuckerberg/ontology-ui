@@ -14,7 +14,7 @@ import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../types/d";
 import { Link } from "react-router-dom";
-import { settingsDrawerActiveState } from "../recoil/controls";
+import { settingsDrawerActiveState, activeGraphState } from "../recoil/controls";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { sugiyamaIsEnabledState } from "../recoil/sugi";
 import { dotplotIsOpenState } from "../recoil/dotplot";
@@ -41,9 +41,10 @@ interface OntologyExplorerControlDrawerProps {
 }
 
 export default function OntologyExplorerControlDrawer(props: OntologyExplorerControlDrawerProps): JSX.Element {
-  const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
-  const [settingsDrawerActive, setSettingsDrawerActive] = useRecoilState(settingsDrawerActiveState);
+  const [, setActiveGraph] = useRecoilState(activeGraphState);
   const [dotplotIsOpen, setDotplotIsOpen] = useRecoilState(dotplotIsOpenState);
+  const [settingsDrawerActive, setSettingsDrawerActive] = useRecoilState(settingsDrawerActiveState);
+  const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
 
   const params = useParams();
 
@@ -112,9 +113,9 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             },
           },
           {
-            combo: "L",
+            combo: "T",
             global: true,
-            label: "Activate hierarchy layout",
+            label: "Activate hierarchy / tree / sugiyama layout",
             onKeyDown: () => {
               handleSugiyamaOpen();
             },
@@ -133,6 +134,22 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             label: "Activate dotplot",
             onKeyDown: () => {
               setDotplotIsOpen(!dotplotIsOpen);
+            },
+          },
+          {
+            combo: "S",
+            global: true,
+            label: "Activate settings",
+            onKeyDown: () => {
+              setSettingsDrawerActive(!settingsDrawerActive);
+            },
+          },
+          {
+            combo: "U",
+            global: true,
+            label: "Activate umap layout",
+            onKeyDown: () => {
+              setActiveGraph("umap");
             },
           },
         ]}

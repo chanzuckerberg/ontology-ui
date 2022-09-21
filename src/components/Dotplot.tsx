@@ -20,18 +20,18 @@ const Dotplot = () => {
   const [dotplotIsOpen, setDotplotIsOpen] = useRecoilState(dotplotIsOpenState);
   const [dotplotRenderThreshold] = useRecoilState(dotplotRenderThresholdState);
   const [rowHighlighted, setRowHighlighted] = useRecoilState(rowHighlightedState);
+  const currentNodes = useRecoilValue(dagDataStructureNodesState);
 
   /* selectors */
   const dotplotEnabled = useRecoilValue(dotplotEnabledState);
   const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
-  const dotplotRows = useRecoilValue(dagDataStructureNodesState);
   const dots = useRecoilValue(dotplotState);
   const diffexpGenes = useRecoilValue(diffexpGenesDotplotState);
   const ontology = useRecoilValue(currentOntologyState);
 
   const { fracScale, meanScale, legend } = useRecoilValue(dotScaleState);
 
-  if (!dotplotEnabled || !dotplotIsOpen || !dotplotRows) {
+  if (!dotplotEnabled || !dotplotIsOpen || !currentNodes) {
     return null;
   }
 
@@ -45,7 +45,7 @@ const Dotplot = () => {
         onClose={() => {
           setDotplotIsOpen(false);
         }}
-        title={`Dotplot view (scroll ↔️) —— celltypes: ${dotplotRows.length}, genes: ${diffexpGenes.length}`}
+        title={`Dotplot view (scroll ↔️) —— celltypes: ${currentNodes.length}, genes: ${diffexpGenes.length}`}
         position={"bottom"}
         isOpen={dotplotIsOpen}
         canOutsideClickClose={true}
@@ -87,8 +87,8 @@ const Dotplot = () => {
               <g transform={"translate(200,10)"}>
                 {/* CELL TYPES */}
                 {ontology &&
-                  dotplotRows &&
-                  dotplotRows.map((row: OntologyVertexDatum, i: number) => {
+                  currentNodes &&
+                  currentNodes.map((row: OntologyVertexDatum, i: number) => {
                     const vertex = ontology.get(row.id);
                     return (
                       <text
@@ -125,8 +125,8 @@ const Dotplot = () => {
                   diffexpGenes.map((gene: string, offsetX: number) => {
                     return (
                       <g key={gene}>
-                        {dotplotRows &&
-                          dotplotRows.map((celltype: any, offsetY: number) => {
+                        {currentNodes &&
+                          currentNodes.map((celltype: any, offsetY: number) => {
                             const dot = dots[gene] && dots[gene][celltype.id];
                             if (dot) {
                               return (
