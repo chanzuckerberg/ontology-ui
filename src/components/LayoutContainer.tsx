@@ -413,14 +413,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     }
   };
 
-  const handleSugiyamaOpen = () => setSugiyamaIsOpen(true);
-  const handleSugiyamaClose = () => setSugiyamaIsOpen(false);
-
   return (
     <div id="ontologyExplorerContainer">
       <Controls
         pinnedVertex={pinnedVertex}
-        handleSugiyamaOpen={handleSugiyamaOpen}
         handleDisplayHulls={() =>
           setForceCanvasHighlightProps({ ...forceCanvasHighlightProps, hullsEnabled: !hullsEnabled })
         }
@@ -544,7 +540,9 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
          */}
         <Drawer
           icon="layout-hierarchy"
-          onClose={handleSugiyamaClose}
+          onClose={() => {
+            setSugiyamaIsOpen(false);
+          }}
           title="Hierarchical sub-dag view (scroll ↔️)"
           position={"bottom"}
           isOpen={sugiyamaIsOpen}
