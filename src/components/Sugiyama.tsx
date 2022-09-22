@@ -40,8 +40,6 @@ export default function Sugiyama(): JSX.Element | null {
   const cellCountShrimp: number = 1;
   const nCellsScale = scaleLinear().domain([cellCountShrimp, cellCountWhale]).range([minNodeRadius, maxNodeRadius]);
 
-  console.log("ontology in sugyiyama", ontology);
-
   return (
     <svg
       width={sugiyamaWidthAspectRatio * scaleMultiplier}
