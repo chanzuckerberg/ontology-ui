@@ -295,7 +295,16 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagDataStructure_MUTABLE, dagCanvasRef, go, hullsEnabled, heightMap, setSimulationRunning]);
+  }, [
+    ontology,
+    dagDataStructure_MUTABLE,
+    dagCanvasRef,
+    go,
+    hullsEnabled,
+    heightMap,
+    setSimulationRunning,
+    activeGraph,
+  ]);
 
   useEffect(() => {
     /*
@@ -334,6 +343,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     graph.ontologies,
     selectedGene,
     selectedGeneExpression,
+    activeGraph,
   ]);
 
   useEffect(() => {
@@ -341,7 +351,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     Redraw the DAG whenever the canvas size has changed
     */
     if (redrawCanvas) redrawCanvas();
-  }, [redrawCanvas, forceCanvasWidth, forceCanvasHeight]);
+  }, [redrawCanvas, forceCanvasWidth, forceCanvasHeight, activeGraph]);
 
   /*
    * Controls callbacks
