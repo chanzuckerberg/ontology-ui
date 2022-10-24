@@ -1,13 +1,14 @@
 import { atom, selector } from "recoil";
 import { geneDataState } from "./genes";
 import { UMAP } from "umap-js";
-
+import { PCA } from "ml-pca";
 import { Vectors } from "umap-js/dist/umap";
 import { currentCelltypesState, dagDataStructureState } from ".";
+import { diffexpGenesDotplotState } from "./dotplot";
 
 export const umapThresholdState = atom({
   key: "umapThresholdState",
-  default: 200,
+  default: 20000,
 });
 
 export const umapEnabledState = selector({
@@ -23,21 +24,39 @@ export const umapEnabledState = selector({
   },
 });
 
+export const currentGeneDataState = selector({
+  key: "currentGeneDataState",
+  get: ({ get }) => {
+    const currentCelltypes = get(currentCelltypesState);
+    const geneData = get(geneDataState);
+    if (!currentCelltypes || !geneData) return null;
+    const currentGeneData = geneData.filter((pair) => {
+      return currentCelltypes.includes(pair[1]);
+    });
+    return currentGeneData;
+  },
+});
+
+export const relevantGenesListState = selector({
+  key: "relevantGenesListState",
+  get: ({ get }) => {
+    const currentGeneData = get(currentGeneDataState);
+    if (!currentGeneData) return null;
+    const relevantGenesList = Array.from(new Set(currentGeneData.map((pair) => pair[2])));
+    return relevantGenesList;
+  },
+});
+
 export const umapVectorState = selector<Vectors | null>({
   key: "vectorsForUmap",
   get: ({ get }) => {
     const umapEnabled = get(umapEnabledState);
-    const geneData = get(geneDataState);
     const dagDataStructure = get(dagDataStructureState); // we always umap the current selection based on filters
     const currentCelltypes = get(currentCelltypesState);
+    const currentGeneData = get(currentGeneDataState);
+    const relevantGenesList = get(relevantGenesListState);
 
-    if (!dagDataStructure || !geneData || !umapEnabled || !currentCelltypes) return null;
-
-    const currentGeneData = geneData.filter((pair) => {
-      return currentCelltypes.includes(pair[1]);
-    });
-
-    const relevantGenesList = Array.from(new Set(currentGeneData.map((pair) => pair[2])));
+    if (!dagDataStructure || !currentGeneData || !relevantGenesList || !umapEnabled || !currentCelltypes) return null;
 
     /* 
 
@@ -121,19 +140,25 @@ export const umapEmbeddingState = selector<number[][] | null>({
   key: "umapEmbeddingState",
   get: ({ get }) => {
     const umapVectors = get(umapVectorState);
-
-    if (!umapVectors) return null;
-
+    const relevantGenesList = get(relevantGenesListState);
+    if (!umapVectors || !relevantGenesList) return null;
     // remove all vectors that are all zeros
-    const filteredVectors = umapVectors.filter((vector) => {
+    const diffexpGenes = get(diffexpGenesDotplotState);
+    let filteredVectors = umapVectors.filter((vector) => {
       return vector.some((x) => x !== 0);
     });
-
+    filteredVectors = filteredVectors.map((vector) => {
+      return vector.filter((_x, i) => {
+        return diffexpGenes.includes(relevantGenesList[i]);
+      })
+    })
+    const pca = new PCA(filteredVectors);
+    const data = pca.predict(filteredVectors).to2DArray();
     const embedding = new UMAP({
       // nComponents: 2,
       // minDist: 0.1,
       // nNeighbors: 15,
-    }).fit(filteredVectors);
+    }).fit(data);
 
     return embedding;
   },

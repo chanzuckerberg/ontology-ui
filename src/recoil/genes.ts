@@ -45,7 +45,6 @@ export const geneDataState = selector<string[][]>({
       const csvString: string = await response.text();
       // index,cell_type,gene_id,mean,frac
       const geneData: string[][] = dsvFormat(",").parseRows(csvString);
-
       return geneData.slice(1);
     } catch (error) {
       throw error;
