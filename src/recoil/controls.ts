@@ -14,3 +14,8 @@ export const sugiyamaIsOpenState = atom<boolean>({
   key: "sugiyamaIsOpen",
   default: false,
 });
+
+export const activeGraphState = atom<"force" | "umap">({
+  key: "activeGraph",
+  default: "force",
+});

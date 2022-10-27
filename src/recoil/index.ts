@@ -1,6 +1,6 @@
 import { atom, selector } from "recoil";
 
-import { DagStateNodesLinksStrat } from "../types/graph";
+import { DagStateNodesLinksStrat, OntologyVertexDatum } from "../types/graph";
 import { DatasetGraph, Ontology } from "../types/d";
 import { createDatasetGraph, createLattice } from "../util/loadDatasetGraph";
 
@@ -41,5 +41,33 @@ export const currentOntologyState = selector<Ontology | null>({
     if (!graph || !url?.ontoID) return null;
 
     return graph?.ontologies[url.ontoID];
+  },
+});
+
+// just the nodes in the dag, useful for dotplot and umap as intermediate structure
+export const dagDataStructureNodesState = selector<OntologyVertexDatum[] | null>({
+  key: "dagDataStructureNodes",
+  get: ({ get }) => {
+    const dagDataStructure = get(dagDataStructureState);
+
+    if (dagDataStructure && dagDataStructure.nodes) {
+      return dagDataStructure.nodes;
+    } else {
+      return null;
+    }
+  },
+});
+
+// all of the current selection celltypes as an array of strings like CL:0000000
+export const currentCelltypesState = selector<string[]>({
+  key: "currentCelltypes",
+  get: ({ get }) => {
+    const currentCelltypes = get(dagDataStructureNodesState);
+
+    if (currentCelltypes) {
+      return currentCelltypes.map((row) => row.id);
+    } else {
+      return [];
+    }
   },
 });

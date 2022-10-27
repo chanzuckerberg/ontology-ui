@@ -39,13 +39,15 @@ import { ErrorFallback } from "../util/errorFallback";
 import { useRecoilState, useRecoilValue } from "recoil";
 
 import { dagDataStructureState, urlState } from "../recoil";
+import { windowDimensionsState } from "../recoil/layout";
 import { geneNameConversionTableState, selectedGeneExpressionState } from "../recoil/genes";
-
-import { sugiyamaIsOpenState, selectedGeneState } from "../recoil/controls";
+import { sugiyamaIsOpenState, selectedGeneState, activeGraphState } from "../recoil/controls";
 import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
 import { simulationRunningState } from "../recoil/force";
 
 import Dotplot from "./Dotplot";
+import Umap from "./Umap";
+import { dotplotEnabledState } from "../recoil/dotplot";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: true,
@@ -67,18 +69,21 @@ const defaultState: OntologyExplorerState = {
 };
 
 export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.Element {
-  /* recoil */
   /* atoms */
+  const [activeGraph] = useRecoilState(activeGraphState);
   const [selectedGene] = useRecoilState(selectedGeneState);
   const [sugiyamaIsOpen, setSugiyamaIsOpen] = useRecoilState(sugiyamaIsOpenState);
   const [sugiyamaRenderThreshold] = useRecoilState(sugiyamaRenderThresholdState);
   const [simulationRunning, setSimulationRunning] = useRecoilState(simulationRunningState);
   const [dagDataStructure, setDagDataStructure] = useRecoilState(dagDataStructureState);
   const [, setUrlState] = useRecoilState(urlState);
+  const [, setWindowDimensions] = useRecoilState(windowDimensionsState);
+
   /* selectors */
   const selectedGeneExpression = useRecoilValue(selectedGeneExpressionState);
   const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
   const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
+  const dotplotEnabled = useRecoilValue(dotplotEnabledState);
 
   /*
    * Component internal state
@@ -91,11 +96,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
 
   const [redrawCanvas, setRedrawCanvas] = useState<((p?: DrawForceDagHighlightProps) => void) | null>(null);
 
-  const [windowWidth, windowHeight] = useWindowSize();
   const menubarHeight = 50;
   const cardPadding = 10;
-  const forceCanvasWidth = windowWidth - 800;
-  const forceCanvasHeight = windowHeight - menubarHeight - 16;
 
   const { dagCreateProps, cardWidth } = state;
 
@@ -114,10 +116,22 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
    */
   const params = useParams();
 
+  const [windowWidth, windowHeight] = useWindowSize();
+
   // sync the params with recoil so that we know when the ontology changes
   useEffect(() => {
     setUrlState(params);
   }, [params, setUrlState]);
+
+  useEffect(() => {
+    setWindowDimensions({
+      width: windowWidth,
+      height: windowHeight,
+    });
+  }, [windowWidth, windowHeight, setWindowDimensions]);
+
+  const forceCanvasWidth = windowWidth - 800;
+  const forceCanvasHeight = windowHeight - menubarHeight - 16;
 
   const { vertexID: pinnedVertexID } = params;
   // unknown ontology - just display our default.  TODO - we should show an error?
@@ -281,7 +295,16 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       setRedrawCanvas(() => _redrawCanvas);
       setSimulationRunning(() => true);
     }
-  }, [ontology, dagDataStructure_MUTABLE, dagCanvasRef, go, hullsEnabled, heightMap, setSimulationRunning]);
+  }, [
+    ontology,
+    dagDataStructure_MUTABLE,
+    dagCanvasRef,
+    go,
+    hullsEnabled,
+    heightMap,
+    setSimulationRunning,
+    activeGraph,
+  ]);
 
   useEffect(() => {
     /*
@@ -320,6 +343,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     graph.ontologies,
     selectedGene,
     selectedGeneExpression,
+    activeGraph,
   ]);
 
   useEffect(() => {
@@ -327,7 +351,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     Redraw the DAG whenever the canvas size has changed
     */
     if (redrawCanvas) redrawCanvas();
-  }, [redrawCanvas, forceCanvasWidth, forceCanvasHeight]);
+  }, [redrawCanvas, forceCanvasWidth, forceCanvasHeight, activeGraph]);
 
   /*
    * Controls callbacks
@@ -389,14 +413,10 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     }
   };
 
-  const handleSugiyamaOpen = () => setSugiyamaIsOpen(true);
-  const handleSugiyamaClose = () => setSugiyamaIsOpen(false);
-
   return (
     <div id="ontologyExplorerContainer">
       <Controls
         pinnedVertex={pinnedVertex}
-        handleSugiyamaOpen={handleSugiyamaOpen}
         handleDisplayHulls={() =>
           setForceCanvasHighlightProps({ ...forceCanvasHighlightProps, hullsEnabled: !hullsEnabled })
         }
@@ -463,33 +483,44 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         {/**
          * Render ontology force layout
          */}
-        <div style={{ flexGrow: 1, position: "relative" }}>
-          {selectedGene && (
-            <svg id="graphLegend" style={{ width: 300, height: 100, position: "absolute", top: "40" }}>
-              <text x="20" y="20">
-                {geneNameConversionTable.get(selectedGene)}
-              </text>
-              {[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map((val, i) => {
-                return <rect key={i} x={20 + i * 15} y={30} height={15} width={15} fill={interpolateViridis(val)} />;
-              })}
-              <text x="20" y="65">
-                {parseFloat(selectedGeneExpression.expressionRange[0]).toPrecision(3)}
-              </text>
-              <text x="158" y="65">
-                {parseFloat(selectedGeneExpression.expressionRange[1]).toPrecision(3)}
-              </text>
-            </svg>
+        <div id="graphContainer">
+          {activeGraph === "umap" && (
+            <div id="umapContainer">
+              <Umap />
+            </div>
           )}
-          <canvas
-            style={{
-              cursor: "crosshair",
-              width: forceCanvasWidth,
-              height: forceCanvasHeight,
-            }}
-            width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina/hidpi
-            height={forceCanvasHeight * window.devicePixelRatio}
-            ref={dagCanvasRef}
-          />
+          {activeGraph === "force" && (
+            <div id="forceContainer" style={{ flexGrow: 1, position: "relative" }}>
+              {selectedGene && (
+                <svg id="graphLegend" style={{ width: 300, height: 100, position: "absolute", top: "40" }}>
+                  <text x="20" y="20">
+                    {geneNameConversionTable.get(selectedGene)}
+                  </text>
+                  {[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map((val, i) => {
+                    return (
+                      <rect key={i} x={20 + i * 15} y={30} height={15} width={15} fill={interpolateViridis(val)} />
+                    );
+                  })}
+                  <text x="20" y="65">
+                    {parseFloat(selectedGeneExpression.expressionRange[0]).toPrecision(3)}
+                  </text>
+                  <text x="158" y="65">
+                    {parseFloat(selectedGeneExpression.expressionRange[1]).toPrecision(3)}
+                  </text>
+                </svg>
+              )}
+              <canvas
+                style={{
+                  cursor: "crosshair",
+                  width: forceCanvasWidth,
+                  height: forceCanvasHeight,
+                }}
+                width={forceCanvasWidth * window.devicePixelRatio} // scale up canvas for retina/hidpi
+                height={forceCanvasHeight * window.devicePixelRatio}
+                ref={dagCanvasRef}
+              />
+            </div>
+          )}
         </div>
         <div
           id="rightSideBarContainer"
@@ -509,7 +540,9 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
          */}
         <Drawer
           icon="layout-hierarchy"
-          onClose={handleSugiyamaClose}
+          onClose={() => {
+            setSugiyamaIsOpen(false);
+          }}
           title="Hierarchical sub-dag view (scroll ↔️)"
           position={"bottom"}
           isOpen={sugiyamaIsOpen}
@@ -529,7 +562,18 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
             )}
           </div>
         </Drawer>
-        <Dotplot />
+        {/**
+         * for performance reasons we should
+         * only render the dotplot when it is below threshold
+         * perhaps the sugiyama drawer pattern works,
+         * the main problem is that if we close the dotplot,
+         * it does away with the drawer closing animation,
+         * pulling all of these components into this file is not ideal
+         * because we want to reduce the filesize of LayoutContainer,
+         * so it would probably be better for both sugiyama and dotplot
+         * to have multiple components that handle error states
+         */}
+        {dotplotEnabled ? <Dotplot /> : null}{" "}
       </div>
     </div>
   );

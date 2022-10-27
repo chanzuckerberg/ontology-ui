@@ -14,7 +14,7 @@ import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../types/d";
 import { Link } from "react-router-dom";
-import { settingsDrawerActiveState } from "../recoil/controls";
+import { settingsDrawerActiveState, activeGraphState, sugiyamaIsOpenState } from "../recoil/controls";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { sugiyamaIsEnabledState } from "../recoil/sugi";
 import { dotplotIsOpenState } from "../recoil/dotplot";
@@ -30,7 +30,6 @@ interface OntologyExplorerControlDrawerProps {
   highlightAncestors: boolean;
   handleHighlightAncestorChange: any;
   handleDisplayHulls: any;
-  handleSugiyamaOpen: any;
   minimumOutdegree: string;
   maximumOutdegree: string;
   handleMinOutdegreeChange: any;
@@ -41,9 +40,11 @@ interface OntologyExplorerControlDrawerProps {
 }
 
 export default function OntologyExplorerControlDrawer(props: OntologyExplorerControlDrawerProps): JSX.Element {
-  const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
-  const [settingsDrawerActive, setSettingsDrawerActive] = useRecoilState(settingsDrawerActiveState);
+  const [, setActiveGraph] = useRecoilState(activeGraphState);
   const [dotplotIsOpen, setDotplotIsOpen] = useRecoilState(dotplotIsOpenState);
+  const [settingsDrawerActive, setSettingsDrawerActive] = useRecoilState(settingsDrawerActiveState);
+  const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
+  const [sugiyamaIsOpen, setSugiyamaIsOpen] = useRecoilState(sugiyamaIsOpenState);
 
   const params = useParams();
 
@@ -58,7 +59,6 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
     minimumOutdegree,
     maximumOutdegree,
     handleMinOutdegreeChange,
-    handleSugiyamaOpen,
     handlePruningDepthChange,
     minDepth,
     maxDepth,
@@ -112,11 +112,11 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             },
           },
           {
-            combo: "L",
+            combo: "T",
             global: true,
-            label: "Activate hierarchy layout",
+            label: "Activate hierarchy / tree / sugiyama layout",
             onKeyDown: () => {
-              handleSugiyamaOpen();
+              setSugiyamaIsOpen(!sugiyamaIsOpen);
             },
           },
           {
@@ -135,6 +135,30 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
               setDotplotIsOpen(!dotplotIsOpen);
             },
           },
+          {
+            combo: "S",
+            global: true,
+            label: "Activate settings",
+            onKeyDown: () => {
+              setSettingsDrawerActive(!settingsDrawerActive);
+            },
+          },
+          {
+            combo: "U",
+            global: true,
+            label: "Activate umap layout",
+            onKeyDown: () => {
+              setActiveGraph("umap");
+            },
+          },
+          {
+            combo: "F",
+            global: true,
+            label: "Activate force-directed layout",
+            onKeyDown: () => {
+              setActiveGraph("force");
+            },
+          },
         ]}
       >
         {({ handleKeyDown, handleKeyUp }) => (
@@ -151,7 +175,9 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
       </HotkeysTarget2>
       <Button
         icon="layout-hierarchy"
-        onClick={handleSugiyamaOpen}
+        onClick={() => {
+          setSugiyamaIsOpen(!sugiyamaIsOpen);
+        }}
         style={{ marginRight: 20 }}
         disabled={!sugiyamaIsEnabled}
       >
