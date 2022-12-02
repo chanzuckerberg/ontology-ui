@@ -11,6 +11,9 @@ module.exports = {
       ignoreWarnings: [/Failed to parse source map from/],
 
       plugins: [
+        new webpack.DefinePlugin({
+          PLAUSIBLE_DATA_DOMAIN: JSON.stringify("cellxgene.cziscience.com"),
+        }),        
         //
         // javascript-lp-solver has some bogus imports which we disable as
         // instructed in the install guide: https://github.com/JWally/jsLPSolver#install
