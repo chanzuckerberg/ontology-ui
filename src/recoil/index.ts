@@ -19,7 +19,7 @@ export const graphState = selector<any>({
   key: "rawGraph",
   get: async ({ get }) => {
     try {
-      const response = await fetch("/dataset_graph.json");
+      const response = await fetch("./dataset_graph.json");
       const data = await response.json();
 
       const graph: DatasetGraph = createDatasetGraph(data);
