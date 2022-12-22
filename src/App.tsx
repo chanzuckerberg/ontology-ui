@@ -6,7 +6,6 @@ import VertexView from "./components/routes/VertexView";
 import DagView from "./components/routes/DagExplorerView";
 import loadDatasetGraph from "./util/loadDatasetGraph";
 import { DatasetGraph, Ontology } from "./types/d";
-import Pyscript from "./Pyscript";
 
 interface AppState {
   graph?: DatasetGraph;
@@ -26,6 +25,17 @@ function App({ basename }: { basename: string }) {
     initState();
   }, [setState]);
 
+  // fetch json at port 5000/api
+  useEffect(() => {
+    const initState = async () => {
+      const response = await fetch("http://localhost:5000/api");
+      const data = await response.json();
+      console.log(data);
+    };
+
+    initState();
+  });
+
   return (
     <Router basename={basename}>
       <div
@@ -40,9 +50,7 @@ function App({ basename }: { basename: string }) {
         <Helmet>
           <meta charSet="utf-8" />
           <title>Cell Ontology</title>
-          <script defer src="https://pyscript.net/latest/pyscript.js"></script>
         </Helmet>
-        <Pyscript />
 
         {graph && lattice && (
           <Routes>
