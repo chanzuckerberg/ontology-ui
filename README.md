@@ -12,9 +12,18 @@ Important note: this repository assumes a public folder with ontology files. In 
 
 From the root of the project, execute the following commands:
 
+Terminal 1:
+
 ```
 $ npm ci
 $ npm run start
+```
+
+Terminal 2:
+
+```
+$ cd server
+$ flask run
 ```
 
 And navigate to `http://localhost:3000/`
