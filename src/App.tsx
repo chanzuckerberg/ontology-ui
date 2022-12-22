@@ -6,6 +6,7 @@ import VertexView from "./components/routes/VertexView";
 import DagView from "./components/routes/DagExplorerView";
 import loadDatasetGraph from "./util/loadDatasetGraph";
 import { DatasetGraph, Ontology } from "./types/d";
+import Pyscript from "./Pyscript";
 
 interface AppState {
   graph?: DatasetGraph;
@@ -39,7 +40,9 @@ function App({ basename }: { basename: string }) {
         <Helmet>
           <meta charSet="utf-8" />
           <title>Cell Ontology</title>
+          <script defer src="https://pyscript.net/latest/pyscript.js"></script>
         </Helmet>
+        <Pyscript />
 
         {graph && lattice && (
           <Routes>
