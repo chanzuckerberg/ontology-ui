@@ -11,15 +11,15 @@ export const isProdState = selector<boolean>({
   },
 });
 
-export const prefixState = selector<string>({
-  key: "prefix",
+export const apiPrefixState = selector<string>({
+  key: "apiPrefix",
   get: ({ get }) => {
     const isProd = get(isProdState);
 
     if (isProd) {
       return "https://cellxgene.cziscience.com";
     } else {
-      return "http://localhost:5000";
+      return "http://localhost:5000/api";
     }
   },
 });

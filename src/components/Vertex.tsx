@@ -10,7 +10,7 @@ import { Button, Icon } from "@blueprintjs/core";
 import { geneNameConversionTableState } from "../recoil/genes";
 import { selectedGeneState } from "../recoil/controls";
 
-import { PortalDataset, portalDatasetsWithCellTypeState } from "../recoil/portal";
+import { portalCellTypeCountsState, PortalDataset, portalDatasetsWithCellTypeState } from "../recoil/portal";
 
 export interface VertexProps {
   graph: DatasetGraph;
@@ -33,6 +33,9 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
   const [selectedGene, setSelectedGene] = useRecoilState(selectedGeneState);
 
   const datasetsWithCellType = useRecoilValue(portalDatasetsWithCellTypeState);
+  const portalCellTypeCounts = useRecoilValue(portalCellTypeCountsState);
+
+  console.log(portalCellTypeCounts);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,7 +103,10 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
           </span>
         </p>
       )}
-      <h5>Count: {vertex && vertex.n_cells ? vertex.n_cells : "0"}</h5>
+      <h5>
+        Count: {vertex && vertex.n_cells ? vertex.n_cells : "0"} & Updated portal count:{" "}
+        {vertex && portalCellTypeCounts[vertexID] ? portalCellTypeCounts[vertexID] : "0"}{" "}
+      </h5>
 
       <h3> Parents </h3>
       <ul>

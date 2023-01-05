@@ -1,6 +1,11 @@
 /* async recoil selector to https://api.cellxgene.cziscience.com/dp/v1/datasets/index */
 import { selector } from "recoil";
-import { prefixState, urlState } from ".";
+import { apiPrefixState, urlState } from ".";
+
+// a type for Census Counts {"CL:0000003":8500,"CL:0000030":31458,"CL:0000037":3342, ...
+export interface CensusCounts {
+  [key: string]: number;
+}
 
 interface Assay {
   label: string;
@@ -38,7 +43,7 @@ export interface PortalDataset {
 const portalDatasets = selector<any>({
   key: "portalDatasets",
   get: async ({ get }) => {
-    const prefix = get(prefixState);
+    const prefix = get(apiPrefixState);
     try {
       const response = await fetch(`${prefix}/portalDatasets`);
       const data: PortalDataset[] = await response.json();
@@ -71,5 +76,23 @@ export const portalDatasetsWithCellTypeState = selector<any>({
     });
 
     return datasetsWithCellType;
+  },
+});
+
+// now let's get all the counts for each cell type across all datasets
+export const portalCellTypeCountsState = selector<any>({
+  key: "portalCellTypeCounts",
+  get: async ({ get }) => {
+    // we make a call to the portal api endpoint /cellCensusCounts
+    // this endpoint returns a list of cell types and the number of cells for each cell type
+
+    const prefix = get(apiPrefixState);
+    try {
+      const response = await fetch(`${prefix}/cellCensusCounts`);
+      const data: CensusCounts = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
   },
 });
