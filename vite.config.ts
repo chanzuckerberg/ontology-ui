@@ -18,4 +18,11 @@ export default defineConfig({
       // querystring: require.resolve('rollup-plugin-node-builtins'),
     },
   },
+  build: {
+    outDir: "build",
+  },
+  server: {
+    open: true,
+    port: 3000,
+  },
 });
