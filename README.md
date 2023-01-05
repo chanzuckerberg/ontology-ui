@@ -1,28 +1,32 @@
 # Ontology UI
 
-This is a prototype repository for research related to ontology visualization and cell types
-
-### Client
-
-React, with create-react-app
+This is a prototype repository for research related to ontology visualization and cell types. Functionality includes loading the
 
 ### Usage
 
-Important note: this repository assumes a public folder with ontology files. In the future, it is probable these will be checked in and versioned.
+The following commands will run a python/flask server on 5000, and a vite client dev server on 3000.
 
-From the root of the project, execute the following commands:
-
-Terminal 1:
+##### CLIENT
 
 ```
 $ npm ci
 $ npm run start
 ```
 
-Terminal 2:
+##### SERVER
+
+Setup:
 
 ```
 $ cd server
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install -r requirements.txt
+```
+
+Run:
+
+```
 $ flask run
 ```
 
