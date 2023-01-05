@@ -163,7 +163,9 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
           datasetsWithCellType.map((dataset: PortalDataset) => {
             return (
               <li key={dataset.id}>
-                <a href={dataset.explorer_url}>{dataset.name}</a>
+                <a target="_blank" href={dataset.explorer_url}>
+                  {dataset.name}
+                </a>
               </li>
             );
           })}
