@@ -4,10 +4,23 @@ import { DagStateNodesLinksStrat, OntologyVertexDatum } from "../types/graph";
 import { DatasetGraph, Ontology } from "../types/d";
 import { createDatasetGraph, createLattice } from "../util/loadDatasetGraph";
 
-export const isProd = selector<boolean>({
+export const isProdState = selector<boolean>({
   key: "isProd",
   get: () => {
-    return import.meta.env.MODE === "production";
+    return import.meta.env.MODE === "production"; // this comes from vite
+  },
+});
+
+export const prefixState = selector<string>({
+  key: "prefix",
+  get: ({ get }) => {
+    const isProd = get(isProdState);
+
+    if (isProd) {
+      return "https://cellxgene.cziscience.com";
+    } else {
+      return "http://localhost:5000";
+    }
   },
 });
 

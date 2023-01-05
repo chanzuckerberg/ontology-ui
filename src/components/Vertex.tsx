@@ -10,6 +10,8 @@ import { Button, Icon } from "@blueprintjs/core";
 import { geneNameConversionTableState } from "../recoil/genes";
 import { selectedGeneState } from "../recoil/controls";
 
+import { PortalDataset, portalDatasetsWithCellTypeState } from "../recoil/portal";
+
 export interface VertexProps {
   graph: DatasetGraph;
   vertex: OntologyTerm;
@@ -29,6 +31,8 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
 
   const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
   const [selectedGene, setSelectedGene] = useRecoilState(selectedGeneState);
+
+  const datasetsWithCellType = useRecoilValue(portalDatasetsWithCellTypeState);
 
   useEffect(() => {
     let cancelled = false;
@@ -148,6 +152,18 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
                 style={{ fontWeight: selectedGene === gene ? 700 : 300, cursor: "pointer" }}
               >
                 {geneNameConversionTable.get(gene) || gene}
+              </li>
+            );
+          })}
+      </ul>
+      <h3>CELLxGENE Portal Datasets</h3>
+      <ul>
+        {vertex &&
+          datasetsWithCellType &&
+          datasetsWithCellType.map((dataset: PortalDataset) => {
+            return (
+              <li key={dataset.id}>
+                <a href={dataset.explorer_url}>{dataset.name}</a>
               </li>
             );
           })}
