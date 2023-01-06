@@ -62,7 +62,7 @@ def cellCensus():
     # loop through the dataframe
     for index, row in census_summary_cell_counts.iterrows():
         # limit to humans
-        if row["organism"] == "Homo sapiens":
+        if row["organism"] != "Homo sapiens":
             continue
 
         json[row["ontology_term_id"]] = row["unique_cell_count"]
