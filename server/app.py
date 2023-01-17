@@ -10,6 +10,9 @@ app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
+# open connection to the census
+census = cell_census.open_soma()
+
 @app.route('/')
 def hello_world():
     return '<h1>This is the "/" route for the python backend for cellxgene-ontology</h1>'
@@ -32,14 +35,30 @@ def portalDatasets():
     # then we return the response
     return response.json()
 
-@app.route('/api/cellCensusCounts')
+@app.route('/api/census/cellMetadataFields')
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
-def cellCensus():
+def cellMetadata():
+    return list(census["census_data"]["homo_sapiens"].obs.keys())
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+@app.route('/api/census/cellCounts')
+@cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
+def cellCounts():
     # basic use of the census_summary_cell_counts dataframe.
     # Each Cell Census contains a top-level dataframe summarizing counts of various cell labels. You can read this into a Pandas DataFrame:
-    census = cell_census.open_soma()
-    census_summary_cell_counts = census["census_info"]["summary_cell_counts"].read_as_pandas_all()
+    census_summary_cell_counts = census["census_info"]["summary_cell_counts"].read().concat().to_pandas()
 
     # Dropping the soma_joinid column as it isn't useful in this demo
     census_summary_cell_counts = census_summary_cell_counts.drop(columns=["soma_joinid"])
@@ -69,4 +88,6 @@ def cellCensus():
 
     # return the json object
     return json
+
+
 
