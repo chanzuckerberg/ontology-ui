@@ -61,7 +61,7 @@ def cellCounts():
     census_summary_cell_counts = census["census_info"]["summary_cell_counts"].read().concat().to_pandas()
 
     # Dropping the soma_joinid column as it isn't useful in this demo
-    census_summary_cell_counts = census_summary_cell_counts.drop(columns=["soma_joinid"])
+    census_summary_cell_counts = census_summary_cell_counts.drop(columns=["soma_joinid"]
 
     # print the head of the dataframe 
     print(census_summary_cell_counts.head())
