@@ -32,7 +32,7 @@ multidict==6.0.4
 natsort==8.2.0
 networkx==2.8.8
 numba==0.56.4
-numpy==1.23.5
+numpy
 packaging==22.0
 pandas==1.5.2
 patsy==0.5.3
