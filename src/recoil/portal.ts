@@ -40,6 +40,22 @@ export interface PortalDataset {
   tissue_ancestors: string[];
 }
 
+type CellMetadataFields = {
+  soma_joinid: string;
+  dataset_id: string;
+  assay: string;
+  assay_ontology_term_id: string;
+  cell_type: string;
+  cell_type_ontology_term_id: string;
+  development_stage: string;
+  development_stage_ontology_term_id: string;
+  disease: string;
+  disease_ontology_term_id: string;
+  donor_id: string;
+  is_primary_data: string;
+  self_report: string;
+};
+
 const portalDatasets = selector<any>({
   key: "portalDatasets",
   get: async ({ get }) => {
@@ -88,7 +104,7 @@ export const portalCellTypeCountsState = selector<any>({
 
     const prefix = get(apiPrefixState);
     try {
-      const response = await fetch(`${prefix}/cellCensusCounts`);
+      const response = await fetch(`${prefix}/census/cellCounts`);
       const data: CensusCounts = await response.json();
       return data;
     } catch (error) {
@@ -96,3 +112,30 @@ export const portalCellTypeCountsState = selector<any>({
     }
   },
 });
+
+export const portalCellMetadataFieldsState = selector<any>({
+  key: "portalCellMetadataFields",
+  get: async ({ get }) => {
+    // we make a call to the portal api endpoint /cellCensusCounts
+    // this endpoint returns a list of cell types and the number of cells for each cell type
+
+    const prefix = get(apiPrefixState);
+    try {
+      const response = await fetch(`${prefix}/census/cellMetadataFields`);
+      const data: CellMetadataFields = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
+/* 
+  the above selector has the following response signature
+
+  ["soma_joinid","dataset_id","assay","assay_ontology_term_id","cell_type","cell_type_ontology_term_id","development_stage","development_stage_ontology_term_id","disease","disease_ontology_term_id","donor_id","is_primary_data","self_reported_ethnicity","self_reported_ethnicity_ontology_term_id","sex","sex_ontology_term_id","suspension_type","tissue","tissue_ontology_term_id","tissue_general","tissue_general_ontology_term_id"]
+
+  so the type would be
+
+
+*/

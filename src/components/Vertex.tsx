@@ -104,8 +104,7 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
         </p>
       )}
       <h5>
-        Count: {vertex && vertex.n_cells ? vertex.n_cells : "0"} & Updated portal count:{" "}
-        {vertex && portalCellTypeCounts[vertexID] ? portalCellTypeCounts[vertexID] : "0"}{" "}
+        CELLxGENE portal cell count: {vertex && portalCellTypeCounts[vertexID] ? portalCellTypeCounts[vertexID] : "0"}
       </h5>
 
       <h3> Parents </h3>

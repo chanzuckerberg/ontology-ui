@@ -88,7 +88,9 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
           marginRight: 20,
         }}
       >
-        cellxgene-ontology{params.ontoID && `: ${params.ontoID}`}
+        CELLxGENE
+        <span style={{ position: "absolute", left: 0, top: 17, fontSize: 12, color: "#4aa9e7" }}>ONTOLOGY</span>
+        {params.ontoID && `: ${params.ontoID}`}
       </p>
       {params.ontoID === "CL" && <Link to={"/a/ontology/UBERON"}> Switch to UBERON</Link>}
       {params.ontoID === "UBERON" && <Link to={"/a/ontology/CL"}> Switch to CL</Link>}
