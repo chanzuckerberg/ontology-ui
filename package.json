@@ -42,8 +42,7 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "tsc && vite build",
-    "serve": "vite preview"
+    "build": "tsc && vite build"
   },
   "browser": {
     "fs": false,
