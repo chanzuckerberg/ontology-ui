@@ -6,13 +6,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    volumes:
-      - ./:/app
   backend:
     build:
       context: ./server
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
-    volumes:
-      - ./:/app
