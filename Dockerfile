@@ -5,10 +5,10 @@ FROM node:18
 WORKDIR /app
 
 # Copy the package.json and package-lock.json files into the container
-COPY package*.json ./
+COPY package*.json .
 
 # Install the dependencies
-RUN npm ci
+RUN npm install
 
 # Copy the rest of the application files into the container
 COPY . .
@@ -20,4 +20,11 @@ RUN npm run build
 EXPOSE 3000
 
 # Start the development server
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]
+
+
+
+
+
+
+
