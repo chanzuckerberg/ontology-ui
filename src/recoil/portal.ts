@@ -99,9 +99,6 @@ export const portalDatasetsWithCellTypeState = selector<any>({
 export const portalCellTypeCountsState = selector<any>({
   key: "portalCellTypeCounts",
   get: async ({ get }) => {
-    // we make a call to the portal api endpoint /cellCensusCounts
-    // this endpoint returns a list of cell types and the number of cells for each cell type
-
     const prefix = get(apiPrefixState);
     try {
       const response = await fetch(`${prefix}/census/cellCounts`);
@@ -116,9 +113,6 @@ export const portalCellTypeCountsState = selector<any>({
 export const portalCellMetadataFieldsState = selector<any>({
   key: "portalCellMetadataFields",
   get: async ({ get }) => {
-    // we make a call to the portal api endpoint /cellCensusCounts
-    // this endpoint returns a list of cell types and the number of cells for each cell type
-
     const prefix = get(apiPrefixState);
     try {
       const response = await fetch(`${prefix}/census/cellMetadataFields`);

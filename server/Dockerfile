@@ -15,10 +15,10 @@ RUN pip install numpy
 RUN pip install -r requirements.txt
 
 # Copy the rest of the application files into the container
-COPY . .
+COPY . ./app
 
 # Expose port 5000 for the development server
 EXPOSE 5000
 
-# Start the development server
-CMD ["flask", "run", "--host=0.0.0.0"]
+ENTRYPOINT ["python"]
+CMD ["flask", "run"]

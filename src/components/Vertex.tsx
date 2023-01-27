@@ -35,8 +35,6 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
   const datasetsWithCellType = useRecoilValue(portalDatasetsWithCellTypeState);
   const portalCellTypeCounts = useRecoilValue(portalCellTypeCountsState);
 
-  console.log(portalCellTypeCounts);
-
   useEffect(() => {
     let cancelled = false;
     olsLookupTermByOboId(vertexID)

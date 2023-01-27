@@ -47,8 +47,6 @@ def cellMetadata():
 
 
 
-
-
 @app.route('/api/census/cellCounts')
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def cellCounts():
