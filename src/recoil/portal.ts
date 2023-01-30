@@ -1,6 +1,7 @@
 /* async recoil selector to https://api.cellxgene.cziscience.com/dp/v1/datasets/index */
 import { selector } from "recoil";
-import { apiPrefixState, urlState } from ".";
+import { urlState } from ".";
+import apiPrefix from "../util/apiPrefix";
 
 // a type for Census Counts {"CL:0000003":8500,"CL:0000030":31458,"CL:0000037":3342, ...
 export interface CensusCounts {
@@ -59,9 +60,8 @@ type CellMetadataFields = {
 const portalDatasets = selector<any>({
   key: "portalDatasets",
   get: async ({ get }) => {
-    const prefix = get(apiPrefixState);
     try {
-      const response = await fetch(`${prefix}/portalDatasets`);
+      const response = await fetch(`${apiPrefix}/portalDatasets`);
       const data: PortalDataset[] = await response.json();
       return data;
     } catch (error) {
@@ -99,9 +99,8 @@ export const portalDatasetsWithCellTypeState = selector<any>({
 export const portalCellTypeCountsState = selector<any>({
   key: "portalCellTypeCounts",
   get: async ({ get }) => {
-    const prefix = get(apiPrefixState);
     try {
-      const response = await fetch(`${prefix}/census/cellCounts`);
+      const response = await fetch(`${apiPrefix}/census/cellCounts`);
       const data: CensusCounts = await response.json();
       return data;
     } catch (error) {
@@ -113,9 +112,8 @@ export const portalCellTypeCountsState = selector<any>({
 export const portalCellMetadataFieldsState = selector<any>({
   key: "portalCellMetadataFields",
   get: async ({ get }) => {
-    const prefix = get(apiPrefixState);
     try {
-      const response = await fetch(`${prefix}/census/cellMetadataFields`);
+      const response = await fetch(`${apiPrefix}/census/cellMetadataFields`);
       const data: CellMetadataFields = await response.json();
       return data;
     } catch (error) {
@@ -123,13 +121,3 @@ export const portalCellMetadataFieldsState = selector<any>({
     }
   },
 });
-
-/* 
-  the above selector has the following response signature
-
-  ["soma_joinid","dataset_id","assay","assay_ontology_term_id","cell_type","cell_type_ontology_term_id","development_stage","development_stage_ontology_term_id","disease","disease_ontology_term_id","donor_id","is_primary_data","self_reported_ethnicity","self_reported_ethnicity_ontology_term_id","sex","sex_ontology_term_id","suspension_type","tissue","tissue_ontology_term_id","tissue_general","tissue_general_ontology_term_id"]
-
-  so the type would be
-
-
-*/

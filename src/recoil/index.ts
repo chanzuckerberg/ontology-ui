@@ -4,25 +4,7 @@ import { DagStateNodesLinksStrat, OntologyVertexDatum } from "../types/graph";
 import { DatasetGraph, Ontology } from "../types/d";
 import { createDatasetGraph, createLattice } from "../util/loadDatasetGraph";
 
-export const isProdState = selector<boolean>({
-  key: "isProd",
-  get: () => {
-    return import.meta.env.MODE === "production"; // this comes from vite
-  },
-});
-
-export const apiPrefixState = selector<string>({
-  key: "apiPrefix",
-  get: ({ get }) => {
-    const isProd = get(isProdState);
-
-    if (isProd) {
-      return "https://cellxgene.cziscience.com";
-    } else {
-      return "http://127.0.0.1:5000/api";
-    }
-  },
-});
+import isProd from "../util/isProd";
 
 export const dagDataStructureState = atom<DagStateNodesLinksStrat | null>({
   key: "dagDataStructure",
