@@ -4,7 +4,7 @@
 
 import { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 
-import { Ontology, DatasetGraph } from "../../d";
+import { Ontology, DatasetGraph } from "./d";
 
 export interface OntologyVertexDatum extends SimulationNodeDatum {
   id: string;

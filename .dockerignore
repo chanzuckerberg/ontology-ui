@@ -1,0 +1,3 @@
+# Don't copy these files over
+
+node_modules

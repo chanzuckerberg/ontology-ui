@@ -4,6 +4,8 @@ import { DagStateNodesLinksStrat, OntologyVertexDatum } from "../types/graph";
 import { DatasetGraph, Ontology } from "../types/d";
 import { createDatasetGraph, createLattice } from "../util/loadDatasetGraph";
 
+import isProd from "../util/isProd";
+
 export const dagDataStructureState = atom<DagStateNodesLinksStrat | null>({
   key: "dagDataStructure",
   default: null,

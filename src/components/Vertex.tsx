@@ -10,6 +10,8 @@ import { Button, Icon } from "@blueprintjs/core";
 import { geneNameConversionTableState } from "../recoil/genes";
 import { selectedGeneState } from "../recoil/controls";
 
+import { portalCellTypeCountsState, PortalDataset, portalDatasetsWithCellTypeState } from "../recoil/portal";
+
 export interface VertexProps {
   graph: DatasetGraph;
   vertex: OntologyTerm;
@@ -29,6 +31,9 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
 
   const geneNameConversionTable = useRecoilValue(geneNameConversionTableState);
   const [selectedGene, setSelectedGene] = useRecoilState(selectedGeneState);
+
+  const datasetsWithCellType = useRecoilValue(portalDatasetsWithCellTypeState);
+  const portalCellTypeCounts = useRecoilValue(portalCellTypeCountsState);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +101,9 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
           </span>
         </p>
       )}
-      <h5>Count: {vertex && vertex.n_cells ? vertex.n_cells : "0"}</h5>
+      <h5>
+        CELLxGENE portal cell count: {vertex && portalCellTypeCounts[vertexID] ? portalCellTypeCounts[vertexID] : "0"}
+      </h5>
 
       <h3> Parents </h3>
       <ul>
@@ -148,6 +155,20 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
                 style={{ fontWeight: selectedGene === gene ? 700 : 300, cursor: "pointer" }}
               >
                 {geneNameConversionTable.get(gene) || gene}
+              </li>
+            );
+          })}
+      </ul>
+      <h3>CELLxGENE Portal Datasets</h3>
+      <ul>
+        {vertex &&
+          datasetsWithCellType &&
+          datasetsWithCellType.map((dataset: PortalDataset) => {
+            return (
+              <li key={dataset.id}>
+                <a target="_blank" href={dataset.explorer_url}>
+                  {dataset.name}
+                </a>
               </li>
             );
           })}

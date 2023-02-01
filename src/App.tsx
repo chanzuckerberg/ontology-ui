@@ -25,6 +25,17 @@ function App({ basename }: { basename: string }) {
     initState();
   }, [setState]);
 
+  // fetch json at port 5000/api
+  useEffect(() => {
+    const initState = async () => {
+      const response = await fetch("http://localhost:5000/api");
+      const data = await response.json();
+      console.log(data);
+    };
+
+    initState();
+  });
+
   return (
     <Router basename={basename}>
       <div
@@ -39,6 +50,12 @@ function App({ basename }: { basename: string }) {
         <Helmet>
           <meta charSet="utf-8" />
           <title>Cell Ontology</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,400&display=swap"
+            rel="stylesheet"
+          />
         </Helmet>
 
         {graph && lattice && (
