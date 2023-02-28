@@ -13,8 +13,8 @@ module "stack" {
       name                = "frontend",
       desired_count       = 1,
       port                = 3000,
-      memory              = "100Mi"
-      cpu                 = "100m"
+      memory              = "500Mi"
+      cpu                 = "250m"
       health_check_path   = "/",
       service_type        = "INTERNAL"
     },
@@ -22,8 +22,8 @@ module "stack" {
       name                = "backend",
       desired_count       = 1,
       port                = 5000,
-      memory              = "100Mi"
-      cpu                 = "100m"
+      memory              = "500Mi"
+      cpu                 = "250m"
       health_check_path   = "/",
       service_type        = "INTERNAL"
     }
