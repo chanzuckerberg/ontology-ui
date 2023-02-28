@@ -10,7 +10,8 @@ app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
-# open connection to the census
+# open connection to the census, as of 0.4.0 this needs to be closed manually? 
+# https://github.com/chanzuckerberg/cell-census/releases/tag/v0.4.0
 census = cell_census.open_soma()
 
 @app.route('/')
@@ -39,13 +40,6 @@ def portalDatasets():
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def cellMetadata():
     return list(census["census_data"]["homo_sapiens"].obs.keys())
-
-
-
-
-
-
-
 
 @app.route('/api/census/cellCounts')
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
