@@ -1,0 +1,32 @@
+{
+    "config_version": "v2",
+    "terraform_version": "1.3.0",
+    "default_env": "rdev",
+    "app": "jheath",
+    "default_compose_env_file": ".env.ecr",
+    "slice_default_tag": "branch-main",
+    "services": [
+        "frontend",
+        "backend"
+    ],
+    "environments": {
+        "rdev": {
+            "aws_profile": "czi-playground",
+            "secret_arn": "happy/env-jheath-rdev-config",
+            "terraform_directory": ".happy/terraform/envs/rdev",
+            "log_group_prefix": "/happy/jheath/rdev",
+            "auto_run_migrations": true,
+            "task_launch_type": "k8s",
+            "k8s": {
+                "namespace": "jheath-rdev-happy-happy-env",
+                "cluster_id": "jheath-rdev-eks",
+                "auth_method": "eks",
+                "context": "jheath-rdev-eks"
+            }
+        }
+    },
+    "tasks": {
+        "migrate": [],
+        "delete": []
+    }
+}
