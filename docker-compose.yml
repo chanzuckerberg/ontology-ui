@@ -1,12 +1,14 @@
 version: "3.8"
 services:
   frontend:
+    image: 401986845158.dkr.ecr.us-west-2.amazonaws.com/frontend
     build:
       context: ./
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
   backend:
+    image: 401986845158.dkr.ecr.us-west-2.amazonaws.com/backend
     build:
       context: ./server
       dockerfile: Dockerfile

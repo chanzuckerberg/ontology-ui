@@ -28,4 +28,6 @@ module "stack" {
       service_type        = "INTERNAL"
     }
   }
+  tasks = {
+  }
 }
