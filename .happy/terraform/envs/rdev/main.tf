@@ -24,7 +24,7 @@ module "stack" {
       port                = 5000,
       memory              = "500Mi"
       cpu                 = "250m"
-      health_check_path   = "/",
+      health_check_path   = "/api",
       service_type        = "INTERNAL"
     }
   }
