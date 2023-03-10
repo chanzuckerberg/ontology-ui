@@ -28,8 +28,8 @@ function App({ basename }: { basename: string }) {
   // fetch json at port 5000/api
   useEffect(() => {
     const initState = async () => {
-      const response = await fetch("http://localhost:5000/api");
-      const data = await response.json();
+      const response = await fetch("/api");
+      const data = await response.text();
       console.log(data);
     };
 
