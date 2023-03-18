@@ -9,23 +9,23 @@ module "stack" {
   k8s_namespace    = "sc-prod-happy-eks-happy-env"
   services = {
     frontend = {
-      name              = "frontend",
-      desired_count     = 1,
-      port              = 3000,
-      memory            = "500Mi"
-      cpu               = "250m"
-      health_check_path = "/",
-      service_type      = "INTERNAL"
+      name                  = "frontend",
+      desired_count         = 1,
+      port                  = 3000,
+      memory                = "500Mi"
+      cpu                   = "250m"
+      health_check_path     = "/",
+      service_type          = "INTERNAL"
       platform_architecture = "arm64"
     },
     backend = {
-      name              = "backend",
-      desired_count     = 1,
-      port              = 5000,
-      memory            = "500Mi"
-      cpu               = "250m"
-      health_check_path = "/api",
-      service_type      = "INTERNAL"
+      name                  = "backend",
+      desired_count         = 1,
+      port                  = 5000,
+      memory                = "500Mi"
+      cpu                   = "250m"
+      health_check_path     = "/api",
+      service_type          = "INTERNAL"
       platform_architecture = "arm64"
     }
   }
