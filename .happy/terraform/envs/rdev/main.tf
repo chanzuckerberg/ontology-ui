@@ -18,6 +18,7 @@ module "stack" {
       health_check_path = "/",
       service_type      = "EXTERNAL"
       path              = "/*"
+      platform_architecture = "arm64"
     },
     backend = {
       name              = "backend",
@@ -29,6 +30,7 @@ module "stack" {
       service_type      = "EXTERNAL"
       path              = "/api*"
       priority          = 1
+      platform_architecture = "arm64"
     }
   }
   tasks = {

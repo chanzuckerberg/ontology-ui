@@ -16,6 +16,7 @@ module "stack" {
       cpu               = "250m"
       health_check_path = "/",
       service_type      = "INTERNAL"
+      platform_architecture = "arm64"
     },
     backend = {
       name              = "backend",
@@ -25,6 +26,7 @@ module "stack" {
       cpu               = "250m"
       health_check_path = "/api",
       service_type      = "INTERNAL"
+      platform_architecture = "arm64"
     }
   }
   tasks = {
