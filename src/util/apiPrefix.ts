@@ -1,5 +1,5 @@
 import isProd from "./isProd";
 
-const apiPrefix = isProd ? "https://cellxgene.cziscience.com" : "http://127.0.0.1:5000/api";
+const apiPrefix = isProd ? "https://cellxgene.cziscience.com" : "/api";
 
 export default apiPrefix;
