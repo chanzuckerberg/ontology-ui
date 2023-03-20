@@ -7,7 +7,7 @@ module "stack" {
   deployment_stage = "prod"
   stack_prefix     = "/${var.stack_name}"
   k8s_namespace    = "sc-prod-happy-eks-happy-env"
-  routing_method = "CONTEXT"
+  routing_method   = "CONTEXT"
   services = {
     frontend = {
       name                  = "frontend",
@@ -28,7 +28,7 @@ module "stack" {
       cpu                   = "250m"
       health_check_path     = "/api/health",
       service_type          = "EXTERNAL"
-      path                  = "/api*"//
+      path                  = "/api*"
       priority              = 1
       platform_architecture = "amd64"
     }

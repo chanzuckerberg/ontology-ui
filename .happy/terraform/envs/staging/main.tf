@@ -7,7 +7,7 @@ module "stack" {
   deployment_stage = "staging"
   stack_prefix     = "/${var.stack_name}"
   k8s_namespace    = "sc-staging-happy-eks-happy-env"
-  routing_method = "CONTEXT"
+  routing_method   = "CONTEXT"
   services = {
     frontend = {
       name                  = "frontend",
