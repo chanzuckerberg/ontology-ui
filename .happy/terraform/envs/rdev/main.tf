@@ -13,8 +13,8 @@ module "stack" {
       name                  = "frontend",
       desired_count         = 1,
       port                  = 3000,
-      memory                = "1G"
-      cpu                   = "1.0"
+      memory                = "500Mi"
+      cpu                   = "250m"
       health_check_path     = "/",
       service_type          = "EXTERNAL"
       path                  = "/*"
@@ -30,7 +30,7 @@ module "stack" {
       service_type          = "EXTERNAL"
       path                  = "/api*"
       priority              = 1
-      platform_architecture = "arm64"
+      platform_architecture = "amd64"
     }
   }
   tasks = {
