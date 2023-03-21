@@ -56,6 +56,11 @@ function App({ basename }: { basename: string }) {
             href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,400&display=swap"
             rel="stylesheet"
           />
+          <script
+            defer
+            data-domain="onto.cellxgene-labs.prod.si.czi.technology"
+            src="https://plausible.io/js/script.js"
+          ></script>
         </Helmet>
 
         {graph && lattice && (
