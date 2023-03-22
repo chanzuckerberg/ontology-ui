@@ -1,16 +1,18 @@
 version: "3.8"
 services:
   frontend:
-    image: 401986845158.dkr.ecr.us-west-2.amazonaws.com/frontend
-    platform: linux/amd64
+    image: 699936264352.dkr.ecr.us-west-2.amazonaws.com/frontend
+    platform: linux/arm64
     build:
       context: ./
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
   backend:
-    image: 401986845158.dkr.ecr.us-west-2.amazonaws.com/backend
-    platform: linux/amd64
+    image: 699936264352.dkr.ecr.us-west-2.amazonaws.com/backend
+    # you can make this linux/arm64 if you want, but for some reason, tiledb doesn't have a python wheel for that arch it takes a very long time to build from source (for me +30 minutes)
+    # if you do switch it, you will need to update the platform architecture in the main.tf files
+    platform: linux/amd64 
     build:
       context: ./server
       dockerfile: Dockerfile

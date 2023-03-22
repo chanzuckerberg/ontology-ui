@@ -28,7 +28,7 @@ function App({ basename }: { basename: string }) {
   // fetch json at port 5000/api
   useEffect(() => {
     const initState = async () => {
-      const response = await fetch("http://localhost:5000/api");
+      const response = await fetch("/api/health");
       const data = await response.json();
       console.log(data);
     };
@@ -56,6 +56,11 @@ function App({ basename }: { basename: string }) {
             href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,400&display=swap"
             rel="stylesheet"
           />
+          <script
+            defer
+            data-domain="onto.cellxgene-labs.prod.si.czi.technology"
+            src="https://plausible.io/js/script.js"
+          ></script>
         </Helmet>
 
         {graph && lattice && (

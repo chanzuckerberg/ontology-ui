@@ -14,13 +14,13 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 # https://github.com/chanzuckerberg/cell-census/releases/tag/v0.4.0
 census = cell_census.open_soma()
 
-@app.route('/')
+@app.route('/api')
 def hello_world():
     return '<h1>This is the "/" route for the python backend for cellxgene-ontology</h1>'
 
 # this route will be hit from a react app running on port 3000
 # it will return a json object
-@app.route('/api')
+@app.route('/api/health')
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def api():
     return {'hello': 'world'}
