@@ -17,6 +17,7 @@ import {
   CreateDagProps,
   DagStateNodesLinksStrat,
 } from "../types/graph";
+
 import lruMemoize from "../util/lruMemo";
 import { getHullNodes } from "./drawForce/hulls";
 import { interpolateViridis } from "d3-scale-chromatic";
@@ -40,6 +41,7 @@ import { useRecoilState, useRecoilValue } from "recoil";
 
 import { dagDataStructureState, urlState } from "../recoil";
 import { windowDimensionsState } from "../recoil/layout";
+import { CensusCounts, portalCellTypeCountsState } from "../recoil/portal";
 import { geneNameConversionTableState, selectedGeneExpressionState } from "../recoil/genes";
 import { sugiyamaIsOpenState, selectedGeneState, activeGraphState } from "../recoil/controls";
 import { sugiyamaIsEnabledState, sugiyamaRenderThresholdState } from "../recoil/sugi";
@@ -195,7 +197,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     [searchParamsRef]
   );
   const go = useCallback((path: string) => navigate(makeLink(path)), [navigate, makeLink]);
-
+  
+  const portalCellTypeCounts = useRecoilValue(portalCellTypeCountsState);
   useEffect(() => {
     /*
     Rebuild the DAG rendering elements whenever one of the following change:
@@ -204,8 +207,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
       - parameters that affect the choice of nodes or their connectivity, eg, minimumOutdegree
     Side effect: sets the DAG state.
     */
-    setDagDataStructure(createDag(graph, ontoID, filterQuery, dagCreateProps));
-  }, [filterQuery, graph, ontoID, dagCreateProps, setDagDataStructure]);
+    setDagDataStructure(createDag(graph, ontoID, filterQuery, dagCreateProps, portalCellTypeCounts));
+  }, [filterQuery, graph, ontoID, dagCreateProps, setDagDataStructure, portalCellTypeCounts]);
 
   useEffect(() => {
     /***
@@ -588,16 +591,18 @@ function _createDagHash(
   graph: DatasetGraph,
   ontoID: OntologyPrefix,
   filterQuery: OntologyQuery | null,
-  options: CreateDagProps
+  options: CreateDagProps,
+  portalCellTypeCounts: CensusCounts
 ): string {
-  return "" + ontoID + JSON.stringify(filterQuery) + JSON.stringify(options);
+  return "" + ontoID + JSON.stringify(filterQuery) + JSON.stringify(options) + JSON.stringify(portalCellTypeCounts);
 }
 
 function _createDag(
   graph: DatasetGraph,
   ontoID: OntologyPrefix,
   filterQuery: OntologyQuery | null,
-  options: CreateDagProps
+  options: CreateDagProps,
+  portalCellTypeCounts: CensusCounts
 ): DagStateNodesLinksStrat {
   const { minimumOutdegree, maximumOutdegree, doCreateSugiyamaDatastructure, pruningDepth } = options;
 
@@ -620,7 +625,7 @@ function _createDag(
       return OntologyFilterAction.Retain;
     });
   }
-  const result = createNodesLinksHulls(ontology, doCreateSugiyamaDatastructure);
+  const result = createNodesLinksHulls(ontology, doCreateSugiyamaDatastructure, portalCellTypeCounts);
   return result;
 }
 

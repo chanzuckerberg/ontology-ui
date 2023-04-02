@@ -5,7 +5,10 @@ import apiPrefix from "../util/apiPrefix";
 
 // a type for Census Counts {"CL:0000003":8500,"CL:0000030":31458,"CL:0000037":3342, ...
 export interface CensusCounts {
-  [key: string]: number;
+  [key: string]: {
+    unique_cell_count: number;
+    unique_cell_count_with_descendants: number;
+  }
 }
 
 interface Assay {
