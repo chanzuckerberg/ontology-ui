@@ -50,6 +50,7 @@ import { simulationRunningState } from "../recoil/force";
 import Dotplot from "./Dotplot";
 import Umap from "./Umap";
 import { dotplotEnabledState } from "../recoil/dotplot";
+import Tutorial from "./Tutorial";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: true,
@@ -197,7 +198,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
     [searchParamsRef]
   );
   const go = useCallback((path: string) => navigate(makeLink(path)), [navigate, makeLink]);
-  
+
   const portalCellTypeCounts = useRecoilValue(portalCellTypeCountsState);
   useEffect(() => {
     /*
@@ -439,6 +440,7 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
         currentPruningDepth={currentPruningDepth}
         handlePruningDepthChange={handlePruningDepthChange}
       />
+      <Tutorial />
       <div id="horizontalScroll" style={{ display: "flex", justifyContent: "space-between" }}>
         <div
           id="card"
