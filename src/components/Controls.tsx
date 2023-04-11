@@ -14,10 +14,15 @@ import { useParams } from "react-router-dom";
 
 import { OntologyTerm } from "../types/d";
 import { Link } from "react-router-dom";
-import { settingsDrawerActiveState, activeGraphState, sugiyamaIsOpenState } from "../recoil/controls";
+import {
+  settingsDrawerActiveState,
+  activeGraphState,
+  sugiyamaIsOpenState,
+  tutorialDrawerActiveState,
+} from "../recoil/controls";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { sugiyamaIsEnabledState } from "../recoil/sugi";
-import { dotplotIsOpenState } from "../recoil/dotplot";
+import { dotplotEnabledState, dotplotIsOpenState } from "../recoil/dotplot";
 
 interface OntologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
@@ -45,6 +50,8 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
   const [settingsDrawerActive, setSettingsDrawerActive] = useRecoilState(settingsDrawerActiveState);
   const sugiyamaIsEnabled = useRecoilValue(sugiyamaIsEnabledState);
   const [sugiyamaIsOpen, setSugiyamaIsOpen] = useRecoilState(sugiyamaIsOpenState);
+  const [tutorialDrawerActive, setTutorialDrawerActive] = useRecoilState(tutorialDrawerActiveState);
+  const dotplotEnabled = useRecoilValue(dotplotEnabledState);
 
   const params = useParams();
 
@@ -94,6 +101,35 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
       </p>
       {params.ontoID === "CL" && <Link to={"/a/ontology/UBERON"}> Switch to UBERON</Link>}
       {params.ontoID === "UBERON" && <Link to={"/a/ontology/CL"}> Switch to CL</Link>}
+      <Button
+        style={{ marginRight: 20, marginLeft: 20 }}
+        icon="help"
+        onClick={() => {
+          setTutorialDrawerActive(true);
+        }}
+      >
+        Welcome & Quickstart
+      </Button>
+      <Button
+        icon="layout-hierarchy"
+        onClick={() => {
+          setSugiyamaIsOpen(!sugiyamaIsOpen);
+        }}
+        style={{ marginRight: 20 }}
+        disabled={!sugiyamaIsEnabled}
+      >
+        Hierarchy layout
+      </Button>
+      <Button
+        icon="heat-grid"
+        onClick={() => {
+          setDotplotIsOpen(!dotplotIsOpen);
+        }}
+        style={{ marginRight: 20 }}
+        disabled={!dotplotEnabled}
+      >
+        Dotplot layout
+      </Button>
 
       <HotkeysTarget2
         hotkeys={[
@@ -168,7 +204,7 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             icon="unpin"
             tabIndex={0}
             onClick={deselectPinnedNode}
-            style={{ marginRight: 20, marginLeft: 20 }}
+            style={{ marginRight: 20 }}
             disabled={!pinnedVertex}
           >
             Deselect <Tag minimal>Esc</Tag>
@@ -176,14 +212,13 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
         )}
       </HotkeysTarget2>
       <Button
-        icon="layout-hierarchy"
-        onClick={() => {
-          setSugiyamaIsOpen(!sugiyamaIsOpen);
-        }}
         style={{ marginRight: 20 }}
-        disabled={!sugiyamaIsEnabled}
+        icon="settings"
+        onClick={() => {
+          setSettingsDrawerActive(true);
+        }}
       >
-        Hierarchy layout
+        Settings
       </Button>
       <Drawer
         isOpen={settingsDrawerActive}
@@ -281,13 +316,6 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
         </div>
         <div className={Classes.DRAWER_FOOTER}>A lovely footer</div>
       </Drawer>
-      <Button
-        style={{ marginRight: 20 }}
-        icon="settings"
-        onClick={() => {
-          setSettingsDrawerActive(true);
-        }}
-      />
     </div>
   );
 }

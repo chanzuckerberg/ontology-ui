@@ -5,6 +5,11 @@ export const settingsDrawerActiveState = atom<boolean>({
   default: false,
 });
 
+export const tutorialDrawerActiveState = atom<boolean>({
+  key: "tutorialDrawerActive",
+  default: true,
+});
+
 export const selectedGeneState = atom<null | string>({
   key: "selectedGene",
   default: null,
