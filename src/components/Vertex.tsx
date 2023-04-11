@@ -10,7 +10,7 @@ import { Button, Icon } from "@blueprintjs/core";
 import { geneNameConversionTableState } from "../recoil/genes";
 import { selectedGeneState } from "../recoil/controls";
 
-import { portalCellTypeCountsState, PortalDataset, portalDatasetsWithCellTypeState } from "../recoil/portal";
+import { CensusCounts, portalCellTypeCountsState, PortalDataset, portalDatasetsWithCellTypeState } from "../recoil/portal";
 
 export interface VertexProps {
   graph: DatasetGraph;
@@ -33,7 +33,7 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
   const [selectedGene, setSelectedGene] = useRecoilState(selectedGeneState);
 
   const datasetsWithCellType = useRecoilValue(portalDatasetsWithCellTypeState);
-  const portalCellTypeCounts = useRecoilValue(portalCellTypeCountsState);
+  const portalCellTypeCounts: CensusCounts = useRecoilValue(portalCellTypeCountsState);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,7 +102,9 @@ export default function Vertex({ graph, vertex, query, makeTo, searchTerms, setS
         </p>
       )}
       <h5>
-        CELLxGENE portal cell count: {vertex && portalCellTypeCounts[vertexID] ? portalCellTypeCounts[vertexID] : "0"}
+        CELLxGENE portal cell count: {vertex && portalCellTypeCounts[vertexID] ? portalCellTypeCounts[vertexID].unique_cell_count : "0"}
+        <br/>
+        CELLxGENE portal cell count (including descendants): {vertex && portalCellTypeCounts[vertexID] ? portalCellTypeCounts[vertexID].unique_cell_count_with_descendants : "0"}
       </h5>
 
       <h3> Parents </h3>

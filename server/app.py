@@ -1,14 +1,17 @@
 from flask import Flask
 import requests # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-urllib3-and-requests-modul
 import cell_census
-
+import pandas as pd
+from rollup import rollup_across_cell_type_descendants, ALL_CELL_ONTOLOGY_TERMS
 # cors
 from flask_cors import CORS, cross_origin
+
 app = Flask(__name__)
 
 # cors
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
+
 
 # open connection to the census, as of 0.4.0 this needs to be closed manually? 
 # https://github.com/chanzuckerberg/cell-census/releases/tag/v0.4.0
@@ -47,12 +50,22 @@ def cellCounts():
     # basic use of the census_summary_cell_counts dataframe.
     # Each Cell Census contains a top-level dataframe summarizing counts of various cell labels. You can read this into a Pandas DataFrame:
     census_summary_cell_counts = census["census_info"]["summary_cell_counts"].read().concat().to_pandas()
+    
+    # limit to humans and cell types
+    census_summary_cell_counts = census_summary_cell_counts[census_summary_cell_counts["organism"]=="Homo sapiens"]
+    census_summary_cell_counts = census_summary_cell_counts[census_summary_cell_counts["category"]=="cell_type"]
+    
+    # get the columns we care about
+    census_summary_cell_counts = census_summary_cell_counts[["ontology_term_id","unique_cell_count"]]
 
-    # Dropping the soma_joinid column as it isn't useful in this demo
-    census_summary_cell_counts = census_summary_cell_counts.drop(columns=["soma_joinid"])
-
-    # print the head of the dataframe 
-    print(census_summary_cell_counts.head())
+    # add missing CL terms to rollup into
+    MISSING_CL_TERMS = list(set(ALL_CELL_ONTOLOGY_TERMS).symmetric_difference(set(census_summary_cell_counts["ontology_term_id"])))
+    added_empty_rows = pd.DataFrame([{"ontology_term_id": cl, "unique_cell_count": 0} for cl in MISSING_CL_TERMS])
+    census_summary_cell_counts = pd.concat([census_summary_cell_counts, added_empty_rows])
+    
+    # do the rollup
+    rollup_cell_type_df = rollup_across_cell_type_descendants(census_summary_cell_counts)
+    census_summary_cell_counts["unique_cell_count_with_descendants"] = rollup_cell_type_df["unique_cell_count"]
 
     # create the json we're going to return, which will look like this and ONLY include the Homo Sapiens data (from the organism column)
     # {
@@ -63,19 +76,9 @@ def cellCounts():
     #     },
     # ]
     # }
-
-    # create the data array
-    json = {}
-    # loop through the dataframe
-    for index, row in census_summary_cell_counts.iterrows():
-        # limit to humans
-        if row["organism"] != "Homo sapiens":
-            continue
-
-        json[row["ontology_term_id"]] = row["unique_cell_count"]
-
-    # return the json object
-    return json
+    census_summary_cell_counts = census_summary_cell_counts.set_index("ontology_term_id")
+    records = census_summary_cell_counts.to_dict('records')
+    return dict(zip(census_summary_cell_counts.index,records))    
 
 
 
