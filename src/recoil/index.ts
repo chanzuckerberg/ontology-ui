@@ -73,3 +73,21 @@ export const currentCelltypesState = selector<string[]>({
     }
   },
 });
+
+// we need to populate the data table with celltypes in the current selection
+// this is a selector that returns the current celltypes as an array of objects with counts
+
+export const currentCelltypesWithCountsState = selector<any>({
+  key: "currentCelltypesWithCounts",
+  get: ({ get }) => {
+    const currentCelltypes = get(currentCelltypesState);
+    const ontology = get(currentOntologyState);
+
+    if (!ontology) return null;
+
+    console.log(currentCelltypes);
+    console.log(ontology);
+
+    return null;
+  },
+});

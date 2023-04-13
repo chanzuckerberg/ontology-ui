@@ -51,6 +51,7 @@ import Dotplot from "./Dotplot";
 import Umap from "./Umap";
 import { dotplotEnabledState } from "../recoil/dotplot";
 import Tutorial from "./Tutorial";
+import Datatable from "./DataTable";
 
 const defaultForceHightlightProps: DrawForceDagHighlightProps = {
   hullsEnabled: true,
@@ -578,7 +579,8 @@ export default function OntologyExplorer({ graph }: OntologyExplorerProps): JSX.
          * so it would probably be better for both sugiyama and dotplot
          * to have multiple components that handle error states
          */}
-        {dotplotEnabled ? <Dotplot /> : null}{" "}
+        {dotplotEnabled ? <Dotplot /> : null}
+        <Datatable />
       </div>
     </div>
   );

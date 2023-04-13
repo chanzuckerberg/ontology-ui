@@ -41,10 +41,13 @@ export const sugiyamaRenderThresholdState = atom<number>({
   default: 200,
 });
 
-export const sugiyamaLayoutState = selector<LayoutState>({
+export const sugiyamaLayoutState = selector<LayoutState | null>({
   key: "sugiyamaLayoutState",
   get: ({ get }) => {
     const dagDataStructure = get(dagDataStructureState);
+
+    if (!dagDataStructure) return null;
+
     const _createDagStructure = dagStratify();
     const sugiyamaDagStratified = _createDagStructure(dagDataStructure?.sugiyamaStratifyData);
     let _width = null;

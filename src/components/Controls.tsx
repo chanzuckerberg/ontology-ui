@@ -23,6 +23,7 @@ import {
 import { useRecoilState, useRecoilValue } from "recoil";
 import { sugiyamaIsEnabledState } from "../recoil/sugi";
 import { dotplotEnabledState, dotplotIsOpenState } from "../recoil/dotplot";
+import { dataTableIsOpenState } from "../recoil/datatable";
 
 interface OntologyExplorerControlDrawerProps {
   pinnedVertex: OntologyTerm | undefined;
@@ -52,6 +53,7 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
   const [sugiyamaIsOpen, setSugiyamaIsOpen] = useRecoilState(sugiyamaIsOpenState);
   const [tutorialDrawerActive, setTutorialDrawerActive] = useRecoilState(tutorialDrawerActiveState);
   const dotplotEnabled = useRecoilValue(dotplotEnabledState);
+  const [dataTableIsOpen, setDataTableIsOpen] = useRecoilState(dataTableIsOpenState);
 
   const params = useParams();
 
@@ -118,7 +120,7 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
         style={{ marginRight: 20 }}
         disabled={!sugiyamaIsEnabled}
       >
-        Hierarchy layout
+        Hierarchy
       </Button>
       <Button
         icon="heat-grid"
@@ -128,7 +130,17 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
         style={{ marginRight: 20 }}
         disabled={!dotplotEnabled}
       >
-        Dotplot layout
+        Dotplot
+      </Button>
+      <Button
+        icon="th"
+        onClick={() => {
+          setDataTableIsOpen(!dataTableIsOpen);
+        }}
+        style={{ marginRight: 20 }}
+        disabled={!dotplotEnabled}
+      >
+        Data Table
       </Button>
 
       <HotkeysTarget2
@@ -195,6 +207,14 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
             label: "Activate force-directed layout",
             onKeyDown: () => {
               setActiveGraph("force");
+            },
+          },
+          {
+            combo: "X",
+            global: true,
+            label: "Activate data table view",
+            onKeyDown: () => {
+              setDataTableIsOpen(!dataTableIsOpen);
             },
           },
         ]}
