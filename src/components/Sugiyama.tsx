@@ -12,6 +12,8 @@ export default function Sugiyama(): JSX.Element | null {
   const sugiyamaLayout = useRecoilValue(sugiyamaLayoutState);
   const ontology = useRecoilValue(currentOntologyState);
 
+  if (!ontology || !sugiyamaLayout) return null;
+
   const {
     sugiyamaWidthAspectRatio,
     sugiyamaHeightAspectRatio,
