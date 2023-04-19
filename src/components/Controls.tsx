@@ -253,8 +253,8 @@ export default function OntologyExplorerControlDrawer(props: OntologyExplorerCon
         <div className={Classes.DRAWER_BODY}>
           <div className={Classes.DIALOG_BODY}>
             <p>
-              Customizations to interface and interactivity. Some options have hotkeys, these are shown as (k). The
-              hotkey (k) pulls up a menu of all hotkeys.
+              Customizations to interface and interactivity. Many affordances have hotkeys — press "shift" and "?" to
+              see all of them.
             </p>
             <h2> Interactivity </h2>
             <p>
