@@ -243,11 +243,55 @@ export const drawForceDag = (
        */
       drawHulls(ontology, nodes, hullToNodes, context, hullBorderColor, hullLabelColor, hullRoots);
 
+      const hullRootsHardcoded = [
+        "CL:0000000",
+        "CL:0000084",
+        "CL:0000057",
+        "CL:0000210",
+        "CL:0000236",
+        "CL:0000540",
+        "CL:0000787",
+        "CL:0001065",
+        "CL:0000584",
+        "CL:0000125",
+        "CL:0000623",
+        "CL:1000497",
+        "CL:0000235",
+        "CL:0000576",
+        "CL:0000746",
+        "CL:0000148",
+        "CL:0000738",
+        "CL:0000151",
+        "CL:0019031",
+        "CL:0000446",
+        "CL:0000667",
+        "CL:0002491",
+        "CL:0019018",
+        "CL:0000646",
+        "CL:0002365",
+        "CL:0000785",
+        "CL:0000127",
+        "CL:0000617",
+        "CL:0000128",
+        "CL:0000019",
+        "CL:0000158",
+        "CL:0000003",
+        "CL:0000121",
+        "CL:0008034",
+        "CL:0000071",
+        "CL:0000136",
+        "CL:0000129",
+        "CL:0008002",
+        "CL:0000117",
+        "CL:0000763",
+        "CL:0000860",
+      ];
+
       /**
        * Draw text on hull nodes
        */
       for (const node of nodes) {
-        if (hullRoots.includes(node.id)) {
+        if (hullRootsHardcoded.includes(node.id)) {
           const vertex: any = ontology.get(node.id);
           if (vertex && vertex.label && typeof vertex.label === "string" && node.x && node.y) {
             context.fillStyle = tooltipColor;

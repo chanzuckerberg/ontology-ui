@@ -25,6 +25,7 @@ export const drawHulls = (
    * CUSTOM SUBSET FOR TEST
    */
   //  ["CL:0002086", "CL:0002031", "CL:1000504"]
+
   hullRoots.forEach((vertex_id: string, i, arr) => {
     drawHull(vertex_id, ontology, nodes, hullToNodes, context, hullBorderColor, hullLabelColor, i, arr);
   });
@@ -56,7 +57,8 @@ const drawHull = (
   const _sineBowColor: string = interpolateSinebow(colorScale(index));
   const _sineBowColorObj: any = color(_sineBowColor);
   _sineBowColorObj.opacity = 0.1;
-  const hullColor = _sineBowColorObj + "";
+  // const hullColor = _sineBowColorObj + "";
+  const hullColor = "rgba(255,255,255,0";
 
   /**
    * Filter the simulation's nodes that are descendants of the given vertex

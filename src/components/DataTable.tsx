@@ -2,7 +2,7 @@ import { Button, Classes, Drawer, DrawerSize } from "@blueprintjs/core";
 import { useRecoilState, useRecoilValue } from "recoil";
 
 import { dataTableIsOpenState } from "../recoil/datatable";
-import { currentCelltypesState, currentCelltypesWithCountsState, currentOntologyState } from "../recoil/";
+import { currentCelltypesState, currentOntologyState } from "../recoil/";
 import { portalCellTypeCountsState } from "../recoil/portal";
 import { useState } from "react";
 
@@ -94,11 +94,11 @@ const Datatable = () => {
             </div>
             <div>
               {currentCelltypes.map((celltype, i) => {
-                console.log(portalCellTypeCounts[celltype]);
                 const vertex = ontology.get(celltype);
 
                 return (
                   <div
+                    key={i}
                     style={{
                       width: tableWidth,
                       display: "grid",

@@ -29,12 +29,12 @@ interface SearchTermProps {
 
 const SearchModes: { label: string; value: SearchMode }[] = [
   {
-    label: `🫁 compartment`,
-    value: "compartment",
-  },
-  {
     label: `cell type`,
     value: "celltype",
+  },
+  {
+    label: `🫁 compartment`,
+    value: "compartment",
   },
 ];
 
@@ -42,7 +42,7 @@ const SearchSidebar = (props: SearchSidebarProps) => {
   const { searchTerms, setSearchTerms, emptyFilterResult } = props;
   const marginUnit = 15;
   const [searchString, setSearchString] = useState<string>("");
-  const [searchMode, setSearchMode] = useState<SearchMode>("compartment");
+  const [searchMode, setSearchMode] = useState<SearchMode>("celltype");
 
   const handleSearchTermChange = (term: SearchTerm, id: number) => {
     const updatedSearchTerms = [...searchTerms];
