@@ -11,40 +11,40 @@
     ],
     "environments": {
         "rdev": {
-            "aws_profile": "single-cell-dev",
-            "terraform_directory": ".happy/terraform/envs/rdev",
-            "log_group_prefix": "/happy/cellxgene-labs/rdev",
-            "task_launch_type": "k8s",
+            "aws_profile": "czi-playground",
             "k8s": {
-                "namespace": "sc-dev-happy-eks-happy-env",
-                "cluster_id": "sc-dev-eks",
+                "namespace": "si-rdev-happy-eks-rdev-happy-env",
+                "cluster_id": "si-playground-eks-v2",
                 "auth_method": "eks",
-                "context": "sc-dev-eks"
-            }
+                "context": "si-playground-eks-v2"
+            },
+            "terraform_directory": ".happy/terraform/envs/rdev",
+            "task_launch_type": "k8s",
+            "auto_run_migrations": false
         },
         "staging": {
-            "aws_profile": "single-cell-dev",
-            "terraform_directory": ".happy/terraform/envs/staging",
-            "log_group_prefix": "/happy/cellxgene-labs/staging",
-            "task_launch_type": "k8s",
+            "aws_profile": "czi-playground",
             "k8s": {
-                "namespace": "sc-staging-happy-eks-happy-env",
-                "cluster_id": "sc-staging-eks",
+                "namespace": "si-staging-happy-eks-staging-happy-env",
+                "cluster_id": "si-playground-eks-v2",
                 "auth_method": "eks",
-                "context": "sc-staging-eks"
-            }
+                "context": "si-playground-eks-v2"
+            },
+            "terraform_directory": ".happy/terraform/envs/rdev",
+            "task_launch_type": "k8s",
+            "auto_run_migrations": false
         },
         "prod": {
-            "aws_profile": "single-cell-prod",
-            "terraform_directory": ".happy/terraform/envs/prod",
-            "log_group_prefix": "/happy/cellxgene-labs/prod",
-            "task_launch_type": "k8s",
+            "aws_profile": "czi-playground",
             "k8s": {
-                "namespace": "sc-prod-happy-eks-happy-env",
-                "cluster_id": "sc-prod-eks",
+                "namespace": "si-prod-happy-eks-prod-happy-env",
+                "cluster_id": "si-playground-eks-v2",
                 "auth_method": "eks",
-                "context": "sc-prod-eks"
-            }
+                "context": "si-playground-eks-v2"
+            },
+            "terraform_directory": ".happy/terraform/envs/rdev",
+            "task_launch_type": "k8s",
+            "auto_run_migrations": false
         }
     },
     "tasks": {

@@ -6,7 +6,7 @@ module "stack" {
   stack_name       = var.stack_name
   deployment_stage = "prod"
   stack_prefix     = "/${var.stack_name}"
-  k8s_namespace    = "sc-prod-happy-eks-happy-env"
+  k8s_namespace    = var.k8s_namespace
   routing_method   = "CONTEXT"
   services = {
     frontend = {
